@@ -329,7 +329,7 @@ function MonitoringTask({
   // 5) RENDER
   // ---------------------
   return (
-    <div style={{ width: 520, margin: 'auto', fontFamily: 'sans-serif' }}>
+    <div style={{ width: 520, margin: '0', fontFamily: 'sans-serif' }}>
       {/* Title */}
       <div
         style={{
