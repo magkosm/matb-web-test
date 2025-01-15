@@ -44,7 +44,7 @@ function TrackingTask({
 
       // Calculate time until next failure (in milliseconds)
       // Using eventsPerMinute to determine frequency
-      npm build const minutesUntilNextFailure = 1 / eventsPerMinute;
+      const minutesUntilNextFailure = 1 / eventsPerMinute;
       const baseDelay = minutesUntilNextFailure * 60 * 1000;
       // Add some randomness (±30% of base delay)
       const randomDelay = baseDelay * (0.7 + Math.random() * 0.6);
