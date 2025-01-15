@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useAutoScroll } from './hooks/useAutoScroll';
+import { downloadCSV } from './utils/csvExport';
 
 // ---------------------------------------------------------------------------
 // 1) Dynamically import all .wav files
@@ -29,7 +31,11 @@ const LEVEL1_INTERVAL = 500; // Initial interval in ms
 const LEVEL2_INTERVAL = 200; // Accelerated interval in ms
 const LEVEL2_DELAY = 1000;    // Time to switch to Level 2 in ms
 
-function CommunicationsTask({ eventsPerMinute = 2, showLog = true }) {
+function CommunicationsTask({ 
+  eventsPerMinute = 2, 
+  showLog = false,
+  onLogUpdate 
+}) {
   const ownCallSign = 'NASA504';
 
   // -------------------------------------------------------------------------
@@ -60,6 +66,9 @@ function CommunicationsTask({ eventsPerMinute = 2, showLog = true }) {
   // Refs to hold latest frequencies and selectedRadio
   const frequenciesRef = useRef(frequencies);
   const selectedRadioRef = useRef(selectedRadio);
+
+  const freqRampTimeoutRef = useRef(null);
+  const freqRampIntervalRef = useRef(null);
 
   useEffect(() => {
     frequenciesRef.current = frequencies;
@@ -186,123 +195,34 @@ function CommunicationsTask({ eventsPerMinute = 2, showLog = true }) {
     msg.finalized = true;
     if (msg.postAudioTimer) clearTimeout(msg.postAudioTimer);
 
-    // Record one last snapshot to capture the final state
-    recordSnapshot(msg);
+    // Only log if showLog is true
+    if (showLog) {
+      // Record one last snapshot to capture the final state
+      recordSnapshot(msg);
+      
+      // Update comm log
+      setCommLog(prev => {
+        const newLog = [...prev, {
+          time: new Date().toISOString(),
+          messageId: msg.id,
+          success: msg.success
+        }];
+        onLogUpdate?.(newLog);
+        return newLog;
+      });
+    }
 
     // Clear active message
     setActiveMessage(null);
-
-    console.log(`[FINALIZE] ${msg.id} => snapshots:`, msg.snapshots);
-
-    // Evaluation logic
-    const timeSinceStart = ((Date.now() - startTimeRef.current) / 1000).toFixed(1);
-    const { callsign, radio: targetRadio, frequency: targetFreq } = msg;
-
-    let R_OK = false;
-    let F_OK = false;
-    let RT = null;
-    let radioWasChanged = false;
-    let freqWasChanged = false;
-
-    const snapshots = [...msg.snapshots].sort((a, b) => a.t - b.t);
-
-    // Step 1: Check if correct radio and frequency were set at any point
-    for (let i = 0; i < snapshots.length; i++) {
-      const snap = snapshots[i];
-      if (i > 0) {
-        const prev = snapshots[i - 1];
-        if (prev.selectedRadio !== snap.selectedRadio) radioWasChanged = true;
-        for (const rKey of Object.keys(snap.frequencies)) {
-          if (snap.frequencies[rKey] !== prev.frequencies[rKey]) freqWasChanged = true;
-        }
-      }
-      if (snap.frequencies[targetRadio] === targetFreq && !R_OK && !F_OK) {
-        R_OK = true;
-        F_OK = true;
-        RT = snap.t;
-        console.log(`[FINALIZE] [STEP1] Correct radio+freq at t=${RT}`);
-      }
-    }
-
-    // Step 2: If not, check if any radio has the target frequency
-    if (!F_OK) {
-      for (let i = 0; i < snapshots.length; i++) {
-        const snap = snapshots[i];
-        const anyRadioHasIt = Object.values(snap.frequencies).includes(targetFreq);
-        if (anyRadioHasIt) {
-          F_OK = true;
-          RT = snap.t;
-          console.log(`[FINALIZE] [STEP2] Found freq on a different radio at t=${RT}`);
-          // Check if that frequency was on the target radio
-          const actualRadio = Object.keys(snap.frequencies).find(
-            (r) => snap.frequencies[r] === targetFreq
-          );
-          if (actualRadio === targetRadio) {
-            R_OK = true;
-          }
-          break;
-        }
-      }
-    }
-
-    // Step 3: If still no frequency match, check if user at least selected the correct radio
-    if (!F_OK && radioWasChanged) {
-      const correctRadioAtAnyPoint = snapshots.some((s) => s.selectedRadio === targetRadio);
-      if (correctRadioAtAnyPoint) {
-        R_OK = true;
-        console.log(`[FINALIZE] [STEP3] No freq match but user selected the correct radio.`);
-      }
-    }
-
-    // **New Addition: Track only frequency changes for FA**
-    const userMadeAFrequencyChange = freqWasChanged;
-
-    // Determine if the user made any changes
-    // const userMadeAChange = radioWasChanged || freqWasChanged; // OLD LINE
-    // Use only frequency changes for FA
-    // const userMadeAFrequencyChange = freqWasChanged; // NEW VARIABLE
-
-    const isRelevant = callsign === 'OWN' || callsign === ownCallSign;
-
-    // **Updated Classification Logic**
-    let remarks = '';
-    if (isRelevant) {
-      if (R_OK && F_OK) {
-        remarks = 'HIT';
-      } else {
-        remarks = 'MISS';
-      }
-    } else {
-      if (userMadeAFrequencyChange) { // Only frequency changes lead to FA
-        remarks = 'FA'; // False Alarm
-      } else {
-        remarks = 'CR'; // Correct Rejection
-      }
-    }
-
-    console.log(
-      `[RESULT] ${msg.id} => R_OK=${R_OK}, F_OK=${F_OK}, remarks=${remarks}, RT=${RT}`
-    );
-
-    // Log the result
-    logRow({
-      index: msg.index,
-      Time: timeSinceStart,
-      Ship: callsign,
-      Radio_T: targetRadio,
-      Freq_T: targetFreq,
-      Radio_S: snapshots[snapshots.length - 1]?.selectedRadio,
-      Freq_S: snapshots[snapshots.length - 1]?.frequencies[targetRadio],
-      R_OK,
-      F_OK,
-      RT: RT !== null ? (RT / 1000).toFixed(2) : '',
-      Remarks: remarks,
-    });
   };
 
   const logRow = (row) => {
     if (!showLog) return;
-    setCommLog((prev) => [...prev, row]);
+    setCommLog((prev) => {
+      const newLog = [...prev, row];
+      onLogUpdate(newLog); // Notify parent of log update
+      return newLog;
+    });
   };
 
   // -------------------------------------------------------------------------
@@ -333,12 +253,9 @@ function CommunicationsTask({ eventsPerMinute = 2, showLog = true }) {
   // -------------------------------------------------------------------------
   // 8) Frequency +/- Buttons with Two-Level Ramp-Up
   // -------------------------------------------------------------------------
-  const handleFreqButtonDown = (r, direction) => {
-    // Stop any ongoing arrow ramp to prevent conflicts
+  const handleFreqButtonDown = (r, direction, isDouble = false) => {
     stopArrowFreqRamp();
-
-    // Start two-level ramp-up
-    startFreqRamp(r, direction, 'button');
+    startFreqRamp(r, direction, 'button', isDouble);
   };
 
   const handleFreqButtonUp = () => {
@@ -416,64 +333,74 @@ function CommunicationsTask({ eventsPerMinute = 2, showLog = true }) {
   // -------------------------------------------------------------------------
   // 10) Two-Level Frequency Ramp-Up Function
   // -------------------------------------------------------------------------
-  const startFreqRamp = (radio, direction, rampType) => {
-    // Determine which ramp reference to use
-    const rampRef = rampType === 'button' ? freqButtonRampRef : arrowRampRef;
-    const level2Timeout = rampType === 'button' ? level2TimeoutRef : level2ArrowTimeoutRef;
+  const startFreqRamp = (radio, direction, source, isDouble = false) => {
+    const initialDelay = 500;
+    const rampUpDelay = 100;
 
-    // Initialize Level 1 stepping
-    const step = () => {
-      setFrequencies((prev) => {
-        const val = parseFloat(prev[radio]) || 0;
-        const newVal = (val + 0.025 * direction).toFixed(3);
-        const updated = { ...prev, [radio]: newVal };
-
-        // Update refs
-        frequenciesRef.current = updated;
-
-        if (activeMessage && !activeMessage.finalized) {
-          recordSnapshot(activeMessage);
+    // Initial change
+    setFrequencies(prev => {
+      const currentFreq = Number(prev[radio]);
+      let newFreq;
+      
+      if (isDouble) {
+        // For whole number steps
+        newFreq = Math.floor(currentFreq) + direction;
+      } else {
+        // For small steps (0.025)
+        if (direction > 0) {
+          // Going up: find next 0.025 increment
+          newFreq = Math.floor(currentFreq * 40) / 40 + 0.025;
+        } else {
+          // Going down: find previous 0.025 increment
+          newFreq = Math.ceil(currentFreq * 40) / 40 - 0.025;
         }
-
-        return updated;
-      });
-
-      // Schedule next Level 1 step
-      rampRef.current = setTimeout(step, LEVEL1_INTERVAL);
-    };
-
-    // Start Level 1 stepping
-    step();
-
-    // After LEVEL2_DELAY, switch to Level 2 stepping
-    level2Timeout.current = setTimeout(() => {
-      clearTimeout(rampRef.current); // Clear Level 1 stepping
-      const accelerateStep = () => {
-        setFrequencies((prev) => {
-          const val = parseFloat(prev[radio]) || 0;
-          const newVal = (val + 0.025 * direction).toFixed(3);
-          const updated = { ...prev, [radio]: newVal };
-
-          // Update refs
-          frequenciesRef.current = updated;
-
-          if (activeMessage && !activeMessage.finalized) {
-            recordSnapshot(activeMessage);
-          }
-
-          return updated;
-        });
-
-        // Schedule next Level 2 step
-        rampRef.current = setTimeout(accelerateStep, LEVEL2_INTERVAL);
+      }
+      
+      return {
+        ...prev,
+        [radio]: newFreq.toFixed(3)
       };
+    });
 
-      // Start Level 2 stepping
-      accelerateStep();
-    }, LEVEL2_DELAY);
+    // Set initial timeout
+    freqRampTimeoutRef.current = setTimeout(() => {
+      // Start rapid changes
+      freqRampIntervalRef.current = setInterval(() => {
+        setFrequencies(prev => {
+          const currentFreq = Number(prev[radio]);
+          let newFreq;
+          
+          if (isDouble) {
+            newFreq = Math.floor(currentFreq) + direction;
+          } else {
+            if (direction > 0) {
+              newFreq = Math.floor(currentFreq * 40) / 40 + 0.025;
+            } else {
+              newFreq = Math.ceil(currentFreq * 40) / 40 - 0.025;
+            }
+          }
+          
+          return {
+            ...prev,
+            [radio]: newFreq.toFixed(3)
+          };
+        });
+      }, rampUpDelay);
+    }, initialDelay);
   };
 
   const stopFreqRamp = (rampType) => {
+    // Clear the common ramp refs
+    if (freqRampTimeoutRef.current) {
+      clearTimeout(freqRampTimeoutRef.current);
+      freqRampTimeoutRef.current = null;
+    }
+    if (freqRampIntervalRef.current) {
+      clearInterval(freqRampIntervalRef.current);
+      freqRampIntervalRef.current = null;
+    }
+
+    // Clear type-specific refs
     if (rampType === 'button') {
       if (freqButtonRampRef.current) {
         clearTimeout(freqButtonRampRef.current);
@@ -503,156 +430,257 @@ function CommunicationsTask({ eventsPerMinute = 2, showLog = true }) {
     stopFreqRamp('button');
   };
 
+  const handleExport = () => {
+    downloadCSV(commLog, 'communications-log');
+  };
+
   // -------------------------------------------------------------------------
   // 11) Render
   // -------------------------------------------------------------------------
   return (
-    <div
-      style={{
-        width: 480,
-        fontFamily: 'sans-serif',
-        border: '1px solid #ccc',
+    <div style={{
+      width: '100%',
+      height: '100%',
+      display: 'flex',
+      flexDirection: 'column',
+      overflow: 'hidden'
+    }}>
+      {/* Title Bar */}
+      <div style={{
+        background: 'blue',
+        color: 'white',
+        textAlign: 'center',
         padding: '0.5rem',
-        margin: '1rem',
-      }}
-    >
-      <div
-        style={{
-          background: 'blue',
-          color: 'white',
-          textAlign: 'center',
-          padding: '0.5rem',
-          fontWeight: 'bold',
-        }}
-      >
+        fontWeight: 'bold',
+        flexShrink: 0
+      }}>
         COMMUNICATIONS TASK
       </div>
 
-      <div>
-        <strong>Call Sign:</strong> {ownCallSign}
-      </div>
+      {/* Main Content Container */}
+      <div style={{
+        flex: 1,
+        display: 'flex',
+        flexDirection: 'column',
+        padding: '1rem',
+        gap: '1rem',
+        overflow: 'hidden'
+      }}>
+        {/* Call Sign */}
+        <div style={{ 
+          textAlign: 'center', 
+          fontSize: 'clamp(1rem, 2vw, 1.5rem)',
+          flexShrink: 0
+        }}>
+          <strong>Call Sign:</strong> {ownCallSign}
+        </div>
 
-      {/* Radios & Frequencies */}
-      <div
-        style={{
+        {/* Radios Container */}
+        <div style={{
+          flex: 1,
           display: 'flex',
           flexDirection: 'column',
-          gap: '0.5rem',
-          marginTop: '1rem',
-        }}
-      >
-        {radioOrder.map((r) => (
-          <div key={r} style={{ display: 'flex', alignItems: 'center' }}>
-            <input
-              type="radio"
-              name="radioSelect"
-              checked={selectedRadio === r}
-              onChange={() => handleRadioSelect(r)}
-              style={{ marginRight: '0.5rem' }}
-            />
-            <span style={{ width: '50px', fontWeight: 'bold', color: 'blue' }}>
-              {r}
-            </span>
+          gap: '1vh',
+          overflow: 'hidden',
+          padding: '1vh'
+        }}>
+          {radioOrder.map((r) => (
+            <div key={r} style={{ 
+              display: 'flex', 
+              alignItems: 'center',
+              gap: '3vw',
+              padding: '0.5vh',
+              backgroundColor: '#f5f5f5',
+              borderRadius: '4px',
+              height: '8vh'
+            }}>
+              {/* Radio Selection */}
+              <div style={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: '0.5vw',
+                width: '15%',
+                flexShrink: 0
+              }}>
+                <input
+                  type="radio"
+                  name="radioSelect"
+                  checked={selectedRadio === r}
+                  onChange={() => handleRadioSelect(r)}
+                  style={{ 
+                    width: '2.5vh',
+                    height: '2.5vh',
+                    cursor: 'pointer'
+                  }}
+                />
+                <span style={{ 
+                  fontWeight: 'bold', 
+                  color: 'blue',
+                  fontSize: 'clamp(0.8rem, 2.5vh, 1.5rem)'
+                }}>
+                  {r}
+                </span>
+              </div>
 
-            <input
-              type="text"
-              style={{ width: '80px', marginLeft: '0.5rem' }}
-              value={frequencies[r]}
-              onChange={(e) => handleFrequencyChange(r, e.target.value)}
-            />
+              {/* Frequency Controls */}
+              <div style={{ 
+                display: 'flex', 
+                flex: 1,
+                gap: '1%',
+                alignItems: 'center',
+                justifyContent: 'space-between'
+              }}>
+                <button
+                  style={{ 
+                    width: '6vh',
+                    height: '4vh',
+                    fontSize: 'clamp(0.8rem, 2vh, 1.2rem)',
+                    background: '#e0e0e0',
+                    border: '1px solid #999',
+                    borderRadius: '4px',
+                    cursor: 'pointer'
+                  }}
+                  onMouseDown={() => handleFreqButtonDown(r, -1, true)}
+                  onMouseUp={handleFreqButtonUp}
+                  onMouseLeave={handleFreqButtonUp}
+                >
+                  --
+                </button>
+                <button
+                  style={{ 
+                    width: '12%',
+                    height: '4vh',
+                    fontSize: 'clamp(0.8rem, 2vh, 1.2rem)',
+                    background: '#e0e0e0',
+                    border: '1px solid #999',
+                    borderRadius: '4px',
+                    cursor: 'pointer'
+                  }}
+                  onMouseDown={() => handleFreqButtonDown(r, -0.25)}
+                  onMouseUp={handleFreqButtonUp}
+                  onMouseLeave={handleFreqButtonUp}
+                >
+                  -
+                </button>
 
-            {/* +/- freq buttons */}
-            <div style={{ display: 'flex', marginLeft: '0.5rem' }}>
-              <button
-                style={{ padding: '2px 4px', marginRight: '4px' }}
-                onMouseDown={() => handleFreqButtonDown(r, +1)}
-                onMouseUp={handleFreqButtonUp}
-                onMouseLeave={handleFreqButtonUp}
-              >
-                +
-              </button>
-              <button
-                style={{ padding: '2px 4px' }}
-                onMouseDown={() => handleFreqButtonDown(r, -1)}
-                onMouseUp={handleFreqButtonUp}
-                onMouseLeave={handleFreqButtonUp}
-              >
-                -
-              </button>
+                <input
+                  type="text"
+                  style={{ 
+                    width: '12vh',
+                    height: '6vh',
+                    fontSize: 'clamp(1rem, 2.5vh, 1.5rem)',
+                    textAlign: 'center',
+                    border: '1px solid #999',
+                    borderRadius: '4px'
+                  }}
+                  value={frequencies[r]}
+                  onChange={(e) => handleFrequencyChange(r, e.target.value)}
+                />
+
+                <button
+                  style={{ 
+                    width: '4vh',
+                    height: '4vh',
+                    fontSize: 'clamp(0.8rem, 2vh, 1.2rem)',
+                    background: '#e0e0e0',
+                    border: '1px solid #999',
+                    borderRadius: '4px',
+                    cursor: 'pointer'
+                  }}
+                  onMouseDown={() => handleFreqButtonDown(r, +0.25)}
+                  onMouseUp={handleFreqButtonUp}
+                  onMouseLeave={handleFreqButtonUp}
+                >
+                  +
+                </button>
+                <button
+                  style={{ 
+                    width: '8vh',
+                    height: '4vh',
+                    fontSize: 'clamp(0.8rem, 2vh, 1.2rem)',
+                    background: '#e0e0e0',
+                    border: '1px solid #999',
+                    borderRadius: '4px',
+                    cursor: 'pointer'
+                  }}
+                  onMouseDown={() => handleFreqButtonDown(r, +1, true)}
+                  onMouseUp={handleFreqButtonUp}
+                  onMouseLeave={handleFreqButtonUp}
+                >
+                  ++
+                </button>
+              </div>
             </div>
-          </div>
-        ))}
-      </div>
-
-      {/* Comm Log */}
-      {showLog && (
-        <div style={{ marginTop: '1rem' }}>
-          <h4>Comm Log</h4>
-          <div
-            style={{
-              maxHeight: 240,
-              overflowY: 'auto',
-              border: '1px solid #ddd',
-              padding: '0.5rem',
-            }}
-          >
-            <table
-              style={{
-                width: '100%',
-                fontSize: '0.75rem',
-                borderCollapse: 'collapse',
-              }}
-            >
-              <thead>
-                <tr style={{ borderBottom: '1px solid #ccc' }}>
-                  <th>Index</th>
-                  <th>Time</th>
-                  <th>Ship</th>
-                  <th>Radio_T</th>
-                  <th>Freq_T</th>
-                  <th>Radio_S</th>
-                  <th>Freq_S</th>
-                  <th>R_OK</th>
-                  <th>F_OK</th>
-                  <th>RT</th>
-                  <th>Remarks</th>
-                </tr>
-              </thead>
-              <tbody>
-                {commLog.map((row, i) => (
-                  <tr key={i} style={{ borderBottom: '1px solid #eee' }}>
-                    <td>{row.index}</td>
-                    <td>{row.Time}</td>
-                    <td>{row.Ship}</td>
-                    <td>{row.Radio_T}</td>
-                    <td>{row.Freq_T}</td>
-                    <td>{row.Radio_S}</td>
-                    <td>{row.Freq_S}</td>
-                    <td>
-                      {row.R_OK === true
-                        ? 'True'
-                        : row.R_OK === false
-                        ? 'False'
-                        : row.R_OK}
-                    </td>
-                    <td>
-                      {row.F_OK === true
-                        ? 'True'
-                        : row.F_OK === false
-                        ? 'False'
-                        : row.F_OK}
-                    </td>
-                    <td>{row.RT}</td>
-                    <td>{row.Remarks}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          ))}
         </div>
-      )}
+      </div>
     </div>
   );
 }
+
+const Log = ({ commLog }) => {
+  const scrollRef = useAutoScroll();
+  
+  const handleExport = () => {
+    downloadCSV(commLog, 'communications-log');
+  };
+
+  // Get last 50 entries for display only
+  const recentLogs = commLog.slice(-50);
+
+  return (
+    <div>
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '0.5rem' }}>
+        <button 
+          onClick={handleExport}
+          style={{
+            padding: '0.25rem 0.5rem',
+            background: '#007bff',
+            color: 'white',
+            border: 'none',
+            borderRadius: '4px',
+            cursor: 'pointer'
+          }}
+        >
+          Export CSV
+        </button>
+      </div>
+      <div ref={scrollRef} style={{ width: '100%', overflowX: 'auto', maxHeight: '300px', overflowY: 'auto' }}>
+        <table style={{ width: '100%', fontSize: '0.75rem', borderCollapse: 'collapse' }}>
+          <thead>
+            <tr style={{ borderBottom: '1px solid #ccc' }}>
+              <th style={{ padding: '0.5rem' }}>Index</th>
+              <th style={{ padding: '0.5rem' }}>Time</th>
+              <th style={{ padding: '0.5rem' }}>Ship</th>
+              <th style={{ padding: '0.5rem' }}>Radio_T</th>
+              <th style={{ padding: '0.5rem' }}>Freq_T</th>
+              <th style={{ padding: '0.5rem' }}>Radio_S</th>
+              <th style={{ padding: '0.5rem' }}>Freq_S</th>
+              <th style={{ padding: '0.5rem' }}>RT</th>
+              <th style={{ padding: '0.5rem' }}>Remarks</th>
+            </tr>
+          </thead>
+          <tbody>
+            {recentLogs.map((row, i) => (
+              <tr key={i} style={{ borderBottom: '1px solid #eee' }}>
+                <td style={{ padding: '0.5rem', textAlign: 'center' }}>{row.index}</td>
+                <td style={{ padding: '0.5rem', textAlign: 'center' }}>{row.Time}</td>
+                <td style={{ padding: '0.5rem', textAlign: 'center' }}>{row.Ship}</td>
+                <td style={{ padding: '0.5rem', textAlign: 'center' }}>{row.Radio_T}</td>
+                <td style={{ padding: '0.5rem', textAlign: 'center' }}>{row.Freq_T}</td>
+                <td style={{ padding: '0.5rem', textAlign: 'center' }}>{row.Radio_S}</td>
+                <td style={{ padding: '0.5rem', textAlign: 'center' }}>{row.Freq_S}</td>
+                <td style={{ padding: '0.5rem', textAlign: 'center' }}>{row.RT}</td>
+                <td style={{ padding: '0.5rem', textAlign: 'center' }}>{row.Remarks}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+};
+
+CommunicationsTask.Log = Log;
 
 export default CommunicationsTask;

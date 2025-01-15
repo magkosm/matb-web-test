@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useAutoScroll } from './hooks/useAutoScroll';
+import { downloadCSV } from './utils/csvExport';
 
 /**
  * Simple utility for unique event IDs.
@@ -21,7 +23,8 @@ function MonitoringTask({
   eventsPerMinute,
   setEventsPerMinute,
   showLog,
-  setShowLog
+  setShowLog,
+  onLogUpdate
 }) {
   // ---------------------
   // 1) STATE
@@ -325,170 +328,222 @@ function MonitoringTask({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
+  // Update the eventLog state and notify parent
+  useEffect(() => {
+    onLogUpdate(eventLog);
+  }, [eventLog, onLogUpdate]);
+
   // ---------------------
   // 5) RENDER
   // ---------------------
   return (
-    <div style={{ width: 520, margin: '0', fontFamily: 'sans-serif' }}>
-      {/* Title */}
-      <div
-        style={{
-          background: 'blue',
-          color: 'white',
-          textAlign: 'center',
-          padding: '0.5rem',
-          fontWeight: 'bold',
-        }}
-      >
+    <div style={{ 
+      width: '100%',
+      height: '100%',
+      display: 'flex',
+      flexDirection: 'column',
+      fontFamily: 'sans-serif'
+    }}>
+      <div style={{
+        background: 'blue',
+        color: 'white',
+        textAlign: 'center',
+        padding: '0.5rem',
+        fontWeight: 'bold',
+      }}>
         SYSTEM MONITORING
       </div>
 
-      
-
-      {/* F1, F2 */}
-      <div style={{ display: 'flex', justifyContent: 'space-around', margin: '1rem 0' }}>
-        {items.slice(0, 2).map((btn) => {
-          const displayColor = btn.eventActive ? btn.colorEvent : btn.colorNormal;
-          return (
-            <div
-              key={btn.label}
-              onClick={() => handleResponse(btn.label)}
-              onTouchStart={() => handleResponse(btn.label)}
-              style={{
-                background: displayColor,
-                width: '80px',
-                height: '60px',
-                lineHeight: '60px',
-                textAlign: 'center',
-                cursor: 'pointer',
-                color: '#fff',
-                borderRadius: '5px',
-                userSelect: 'none',
-              }}
-            >
-              {btn.label}
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Gauges: F3-F6 */}
-      <div style={{ display: 'flex', justifyContent: 'space-around', marginTop: '1rem' }}>
-        {items.slice(2).map((gauge) => {
-          // 11 cells: 0..10, middle cell=5
-          const cells = Array.from({ length: 11 }, (_, i) => i);
-
-          return (
-            <div
-              key={gauge.label}
-              style={{
-                display: 'flex',
-                flexDirection: 'column-reverse',
-                alignItems: 'center',
-                cursor: 'pointer',
-                userSelect: 'none',
-              }}
-              onClick={() => handleResponse(gauge.label)}
-              onTouchStart={() => handleResponse(gauge.label)}
-            >
+      {/* Main Content Container */}
+      <div style={{
+        flex: 1,
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: '2%'
+      }}>
+        {/* F1, F2 */}
+        <div style={{ 
+          display: 'flex', 
+          justifyContent: 'center', 
+          gap: '10%',
+          width: '100%',
+          marginBottom: '5%'
+        }}>
+          {items.slice(0, 2).map((btn) => {
+            const displayColor = btn.eventActive ? btn.colorEvent : btn.colorNormal;
+            return (
               <div
+                key={btn.label}
+                onClick={() => handleResponse(btn.label)}
+                onTouchStart={() => handleResponse(btn.label)}
                 style={{
+                  background: displayColor,
+                  width: '15%',
+                  aspectRatio: '4/3',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  color: '#fff',
+                  borderRadius: '5px',
+                  userSelect: 'none',
+                  fontSize: 'clamp(0.8rem, 2vw, 1.2rem)'
+                }}
+              >
+                {btn.label}
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Gauges: F3-F6 */}
+        <div style={{ 
+          display: 'flex', 
+          justifyContent: 'center', 
+          gap: '8%',
+          width: '100%'
+        }}>
+          {items.slice(2).map((gauge) => {
+            const cells = Array.from({ length: 11 }, (_, i) => i);
+            return (
+              <div
+                key={gauge.label}
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column-reverse',
+                  alignItems: 'center',
+                  cursor: 'pointer',
+                  userSelect: 'none',
+                  width: '8%'
+                }}
+                onClick={() => handleResponse(gauge.label)}
+                onTouchStart={() => handleResponse(gauge.label)}
+              >
+                <div style={{
+                  width: '100%',
+                  height: '20vh',
                   border: '1px solid #333',
-                  width: '35px',
-                  height: '165px',
                   display: 'flex',
                   flexDirection: 'column-reverse',
                   marginBottom: '0.5rem',
-                }}
-              >
-                {cells.map((cellIndex) => {
-                  // "Bad" range if <3 or >7
-                  const isOutOfNormal = cellIndex < 3 || cellIndex > 7;
-                  // highlight [level-1, level, level+1]
-                  const isInRange = (
-                    cellIndex >= gauge.level - 1 &&
-                    cellIndex <= gauge.level + 1
-                  );
-
-                  let backgroundColor;
-                  if (isOutOfNormal) {
-                    // Light red base
-                    backgroundColor = '#FFEEEE';
-                    if (isInRange) {
-                      // darker red highlight
-                      backgroundColor = '#FFCCCC';
-                    }
-                  } else {
-                    // Light gray
-                    backgroundColor = '#B0BEC5';
-                    if (isInRange) {
-                      backgroundColor = '#607D8B';
-                    }
-                  }
-
-                  // Yellow dot if cellIndex == gauge.level
-                  let content = null;
-                  if (cellIndex === gauge.level) {
-                    content = (
-                      <span style={{ color: 'yellow', fontSize: '0.7rem' }}>
-                        ●
-                      </span>
+                }}>
+                  {cells.map((cellIndex) => {
+                    // "Bad" range if <3 or >7
+                    const isOutOfNormal = cellIndex < 3 || cellIndex > 7;
+                    // highlight [level-1, level, level+1]
+                    const isInRange = (
+                      cellIndex >= gauge.level - 1 &&
+                      cellIndex <= gauge.level + 1
                     );
-                  }
 
-                  return (
-                    <div
-                      key={cellIndex}
-                      style={{
-                        flex: 1,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        background: backgroundColor,
-                        borderTop: '1px solid #eee',
-                      }}
-                    >
-                      {content}
-                    </div>
-                  );
-                })}
+                    let backgroundColor;
+                    if (isOutOfNormal) {
+                      // Light red base
+                      backgroundColor = '#FFEEEE';
+                      if (isInRange) {
+                        // darker red highlight
+                        backgroundColor = '#FFCCCC';
+                      }
+                    } else {
+                      // Light gray
+                      backgroundColor = '#B0BEC5';
+                      if (isInRange) {
+                        backgroundColor = '#607D8B';
+                      }
+                    }
+
+                    // Yellow dot if cellIndex == gauge.level
+                    let content = null;
+                    if (cellIndex === gauge.level) {
+                      content = (
+                        <span style={{ color: 'yellow', fontSize: '0.7rem' }}>
+                          ●
+                        </span>
+                      );
+                    }
+
+                    return (
+                      <div
+                        key={cellIndex}
+                        style={{
+                          flex: 1,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          background: backgroundColor,
+                          borderTop: '1px solid #eee',
+                        }}
+                      >
+                        {content}
+                      </div>
+                    );
+                  })}
+                </div>
+                <div style={{ fontSize: 'clamp(0.8rem, 1.5vw, 1.1rem)' }}>
+                  {gauge.label}
+                </div>
               </div>
-              <span>{gauge.label}</span>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Event Log */}
-      {showLog && (
-        <div style={{ marginTop: '2rem' }}>
-          <h4>Event Log</h4>
-          <table style={{ width: '100%', fontSize: '0.85rem', borderCollapse: 'collapse' }}>
-            <thead>
-              <tr style={{ borderBottom: '1px solid #ccc' }}>
-                <th style={{ textAlign: 'left' }}>Label</th>
-                <th style={{ textAlign: 'left' }}>Timestamp</th>
-                <th style={{ textAlign: 'left' }}>RT (ms)</th>
-                <th style={{ textAlign: 'left' }}>Type</th>
-                <th style={{ textAlign: 'left' }}>ID</th>
-              </tr>
-            </thead>
-            <tbody>
-              {eventLog.map((e) => (
-                <tr key={e.id} style={{ borderBottom: '1px solid #eee' }}>
-                  <td>{e.label}</td>
-                  <td>{new Date(e.timestamp).toLocaleTimeString()}</td>
-                  <td>{e.responseTime ?? '—'}</td>
-                  <td>{e.type}</td>
-                  <td style={{ fontSize: '0.7rem', color: '#666' }}>{e.id}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+            );
+          })}
         </div>
-      )}
+      </div>
     </div>
   );
 }
+
+const Log = ({ eventLog }) => {
+  const scrollRef = useAutoScroll();
+  
+  // Get last 50 entries
+  const recentLogs = eventLog.slice(-50);
+  
+  const handleExport = () => {
+    downloadCSV(eventLog, 'monitoring-log');
+  };
+
+  return (
+    <div ref={scrollRef} style={{ width: '100%', overflowX: 'auto', maxHeight: '300px', overflowY: 'auto' }}>
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '0.5rem' }}>
+        <button 
+          onClick={handleExport}
+          style={{
+            padding: '0.25rem 0.5rem',
+            background: '#007bff',
+            color: 'white',
+            border: 'none',
+            borderRadius: '4px',
+            cursor: 'pointer'
+          }}
+        >
+          Export CSV
+        </button>
+      </div>
+      <table style={{ width: '100%', fontSize: '0.75rem', borderCollapse: 'collapse' }}>
+        <thead>
+          <tr style={{ borderBottom: '1px solid #ccc' }}>
+            <th style={{ textAlign: 'left' }}>Label</th>
+            <th style={{ textAlign: 'left' }}>Timestamp</th>
+            <th style={{ textAlign: 'left' }}>RT (ms)</th>
+            <th style={{ textAlign: 'left' }}>Type</th>
+          </tr>
+        </thead>
+        <tbody>
+          {recentLogs.map((e) => (
+            <tr key={e.id} style={{ borderBottom: '1px solid #eee' }}>
+              <td>{e.label}</td>
+              <td>{new Date(e.timestamp).toLocaleTimeString()}</td>
+              <td>{e.responseTime ?? '—'}</td>
+              <td>{e.type}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+};
+
+MonitoringTask.Log = Log;
 
 export default MonitoringTask;

@@ -1,38 +1,143 @@
-.App {
-  text-align: center;
+.main-content {
+  width: 100%;
+  transition: none;
 }
 
-.App-logo {
-  height: 40vmin;
-  pointer-events: none;
+.main-content.sidebar-open {
+  margin-right: 0;
+  width: 100%;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
-  }
+.sidebar {
+  position: fixed;
+  top: 0;
+  right: -400px;
+  width: 400px;
+  height: 100vh;
+  background: white;
+  border-left: 1px solid #ccc;
+  transition: right 0.3s ease;
+  z-index: 1000;
 }
 
-.App-header {
-  background-color: #282c34;
-  min-height: 100vh;
+.sidebar.open {
+  right: 0;
+  height: 100vh;
+}
+
+.sidebar-content {
+  padding: 1rem;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+
+.settings-section {
+  margin-bottom: 2rem;
+}
+
+.logs-section {
+  flex: 1;
+  overflow-y: auto;
+  padding-bottom: 1rem;
+}
+
+.toggle-button {
+  position: fixed;
+  top: 10px;
+  right: 10px;
+  z-index: 1000;
+  padding: 0.5rem 1rem;
+  background-color: #007bff;
+  color: #fff;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+/* Add these styles */
+.tracking-container {
+  touch-action: none;
+  user-select: none;
+}
+
+/* Update existing grid styles */
+.main-content {
+  grid-template-areas:
+    "monitoring tracking scheduling"
+    "communications resource resource";
+}
+
+/* Add to existing sidebar styles */
+.sidebar-content .tracking-log {
+  margin-bottom: 1rem;
+  padding: 0.5rem;
+  background: #f5f5f5;
+  border-radius: 4px;
+}
+
+.log-section {
+  margin-top: 1rem;
+  padding: 0.5rem;
+  background: #f5f5f5;
+  border-radius: 4px;
+  overflow: auto;
+}
+
+.log-section h3 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1rem;
+  color: #333;
+}
+
+.scheduling-panel {
+  grid-area: scheduling;
+  height: 100%;
+  border: 1px solid #ccc;
+}
+
+.system-health {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  padding: 1rem;
+  background-color: #f5f5f5;
+  border-radius: 5px;
+  margin-bottom: 1rem;
+}
+
+.health-container {
   display: flex;
   flex-direction: column;
   align-items: center;
+  height: 80%;
+}
+
+.health-bar {
+  height: 150px;
+  width: 40px;
+  border: 1px solid #ccc;
+  border-radius: 3px;
+  overflow: hidden;
+  position: relative;
+}
+
+.health-value {
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+  transition: height 0.3s ease, background-color 0.3s ease;
+  display: flex;
+  align-items: center;
   justify-content: center;
-  font-size: calc(10px + 2vmin);
-  color: white;
+  color: black;
+  font-weight: bold;
+  text-shadow: 1px 1px 1px rgba(255,255,255,0.5);
 }
 
-.App-link {
-  color: #61dafb;
-}
-
-@keyframes App-logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+.system-load {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
