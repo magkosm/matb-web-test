@@ -10,6 +10,7 @@ const SystemHealth = ({
   const healthRef = useRef(100);
   const frameRef = useRef();
   const metricsRef = useRef({ commMetrics, resourceMetrics });
+  const lastImpactTime = useRef(Date.now());
 
   // Update metrics ref when props change
   useEffect(() => {
@@ -40,29 +41,12 @@ const SystemHealth = ({
 
     const updateHealth = () => {
       if (!isUpdating) return;
-
       const now = Date.now();
-      const deltaTime = Math.min((now - lastUpdateRef.current) / 1000, 1);
       lastUpdateRef.current = now;
-
-      const { commMetrics, resourceMetrics } = metricsRef.current;
-      const resourceImpact = resourceMetrics?.healthImpact || 0;
-      const commImpact = commMetrics?.healthImpact || 0;
       
-      const totalChange = resourceImpact + commImpact;
-
-      // Ensure health changes are properly bounded and not time-dependent
-      const newHealth = Math.min(100, Math.max(0, 
-        healthRef.current + totalChange
-      ));
+      // Only update the visual state to match the ref
+      setCumulativeHealth(healthRef.current);
       
-      if (Math.abs(newHealth - healthRef.current) > 0.01) {
-        healthRef.current = newHealth;
-        setCumulativeHealth(prev => {
-          return Math.abs(prev - newHealth) > 0.01 ? newHealth : prev;
-        });
-      }
-
       frameRef.current = requestAnimationFrame(updateHealth);
     };
 
@@ -74,7 +58,40 @@ const SystemHealth = ({
         cancelAnimationFrame(frameRef.current);
       }
     };
-  }, []);
+  }, []); // Empty dependency array since we're using refs
+
+  // Modify the health impact effect
+  useEffect(() => {
+    const now = Date.now();
+    const resourceImpact = resourceMetrics?.healthImpact || 0;
+    const commImpact = commMetrics?.healthImpact || 0;
+    
+    console.log('Impact check:', {
+      timeSinceLastImpact: now - lastImpactTime.current,
+      resourceImpact,
+      commImpact,
+      currentHealth: healthRef.current
+    });
+
+    // Only process if there are actual impacts and enough time has passed
+    if ((resourceImpact !== 0 || commImpact !== 0) && 
+        (now - lastImpactTime.current >= 2000)) {
+      
+      const newHealth = Math.min(100, Math.max(0, 
+        healthRef.current + resourceImpact + commImpact
+      ));
+      
+      console.log('Applying impact:', {
+        oldHealth: healthRef.current,
+        newHealth,
+        totalImpact: resourceImpact + commImpact
+      });
+      
+      healthRef.current = newHealth;
+      setCumulativeHealth(newHealth);
+      lastImpactTime.current = now;
+    }
+  }, [resourceMetrics?.healthImpact, commMetrics?.healthImpact]);
 
   return (
     <div style={{ 

@@ -169,7 +169,7 @@ const CommunicationsTask = forwardRef(({
       .then(() => {
         console.log(`[AUDIO] Playing: ${msg.id}`);
         // Set load when audio starts playing
-        const loadValue = msg.callsign === 'OWN' ? 2 : 1;
+        const loadValue = msg.callsign === 'OWN' ? 20 : 10;
         setSystemLoad(loadValue);
         onMetricsUpdate?.({ healthImpact, systemLoad: loadValue });
       })
@@ -236,11 +236,11 @@ const CommunicationsTask = forwardRef(({
             snap.frequencies[msg.radio] === msg.frequency) {
           responseType = 'HIT';
           responseTime = snap.t / 1000;
-          impact = 2; // +2 for hits
+          impact = 10; // +2 for hits
           break;
         }
       }
-      if (responseType === 'MISS') impact = -1; // -1 for misses
+      if (responseType === 'MISS') impact = -5; // -1 for misses
     } else {
       // Other ship message - check for any changes
       const hasChanges = msg.snapshots.some((snap, i) => {
@@ -254,7 +254,7 @@ const CommunicationsTask = forwardRef(({
         );
       });
       responseType = hasChanges ? 'FA' : 'CR';
-      impact = hasChanges ? -1 : 1; // -1 for FA, +1 for CR
+      impact = hasChanges ? -10 : 5; // -1 for FA, +1 for CR
     }
 
     // Update health impact
