@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, forwardRef, useImperativeHandle, useCallback } from 'react';
 import Tank from './components/Tank';
 import Pump from './components/Pump';
 import Connection from './components/Connection';
@@ -8,41 +8,130 @@ import { useAutoScroll } from './hooks/useAutoScroll';
 import { downloadCSV } from './utils/csvExport';
 
 // Constants for initial setup
-const BASE_LOSS_RATE = 800; // Original loss rate
-const MIN_LOSS_MULTIPLIER = 0.25; // 25% of base rate at difficulty 0
-const MAX_LOSS_MULTIPLIER = 0.75; // 75% of base rate at difficulty 10
-
-const INITIAL_TANKS = {
-  a: { level: 2500, max: 5000, target: 2500, depletable: true, lossPerMinute: 800 },
-  b: { level: 2500, max: 5000, target: 2500, depletable: true, lossPerMinute: 800 },
-  c: { level: 1000, max: 2000, target: null, depletable: true, lossPerMinute: 0 },
-  d: { level: 1000, max: 2000, target: null, depletable: true, lossPerMinute: 0 },
-  e: { level: 3000, max: 4000, target: null, depletable: false, lossPerMinute: 0 },
-  f: { level: 3000, max: 4000, target: null, depletable: false, lossPerMinute: 0 }
+const INITIAL_STATE = {
+  tanks: {
+    a: { level: 2500, max: 5000, target: 2500, depletable: true, lossPerMinute: 500 },
+    b: { level: 2500, max: 5000, target: 2500, depletable: true, lossPerMinute: 500 },
+    c: { level: 1000, max: 2000, target: null, depletable: true, lossPerMinute: 0 },
+    d: { level: 1000, max: 2000, target: null, depletable: true, lossPerMinute: 0 },
+    e: { level: 3000, max: 4000, target: null, depletable: false, lossPerMinute: 0 },
+    f: { level: 3000, max: 4000, target: null, depletable: false, lossPerMinute: 0 }
+  },
+  pumps: {
+    1: { flow: 800, state: 'off', fromTank: 'c', toTank: 'a' },
+    2: { flow: 600, state: 'off', fromTank: 'e', toTank: 'a' },
+    3: { flow: 800, state: 'off', fromTank: 'd', toTank: 'b' },
+    4: { flow: 600, state: 'off', fromTank: 'f', toTank: 'b' },
+    5: { flow: 600, state: 'off', fromTank: 'e', toTank: 'c' },
+    6: { flow: 600, state: 'off', fromTank: 'f', toTank: 'd' },
+    7: { flow: 400, state: 'off', fromTank: 'a', toTank: 'b' },
+    8: { flow: 400, state: 'off', fromTank: 'b', toTank: 'a' }
+  },
+  failures: new Set()
 };
 
-const INITIAL_PUMPS = {
-  1: { flow: 800, state: 'off', fromTank: 'c', toTank: 'a' },
-  2: { flow: 600, state: 'off', fromTank: 'e', toTank: 'a' },
-  3: { flow: 800, state: 'off', fromTank: 'd', toTank: 'b' },
-  4: { flow: 600, state: 'off', fromTank: 'f', toTank: 'b' },
-  5: { flow: 600, state: 'off', fromTank: 'e', toTank: 'c' },
-  6: { flow: 600, state: 'off', fromTank: 'f', toTank: 'd' },
-  7: { flow: 400, state: 'off', fromTank: 'a', toTank: 'b' }, 8: { flow: 400, state: 'off', fromTank: 'b', toTank: 'a' }
+// Constants for difficulty scaling
+const MIN_LOSS_MULTIPLIER = 0.25; // 25% of normal loss rate at difficulty 0
+const MAX_LOSS_MULTIPLIER = 2.0;  // 200% of normal loss rate at difficulty 10
+
+// Define Log component
+function ResourceManagementLog({ resourceLog }) {
+  const scrollRef = useAutoScroll();
+  
+  // Ensure resourceLog is always an array
+  const safeLog = Array.isArray(resourceLog) ? resourceLog : [];
+
+  const handleExport = () => {
+    downloadCSV(safeLog, 'resource-management-log');
+  };
+
+  if (!safeLog || safeLog.length === 0) {
+    return <div>No resource events recorded</div>;
+  }
+
+  const recentLogs = safeLog.slice(-50);
+
+  return (
+    <div>
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '0.5rem' }}>
+        <button 
+          onClick={handleExport}
+          style={{
+            padding: '0.25rem 0.5rem',
+            background: '#007bff',
+            color: 'white',
+            border: 'none',
+            borderRadius: '4px',
+            cursor: 'pointer'
+          }}
+        >
+          Export CSV
+        </button>
+      </div>
+      <div ref={scrollRef} style={{ width: '100%', overflowX: 'auto', maxHeight: '300px', overflowY: 'auto' }}>
+        <table style={{ width: '100%', fontSize: '0.75rem', borderCollapse: 'collapse' }}>
+          <thead>
+            <tr style={{ borderBottom: '1px solid #ccc' }}>
+              <th style={{ padding: '0.5rem' }}>Time</th>
+              <th style={{ padding: '0.5rem' }}>Tank A</th>
+              <th style={{ padding: '0.5rem' }}>Tank B</th>
+              <th style={{ padding: '0.5rem' }}>Diff A</th>
+              <th style={{ padding: '0.5rem' }}>Diff B</th>
+              <th style={{ padding: '0.5rem' }}>Active Pumps</th>
+              <th style={{ padding: '0.5rem' }}>Failed Pumps</th>
+              <th style={{ padding: '0.5rem' }}>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {recentLogs.map((entry, i) => (
+              <tr key={i} style={{ borderBottom: '1px solid #eee' }}>
+                <td style={{ padding: '0.5rem' }}>
+                  {new Date(entry.time).toLocaleTimeString()}
+                </td>
+                <td style={{ padding: '0.5rem' }}>{entry.tankA}</td>
+                <td style={{ padding: '0.5rem' }}>{entry.tankB}</td>
+                <td style={{ padding: '0.5rem' }}>{entry.diffA}</td>
+                <td style={{ padding: '0.5rem' }}>{entry.diffB}</td>
+                <td style={{ padding: '0.5rem' }}>{entry.activePumps}</td>
+                <td style={{ padding: '0.5rem' }}>{entry.failedPumps}</td>
+                <td style={{ 
+                  padding: '0.5rem',
+                  color: entry.corrA && entry.corrB ? 'green' : 'red'
+                }}>
+                  {entry.corrA && entry.corrB ? '✓' : '✗'}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+// Add these constants at the top with other constants
+const FUEL_RANGES = {
+  CRITICAL: { min: 1000, max: 3000, impact: -2 },
+  WARNING: { min: 2250, max: 2750, impact: -1 },
+  NEUTRAL: { min: 2400, max: 2600, impact: 0 }, // Actually two ranges: 2250-2400 and 2600-2750
+  OPTIMAL: { min: 2400, max: 2600, impact: 1 }
 };
 
-function ResourceManagementTask({ 
+// Define main component
+function ResourceManagementTaskComponent({ 
   eventsPerMinute = 2, 
-  difficulty = 5, // Add difficulty prop
+  difficulty = 5,
   showLog = true, 
-  onLogUpdate 
-}) {
+  onLogUpdate,
+  onMetricsUpdate,
+  isEnabled = true
+}, ref) {
   const containerRef = useRef(null);
-  const [tanks, setTanks] = useState(INITIAL_TANKS);
-  const [pumps, setPumps] = useState(INITIAL_PUMPS);
+  const [tanks, setTanks] = useState(INITIAL_STATE.tanks);
+  const [pumps, setPumps] = useState(INITIAL_STATE.pumps);
   const [tankPositions, setTankPositions] = useState({});
   const [pumpPositions, setPumpPositions] = useState({});
-  const [failures, setFailures] = useState(new Set());
+  const [failures, setFailures] = useState(INITIAL_STATE.failures);
   const [lastUpdate, setLastUpdate] = useState(Date.now());
   const [resourceLog, setResourceLog] = useState([]);
   const [lossMultiplier, setLossMultiplier] = useState(0.5); // Default 50%
@@ -82,7 +171,7 @@ function ResourceManagementTask({
   // Helper function to calculate pump positions
   const calculatePumpPositions = (tankPos) => {
     const positions = {};
-    Object.entries(INITIAL_PUMPS).forEach(([id, pump]) => {
+    Object.entries(INITIAL_STATE.pumps).forEach(([id, pump]) => {
       const fromTank = tankPos[pump.fromTank];
       const toTank = tankPos[pump.toTank];
       
@@ -203,31 +292,27 @@ function ResourceManagementTask({
 
   // Modify the failure generation interval based on EPM
   useEffect(() => {
-    if (!eventsPerMinute) return;
+    if (!isEnabled || !eventsPerMinute) return;
 
     const failureInterval = setInterval(() => {
       // Only proceed if we have working pumps
       const workingPumps = Object.keys(pumps).filter(id => !failures.has(id));
       if (workingPumps.length === 0) return;
 
-      // Randomly fail a working pump
-      const randomPump = workingPumps[Math.floor(Math.random() * workingPumps.length)];
-      setFailures(prev => new Set([...prev, randomPump]));
-
-      // Log the failure
-      logRow({
-        time: new Date().toISOString(),
-        event: `Pump ${randomPump} failed`,
-        type: 'failure'
-      });
-
-    }, (60 / eventsPerMinute) * 1000); // Convert EPM to milliseconds
+      // Random chance to create a failure based on EPM
+      if (Math.random() < eventsPerMinute / 60) {
+        const randomPump = workingPumps[Math.floor(Math.random() * workingPumps.length)];
+        setFailures(prev => new Set([...prev, randomPump]));
+      }
+    }, 1000); // Check every second
 
     return () => clearInterval(failureInterval);
-  }, [eventsPerMinute, pumps, failures]);
+  }, [isEnabled, eventsPerMinute, pumps, failures]);
 
   // Modify tank depletion to use loss multiplier
   useEffect(() => {
+    if (!isEnabled) return;
+
     const interval = setInterval(() => {
       const now = Date.now();
       const deltaTime = (now - lastUpdate) / 1000;
@@ -272,26 +357,33 @@ function ResourceManagementTask({
     }, 100);
 
     return () => clearInterval(interval);
-  }, [pumps, lastUpdate, failures, lossMultiplier]);
+  }, [pumps, lastUpdate, failures, lossMultiplier, isEnabled]);
 
   // Add to your existing state declarations
-  const logRow = (row) => {
-    onLogUpdate?.(row);
-    setResourceLog(prev => [...prev, row]);
-  };
+  const logRow = useCallback((row) => {
+    if (!isEnabled) return;
+    
+    setResourceLog(prev => {
+      const newLog = [...prev, row];
+      // Call external handler in the next tick to avoid render conflicts
+      setTimeout(() => onLogUpdate?.(newLog), 0);
+      return newLog;
+    });
+  }, [isEnabled, onLogUpdate]);
 
   // Add logging to your existing tank level updates
   useEffect(() => {
     const now = Date.now();
     
-    // Only log if 1 second has passed since last log
-    if (now - lastLogTime >= 1000) {
+    // Only log if 1 second has passed since last log AND the task is enabled
+    if (now - lastLogTime >= 1000 && isEnabled) {
       const tankALevel = Math.round(tanks.a.level);
       const tankBLevel = Math.round(tanks.b.level);
       const corrA = tankALevel >= 2250 && tankALevel <= 2750;
       const corrB = tankBLevel >= 2250 && tankBLevel <= 2750;
       
-      logRow({
+      // Create the log entry
+      const logEntry = {
         time: now,
         tankA: tankALevel,
         tankB: tankBLevel,
@@ -301,11 +393,13 @@ function ResourceManagementTask({
         failedPumps: failures.size,
         corrA,
         corrB
-      });
-      
+      };
+
+      // Use logRow instead of direct state updates
+      logRow(logEntry);
       setLastLogTime(now);
     }
-  }, [tanks.a.level, tanks.b.level]);
+  }, [tanks, pumps, failures, isEnabled]);
 
   // -------------------------
   // Helper Functions
@@ -328,15 +422,153 @@ function ResourceManagementTask({
     return Object.values(pumps).filter(pump => pump.state === 'on').length;
   };
 
+  // Reset function
+  const resetTask = () => {
+    // Reset tanks to initial state with exact values
+    setTanks({
+      a: { level: 2500, max: 5000, target: 2500, depletable: true, lossPerMinute: 500 },
+      b: { level: 2500, max: 5000, target: 2500, depletable: true, lossPerMinute: 500 },
+      c: { level: 1000, max: 2000, target: null, depletable: true, lossPerMinute: 0 },
+      d: { level: 1000, max: 2000, target: null, depletable: true, lossPerMinute: 0 },
+      e: { level: 3000, max: 4000, target: null, depletable: false, lossPerMinute: 0 },
+      f: { level: 3000, max: 4000, target: null, depletable: false, lossPerMinute: 0 }
+    });
+
+    // Reset all pumps to off state
+    setPumps({
+      1: { flow: 800, state: 'off', fromTank: 'c', toTank: 'a' },
+      2: { flow: 600, state: 'off', fromTank: 'e', toTank: 'a' },
+      3: { flow: 800, state: 'off', fromTank: 'd', toTank: 'b' },
+      4: { flow: 600, state: 'off', fromTank: 'f', toTank: 'b' },
+      5: { flow: 600, state: 'off', fromTank: 'e', toTank: 'c' },
+      6: { flow: 600, state: 'off', fromTank: 'f', toTank: 'd' },
+      7: { flow: 400, state: 'off', fromTank: 'a', toTank: 'b' },
+      8: { flow: 400, state: 'off', fromTank: 'b', toTank: 'a' }
+    });
+
+    // Clear all failures
+    setFailures(new Set());
+    
+    // Reset all timers and logs
+    setResourceLog([]);
+    setLastUpdate(Date.now());
+    setLastLogTime(Date.now());
+    
+    // Reset difficulty-related settings
+    setLossMultiplier(MIN_LOSS_MULTIPLIER + 
+      (MAX_LOSS_MULTIPLIER - MIN_LOSS_MULTIPLIER) * (difficulty / 10));
+    onLogUpdate?.([]);  // Also clear external logs
+  };
+
+  // Expose resetTask to ref
+  useImperativeHandle(ref, () => ({
+    resetTask
+  }));
+
+  // Calculate health impact for a single tank
+  const calculateTankHealth = (level) => {
+    if (level < FUEL_RANGES.CRITICAL.min || level > FUEL_RANGES.CRITICAL.max) {
+      return FUEL_RANGES.CRITICAL.impact ; // -10 health
+    }
+    if (level >= FUEL_RANGES.OPTIMAL.min && level <= FUEL_RANGES.OPTIMAL.max) {
+      return FUEL_RANGES.OPTIMAL.impact ; // +5 health
+    }
+    if (level >= FUEL_RANGES.WARNING.min && level <= FUEL_RANGES.WARNING.max) {
+      if ((level >= FUEL_RANGES.WARNING.min && level < FUEL_RANGES.OPTIMAL.min) ||
+          (level > FUEL_RANGES.OPTIMAL.max && level <= FUEL_RANGES.WARNING.max)) {
+        return 0; // Neutral zones
+      }
+      return FUEL_RANGES.WARNING.impact ; // -5 health
+    }
+    return 0;
+  };
+
+  // Calculate health impact
+  const calculateHealthImpact = useCallback(() => {
+    const tankAHealth = calculateTankHealth(tanks.a.level);
+    const tankBHealth = calculateTankHealth(tanks.b.level);
+    
+    // Add console logs for debugging
+    // console.log('Tank A:', {
+    //   level: tanks.a.level,
+    //   health: tankAHealth
+    // });
+    // console.log('Tank B:', {
+    //   level: tanks.b.level,
+    //   health: tankBHealth
+    // });
+    // console.log('Total Health Impact:', tankAHealth + tankBHealth);
+    
+    return tankAHealth + tankBHealth;
+  }, [tanks.a.level, tanks.b.level]);
+
+  // Calculate system load
+  const calculateSystemLoad = useCallback(() => {
+    let load = 0;
+    
+    // Count pump failures (up to 4) - multiply by 10 for more impact
+    const pumpLoad = Math.min(failures.size, 4) * 5;
+    
+    // Check tank levels - multiply by 10 for more impact
+    const tankALoad = (tanks.a.level < 2250 || tanks.a.level > 2750) ? 10 : 0;
+    const tankBLoad = (tanks.b.level < 2250 || tanks.b.level > 2750) ? 10 : 0;
+    
+    load = pumpLoad + tankALoad + tankBLoad;
+    
+    // Add console logs for debugging
+    // console.log('System Load:', {
+    //   pumpLoad,
+    //   tankALoad,
+    //   tankBLoad,
+    //   totalLoad: load
+    // });
+    
+    return load;
+  }, [failures.size, tanks.a.level, tanks.b.level]);
+
+  // Update metrics
+  useEffect(() => {
+    if (!isEnabled) {
+      requestAnimationFrame(() => {
+        onMetricsUpdate?.({ healthImpact: 0, systemLoad: 0 });
+      });
+      return;
+    }
+
+    const metrics = {
+      healthImpact: calculateHealthImpact(),
+      systemLoad: calculateSystemLoad()
+    };
+
+    requestAnimationFrame(() => {
+      onMetricsUpdate?.(metrics);
+    });
+  }, [
+    isEnabled,
+    calculateHealthImpact,
+    calculateSystemLoad,
+    onMetricsUpdate
+  ]);
+
+  // Return placeholder when task is disabled
+  if (!isEnabled) {
+    return (
+      <div style={{
+        width: '100%',
+        height: '100%',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: '#f5f5f5',
+        color: '#666'
+      }}>
+        Resource Management Task Disabled
+      </div>
+    );
+  }
+
   return (
-    <div ref={containerRef} style={{ 
-      width: '100%', 
-      height: '100%',
-      display: 'flex',
-      flexDirection: 'column',
-      position: 'relative',
-      overflow: 'hidden' // Prevent content from spilling out
-    }}>
+    <div ref={containerRef} style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column' }}>
       {/* Title Bar */}
       <div style={{
         background: 'blue',
@@ -368,7 +600,7 @@ function ResourceManagementTask({
           height: '100%',
           pointerEvents: 'none'
         }}>
-          {Object.entries(INITIAL_PUMPS).map(([id, pump]) => {
+          {Object.entries(INITIAL_STATE.pumps).map(([id, pump]) => {
             if (!tankPositions[pump.fromTank] || !tankPositions[pump.toTank]) return null;
             
             // Calculate start and end positions
@@ -447,8 +679,8 @@ function ResourceManagementTask({
               onClick={() => togglePump(id)}
               orientation={id === '7' || id === '8' ? 'horizontal' : 'vertical'}
               flowDirection={
-                INITIAL_PUMPS[id].toTank === 'a' ? 'up' :
-                INITIAL_PUMPS[id].toTank === 'b' ? 'up' :
+                INITIAL_STATE.pumps[id].toTank === 'a' ? 'up' :
+                INITIAL_STATE.pumps[id].toTank === 'b' ? 'up' :
                 id === '7' ? 'right' :
                 id === '8' ? 'left' :
                 'down'
@@ -461,77 +693,17 @@ function ResourceManagementTask({
   );
 }
 
-// Add Log component
-ResourceManagementTask.Log = function ResourceManagementLog({ resourceLog }) {
-  const scrollRef = useAutoScroll();
+// Create the forwarded ref component
+const ResourceManagementTask = forwardRef(ResourceManagementTaskComponent);
 
-  const handleExport = () => {
-    downloadCSV(resourceLog, 'resource-management-log');
-  };
+// Add Log component as a static property
+ResourceManagementTask.Log = ResourceManagementLog;
 
-  if (!resourceLog || resourceLog.length === 0) {
-    return <div>No resource events recorded</div>;
-  }
+// Add static method to get default metrics
+ResourceManagementTask.getDefaultMetrics = () => ({
+  healthImpact: 0,
+  systemLoad: 0
+});
 
-  // Get last 50 entries
-  const recentLogs = resourceLog.slice(-50);
-
-  return (
-    <div>
-      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '0.5rem' }}>
-        <button 
-          onClick={handleExport}
-          style={{
-            padding: '0.25rem 0.5rem',
-            background: '#007bff',
-            color: 'white',
-            border: 'none',
-            borderRadius: '4px',
-            cursor: 'pointer'
-          }}
-        >
-          Export CSV
-        </button>
-      </div>
-      <div ref={scrollRef} style={{ width: '100%', overflowX: 'auto', maxHeight: '300px', overflowY: 'auto' }}>
-        <table style={{ width: '100%', fontSize: '0.75rem', borderCollapse: 'collapse' }}>
-          <thead>
-            <tr style={{ borderBottom: '1px solid #ccc' }}>
-              <th style={{ padding: '0.5rem' }}>Time</th>
-              <th style={{ padding: '0.5rem' }}>Tank A</th>
-              <th style={{ padding: '0.5rem' }}>Tank B</th>
-              <th style={{ padding: '0.5rem' }}>Diff A</th>
-              <th style={{ padding: '0.5rem' }}>Diff B</th>
-              <th style={{ padding: '0.5rem' }}>Active Pumps</th>
-              <th style={{ padding: '0.5rem' }}>Failed Pumps</th>
-              <th style={{ padding: '0.5rem' }}>Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            {recentLogs.map((entry, i) => (
-              <tr key={i} style={{ borderBottom: '1px solid #eee' }}>
-                <td style={{ padding: '0.5rem' }}>
-                  {new Date(entry.time).toLocaleTimeString()}
-                </td>
-                <td style={{ padding: '0.5rem' }}>{entry.tankA}</td>
-                <td style={{ padding: '0.5rem' }}>{entry.tankB}</td>
-                <td style={{ padding: '0.5rem' }}>{entry.diffA}</td>
-                <td style={{ padding: '0.5rem' }}>{entry.diffB}</td>
-                <td style={{ padding: '0.5rem' }}>{entry.activePumps}</td>
-                <td style={{ padding: '0.5rem' }}>{entry.failedPumps}</td>
-                <td style={{ 
-                  padding: '0.5rem',
-                  color: entry.corrA && entry.corrB ? 'green' : 'red'
-                }}>
-                  {entry.corrA && entry.corrB ? '✓' : '✗'}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
-};
-
-export default ResourceManagementTask; 
+// Export the component
+export default ResourceManagementTask;

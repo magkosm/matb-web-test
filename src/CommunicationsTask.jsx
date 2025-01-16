@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
 import { useAutoScroll } from './hooks/useAutoScroll';
 import { downloadCSV } from './utils/csvExport';
 
@@ -31,11 +31,23 @@ const LEVEL1_INTERVAL = 500; // Initial interval in ms
 const LEVEL2_INTERVAL = 200; // Accelerated interval in ms
 const LEVEL2_DELAY = 1000;    // Time to switch to Level 2 in ms
 
-function CommunicationsTask({ 
+// Add these constants near the top, after other constants
+const INITIAL_STATE = {
+  frequencies: {
+    NAV1: '112.500',
+    NAV2: '112.500',
+    COM1: '118.325',
+    COM2: '120.775',
+  },
+  selectedRadio: 'NAV1',
+};
+
+const CommunicationsTask = forwardRef(({ 
   eventsPerMinute = 2, 
   showLog = false,
-  onLogUpdate 
-}) {
+  onLogUpdate,
+  onMetricsUpdate
+}, ref) => {
   const ownCallSign = 'NASA504';
 
   // -------------------------------------------------------------------------
@@ -70,6 +82,10 @@ function CommunicationsTask({
   const freqRampTimeoutRef = useRef(null);
   const freqRampIntervalRef = useRef(null);
 
+  // Add new states for health and load metrics
+  const [healthImpact, setHealthImpact] = useState(0);
+  const [systemLoad, setSystemLoad] = useState(0);
+
   useEffect(() => {
     frequenciesRef.current = frequencies;
   }, [frequencies]);
@@ -95,6 +111,7 @@ function CommunicationsTask({
         scheduleNext();
       }, waitMs);
     };
+    
     scheduleNext();
 
     return () => {
@@ -143,24 +160,32 @@ function CommunicationsTask({
     console.log(`[PLAY] ${msg.id}`);
     audioRef.current = new Audio(msg.file);
     msg.startTime = Date.now();
-
+    
     // Record initial snapshot
     recordSnapshot(msg);
 
     audioRef.current
       .play()
-      .then(() => console.log(`[AUDIO] Playing: ${msg.id}`))
+      .then(() => {
+        console.log(`[AUDIO] Playing: ${msg.id}`);
+        // Set load when audio starts playing
+        const loadValue = msg.callsign === 'OWN' ? 2 : 1;
+        setSystemLoad(loadValue);
+        onMetricsUpdate?.({ healthImpact, systemLoad: loadValue });
+      })
       .catch((err) => console.error('[AUDIO] Failed to play:', err));
 
     audioRef.current.onended = () => {
       msg.endTime = Date.now();
       console.log(`[AUDIO] Ended: ${msg.id}`);
 
-      // Start a 10-second post-audio timer for finalization
+      // Start a 10-second post-audio timer for load and finalization
       msg.postAudioTimer = setTimeout(() => {
         console.log(`[TIMER] finalize => ${msg.id}`);
+        setSystemLoad(0);
+        onMetricsUpdate?.({ healthImpact, systemLoad: 0 });
         if (!msg.finalized) finalizeMessage(msg);
-      }, 10000);
+      }, 5000);
     };
   };
 
@@ -195,17 +220,59 @@ function CommunicationsTask({
     msg.finalized = true;
     if (msg.postAudioTimer) clearTimeout(msg.postAudioTimer);
 
-    // Only log if showLog is true
-    if (showLog) {
-      // Record one last snapshot to capture the final state
-      recordSnapshot(msg);
-      
-      // Update comm log
+    // Record one last snapshot to capture the final state
+    recordSnapshot(msg);
+    
+    // Analyze response based on snapshots
+    let responseType = 'MISS';
+    let responseTime = null;
+    let impact = 0; // Initialize health impact
+
+    if (msg.callsign === 'OWN') {
+      // Own ship message - look for correct radio and frequency
+      for (let i = 0; i < msg.snapshots.length; i++) {
+        const snap = msg.snapshots[i];
+        if (snap.selectedRadio === msg.radio && 
+            snap.frequencies[msg.radio] === msg.frequency) {
+          responseType = 'HIT';
+          responseTime = snap.t / 1000;
+          impact = 2; // +2 for hits
+          break;
+        }
+      }
+      if (responseType === 'MISS') impact = -1; // -1 for misses
+    } else {
+      // Other ship message - check for any changes
+      const hasChanges = msg.snapshots.some((snap, i) => {
+        if (i === 0) return false;
+        const prevSnap = msg.snapshots[i - 1];
+        return (
+          snap.selectedRadio !== prevSnap.selectedRadio ||
+          Object.keys(snap.frequencies).some(
+            radio => snap.frequencies[radio] !== prevSnap.frequencies[radio]
+          )
+        );
+      });
+      responseType = hasChanges ? 'FA' : 'CR';
+      impact = hasChanges ? -1 : 1; // -1 for FA, +1 for CR
+    }
+
+    // Update health impact
+    setHealthImpact(impact);
+
+    // Always update comm log with properly formatted data
+    if (msg.id) {
       setCommLog(prev => {
         const newLog = [...prev, {
-          time: new Date().toISOString(),
-          messageId: msg.id,
-          success: msg.success
+          index: msg.index,
+          Time: new Date().toISOString(),
+          Ship: msg.callsign,
+          Radio_T: msg.radio,
+          Freq_T: msg.frequency,
+          Radio_S: selectedRadioRef.current,
+          Freq_S: frequenciesRef.current[selectedRadioRef.current],
+          RT: responseTime || (msg.endTime - msg.startTime) / 1000,
+          Remarks: responseType
         }];
         onLogUpdate?.(newLog);
         return newLog;
@@ -217,10 +284,10 @@ function CommunicationsTask({
   };
 
   const logRow = (row) => {
-    if (!showLog) return;
+    if (!row || Object.keys(row).length === 0) return;
     setCommLog((prev) => {
       const newLog = [...prev, row];
-      onLogUpdate(newLog); // Notify parent of log update
+      onLogUpdate?.(newLog);
       return newLog;
     });
   };
@@ -434,6 +501,47 @@ function CommunicationsTask({
     downloadCSV(commLog, 'communications-log');
   };
 
+  // Reset function
+  const resetTask = () => {
+    setSelectedRadio(INITIAL_STATE.selectedRadio);
+    setFrequencies(INITIAL_STATE.frequencies);
+    setMessageQueue([]);
+    setActiveMessage(null);
+    setCommLog([]);
+    messageIndexRef.current = 0;
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current = null;
+    }
+  };
+
+  // Expose resetTask to ref
+  useImperativeHandle(ref, () => ({
+    resetTask
+  }));
+
+  // Remove the previous load effect since we're handling it in playMessage now
+  useEffect(() => {
+    // Only update metrics when health impact changes
+    onMetricsUpdate?.({ healthImpact, systemLoad });
+  }, [healthImpact, systemLoad]);
+
+  // Add useEffect to reset health impact after a short delay
+  useEffect(() => {
+    if (healthImpact !== 0) {
+      const timer = setTimeout(() => {
+        setHealthImpact(0);
+      }, 1000); // Reset after 1 second
+      return () => clearTimeout(timer);
+    }
+  }, [healthImpact]);
+
+  // Add getMetrics function to expose current health and load values
+  const getMetrics = () => ({
+    healthImpact,
+    systemLoad
+  });
+
   // -------------------------------------------------------------------------
   // 11) Render
   // -------------------------------------------------------------------------
@@ -443,7 +551,9 @@ function CommunicationsTask({
       height: '100%',
       display: 'flex',
       flexDirection: 'column',
-      overflow: 'hidden'
+      overflow: 'hidden',
+      maxWidth: '100%',
+      margin: '0 auto'
     }}>
       {/* Title Bar */}
       <div style={{
@@ -462,14 +572,16 @@ function CommunicationsTask({
         flex: 1,
         display: 'flex',
         flexDirection: 'column',
-        padding: '1rem',
-        gap: '1rem',
-        overflow: 'hidden'
+        padding: '0.5rem',
+        gap: '0.5rem',
+        overflow: 'hidden',
+        minHeight: 0
       }}>
         {/* Call Sign */}
         <div style={{ 
           textAlign: 'center', 
-          fontSize: 'clamp(1rem, 2vw, 1.5rem)',
+          fontSize: '1.2rem',
+          padding: '0.5rem',
           flexShrink: 0
         }}>
           <strong>Call Sign:</strong> {ownCallSign}
@@ -480,19 +592,20 @@ function CommunicationsTask({
           flex: 1,
           display: 'flex',
           flexDirection: 'column',
-          gap: '1vh',
+          gap: '1%',
           overflow: 'hidden',
-          padding: '1vh'
+          minHeight: 0,
+          padding: '1%'
         }}>
           {radioOrder.map((r) => (
             <div key={r} style={{ 
               display: 'flex', 
               alignItems: 'center',
-              gap: '3vw',
-              padding: '0.5vh',
+              gap: '10%',
+              padding: '0.5%',
               backgroundColor: '#f5f5f5',
               borderRadius: '4px',
-              height: '8vh'
+              height: 'min(8vh, 60px)'
             }}>
               {/* Radio Selection */}
               <div style={{ 
@@ -516,7 +629,7 @@ function CommunicationsTask({
                 <span style={{ 
                   fontWeight: 'bold', 
                   color: 'blue',
-                  fontSize: 'clamp(0.8rem, 2.5vh, 1.5rem)'
+                  fontSize: 'clamp(0.7rem, 1.8vh, 1.2rem)'
                 }}>
                   {r}
                 </span>
@@ -532,8 +645,8 @@ function CommunicationsTask({
               }}>
                 <button
                   style={{ 
-                    width: '6vh',
-                    height: '4vh',
+                    width: '15%',
+                    height: '3%',
                     fontSize: 'clamp(0.8rem, 2vh, 1.2rem)',
                     background: '#e0e0e0',
                     border: '1px solid #999',
@@ -548,8 +661,8 @@ function CommunicationsTask({
                 </button>
                 <button
                   style={{ 
-                    width: '12%',
-                    height: '4vh',
+                    width: '10%',
+                    height: '3%',
                     fontSize: 'clamp(0.8rem, 2vh, 1.2rem)',
                     background: '#e0e0e0',
                     border: '1px solid #999',
@@ -566,9 +679,9 @@ function CommunicationsTask({
                 <input
                   type="text"
                   style={{ 
-                    width: '12vh',
-                    height: '6vh',
-                    fontSize: 'clamp(1rem, 2.5vh, 1.5rem)',
+                    width: '30%',
+                    height: '20%',
+                    fontSize: 'clamp(1rem, 2vh, 1.5rem)',
                     textAlign: 'center',
                     border: '1px solid #999',
                     borderRadius: '4px'
@@ -579,8 +692,8 @@ function CommunicationsTask({
 
                 <button
                   style={{ 
-                    width: '4vh',
-                    height: '4vh',
+                    width: '10%',
+                    height: '3%',
                     fontSize: 'clamp(0.8rem, 2vh, 1.2rem)',
                     background: '#e0e0e0',
                     border: '1px solid #999',
@@ -595,8 +708,8 @@ function CommunicationsTask({
                 </button>
                 <button
                   style={{ 
-                    width: '8vh',
-                    height: '4vh',
+                    width: '15%',
+                    height: '3%',
                     fontSize: 'clamp(0.8rem, 2vh, 1.2rem)',
                     background: '#e0e0e0',
                     border: '1px solid #999',
@@ -616,8 +729,9 @@ function CommunicationsTask({
       </div>
     </div>
   );
-}
+});
 
+// Add Log component as a separate component
 const Log = ({ commLog }) => {
   const scrollRef = useAutoScroll();
   
@@ -681,6 +795,13 @@ const Log = ({ commLog }) => {
   );
 };
 
+// Attach Log component to CommunicationsTask
 CommunicationsTask.Log = Log;
+
+// Add static method to get default metrics
+CommunicationsTask.getDefaultMetrics = () => ({
+  healthImpact: 0,
+  systemLoad: 0
+});
 
 export default CommunicationsTask;

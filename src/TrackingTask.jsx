@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import TrackingDisplay from './components/TrackingDisplay';
 import { useGamepads } from './hooks/useGamepads';
 import { useAutoScroll } from './hooks/useAutoScroll';
@@ -34,6 +34,9 @@ function TrackingTask({
 
   // Calculate if cursor is within target area
   const isWithinTarget = Math.abs(cursorPosition.x) <= 25 && Math.abs(cursorPosition.y) <= 25;
+
+  // Add this with other refs near the top (around line 20)
+  const positionRef = useRef({ x: 0, y: 0 });
 
   // Schedule automation failures based on eventsPerMinute
   useEffect(() => {
@@ -89,12 +92,15 @@ function TrackingTask({
     };
   }, [isAuto, automationFailure]);
 
-  // Physics effect remains mostly the same, but with adjusted auto correction
+  // Physics effect with cursor position updates
   useEffect(() => {
     const driftSpeed = 0.5;
-    const autoCorrection = 0.4; // Increased from 0.2 to 0.4 for stronger correction
+    const autoCorrection = 0.4;
     const joystickDeadzone = 0.1;
     const maxDriftVelocity = 2;
+    
+    // Update position ref when cursor position changes
+    positionRef.current = cursorPosition;
 
     const interval = setInterval(() => {
       const now = Date.now();
@@ -109,45 +115,43 @@ function TrackingTask({
       driftXRef.current = Math.max(-maxDriftVelocity, Math.min(maxDriftVelocity, driftXRef.current));
       driftYRef.current = Math.max(-maxDriftVelocity, Math.min(maxDriftVelocity, driftYRef.current));
 
-      setCursorPosition(prev => {
-        let newX = prev.x + driftXRef.current * driftSpeed;
-        let newY = prev.y + driftYRef.current * driftSpeed;
+      let newX = positionRef.current.x + driftXRef.current * driftSpeed;
+      let newY = positionRef.current.y + driftYRef.current * driftSpeed;
 
-        // Auto mode correction with stronger correction
-        if (isAuto && !automationFailure) {
-          const correctionFactor = dt / 200 * autoCorrection;
-          newX -= newX * correctionFactor;
-          newY -= newY * correctionFactor;
-        }
+      // Auto mode correction
+      if (isAuto && !automationFailure) {
+        const correctionFactor = dt / 200 * autoCorrection;
+        newX -= newX * correctionFactor;
+        newY -= newY * correctionFactor;
+      }
 
-        // Handle manual input (keyboard/touch/gamepad) only when not in auto mode
-        if (!isAuto && inputMode === 'joystick' && gamepadsRef.current[0]) {
-          const gamepad = gamepadsRef.current[0];
-          const moveStep = 2;
-          
-          const joyX = Math.abs(gamepad.axes[0]) > joystickDeadzone ? gamepad.axes[0] : 0;
-          const joyY = Math.abs(gamepad.axes[1]) > joystickDeadzone ? gamepad.axes[1] : 0;
+      // Handle manual input
+      if (!isAuto && inputMode === 'joystick' && gamepadsRef.current[0]) {
+        const gamepad = gamepadsRef.current[0];
+        const moveStep = 2;
+        
+        const joyX = Math.abs(gamepad.axes[0]) > joystickDeadzone ? gamepad.axes[0] : 0;
+        const joyY = Math.abs(gamepad.axes[1]) > joystickDeadzone ? gamepad.axes[1] : 0;
 
-          newX += joyX * moveStep;
-          newY += joyY * moveStep;
-        }
+        newX += joyX * moveStep;
+        newY += joyY * moveStep;
+      }
 
-        // Bounce off boundaries
-        if (Math.abs(newX) > 150) {
-          driftXRef.current = -driftXRef.current * 0.8;
-          newX = Math.sign(newX) * 150;
-        }
-        if (Math.abs(newY) > 150) {
-          driftYRef.current = -driftYRef.current * 0.8;
-          newY = Math.sign(newY) * 150;
-        }
+      // Bounce off boundaries
+      if (Math.abs(newX) > 150) {
+        driftXRef.current = -driftXRef.current * 0.8;
+        newX = Math.sign(newX) * 150;
+      }
+      if (Math.abs(newY) > 150) {
+        driftYRef.current = -driftYRef.current * 0.8;
+        newY = Math.sign(newY) * 150;
+      }
 
-        return { x: newX, y: newY };
-      });
+      setCursorPosition({ x: newX, y: newY });
     }, 16);
 
     return () => clearInterval(interval);
-  }, [isAuto, inputMode]);
+  }, [isAuto, inputMode, automationFailure, cursorPosition]);
 
   // Separate effect for logging system
   useEffect(() => {
@@ -183,7 +187,7 @@ function TrackingTask({
     if (onLogUpdate && trackingLog.length > 0) {
       const latestEntry = trackingLog[trackingLog.length - 1];
       onLogUpdate(latestEntry);
-      console.log('TrackingTask: Sent new log entry', latestEntry);
+      // console.log('TrackingTask: Sent new log entry', latestEntry);
     }
   }, [trackingLog, onLogUpdate]);
 
@@ -330,12 +334,23 @@ function TrackingTask({
     downloadCSV(trackingLog, 'tracking-log');
   };
 
-  // Add status reporting
+  // Replace the status update effect (around lines 340-351)
+  const statusRef = useRef({ isManual: !isAuto, isInBox: isWithinTarget });
+
   useEffect(() => {
-    onStatusUpdate?.({
+    const newStatus = {
       isManual: !isAuto,
       isInBox: isWithinTarget
-    });
+    };
+    
+    // Only update if status actually changed
+    if (newStatus.isManual !== statusRef.current.isManual || 
+        newStatus.isInBox !== statusRef.current.isInBox) {
+      statusRef.current = newStatus;
+      requestAnimationFrame(() => {
+        onStatusUpdate?.(newStatus);
+      });
+    }
   }, [isAuto, isWithinTarget, onStatusUpdate]);
 
   useEffect(() => {

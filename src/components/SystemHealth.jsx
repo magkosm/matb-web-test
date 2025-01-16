@@ -1,100 +1,80 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 
 const SystemHealth = ({ 
-  monitoringLogs, 
-  resourceLogs, 
-  commLogs, 
-  trackingLogs,
-  isTrackingManual,
-  isInBox 
+  commMetrics,
+  resourceMetrics
 }) => {
-  const [health, setHealth] = useState(100);
+  const [cumulativeHealth, setCumulativeHealth] = useState(100);
   const [systemLoad, setSystemLoad] = useState(0);
+  const lastUpdateRef = useRef(Date.now());
+  const healthRef = useRef(100);
+  const frameRef = useRef();
+  const metricsRef = useRef({ commMetrics, resourceMetrics });
 
-  // Health calculation effect
+  // Update metrics ref when props change
   useEffect(() => {
-    const interval = setInterval(() => {
-      setHealth(current => {
-        let newHealth = current;
+    metricsRef.current = { commMetrics, resourceMetrics };
+  }, [commMetrics, resourceMetrics]);
 
-        // Base regeneration (0.5% per second - reduced from 1%)
-        newHealth += 0.5;
-
-        // Check latest logs for damage/healing
-        const now = Date.now();
-        const recentTime = now - 1000; // Last second
-
-        // Resource Management continuous effects (increased impact)
-        const latestResource = resourceLogs[resourceLogs.length - 1];
-        if (latestResource) {
-          if (!latestResource.corrA) newHealth -= 2; // Increased from 0.5
-          if (!latestResource.corrB) newHealth -= 2; // Increased from 0.5
-        }
-
-        // Tracking continuous effects (increased impact)
-        if (isTrackingManual) {
-          if (isInBox) {
-            newHealth += 2; // Increased from 1
-          } else {
-            newHealth -= 3; // Increased from 1
-          }
-        }
-
-        // Recent monitoring events (increased impact)
-        const recentMonitoring = monitoringLogs.filter(log => log.timestamp > recentTime);
-        recentMonitoring.forEach(log => {
-          if (log.type === 'miss' || log.type === 'falseAlarm') newHealth -= 5; // Increased from 2
-          if (log.type === 'hit') newHealth += 3; // Increased from 2
-        });
-
-        // Recent comm events (increased impact)
-        const recentComms = commLogs.filter(log => log.timestamp > recentTime);
-        recentComms.forEach(log => {
-          if (log.type === 'miss') newHealth -= 10; // Increased from 5 to 10 for misses
-          if (log.type === 'falseAlarm') newHealth -= 5; // Kept at 5 for false alarms
-          if (log.type === 'hit') newHealth += 3; // Kept at 3 for hits
-          if (log.type === 'correctRejection') newHealth += 2; // Kept at 2 for correct rejections
-        });
-
-        return Math.min(100, Math.max(0, newHealth));
-      });
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, [resourceLogs, monitoringLogs, commLogs, isTrackingManual, isInBox]);
-
-  // Add system load calculation
+  // Handle system load updates - debounced
   useEffect(() => {
-    const interval = setInterval(() => {
-      let newLoad = 0;
-
-      // Base load from resource management
-      const latestResource = resourceLogs[resourceLogs.length - 1];
-      if (latestResource) {
-        // Add 10% load for each active pump
-        newLoad += (latestResource.activePumps * 10);
-        // Add 5% load for each failed pump
-        newLoad += (latestResource.failedPumps * 5);
+    const timer = setTimeout(() => {
+      if (!resourceMetrics && !commMetrics) {
+        setSystemLoad(0);
+        return;
       }
 
-      // Add load from tracking task
-      if (isTrackingManual) {
-        newLoad += 20; // Manual tracking adds significant load
-      }
+      const newLoad = Math.min(100, Math.max(0,
+        (resourceMetrics?.systemLoad || 0) + 
+        (commMetrics?.systemLoad || 0)
+      ));
+      setSystemLoad(newLoad);
+    }, 100); // Add debounce delay
 
-      // Add load from recent events
-      const recentTime = Date.now() - 1000;
-      const recentMonitoring = monitoringLogs.filter(log => log.timestamp > recentTime);
-      const recentComms = commLogs.filter(log => log.timestamp > recentTime);
+    return () => clearTimeout(timer);
+  }, [resourceMetrics?.systemLoad, commMetrics?.systemLoad]);
+
+  // Handle health updates with RAF
+  useEffect(() => {
+    let isUpdating = true;
+
+    const updateHealth = () => {
+      if (!isUpdating) return;
+
+      const now = Date.now();
+      const deltaTime = Math.min((now - lastUpdateRef.current) / 1000, 1);
+      lastUpdateRef.current = now;
+
+      const { commMetrics, resourceMetrics } = metricsRef.current;
+      const resourceImpact = resourceMetrics?.healthImpact || 0;
+      const commImpact = commMetrics?.healthImpact || 0;
       
-      newLoad += (recentMonitoring.length * 5); // Each monitoring event adds 5%
-      newLoad += (recentComms.length * 5); // Each comm event adds 5%
+      const totalChange = resourceImpact + commImpact;
 
-      setSystemLoad(Math.min(100, Math.max(0, newLoad)));
-    }, 1000);
+      // Ensure health changes are properly bounded and not time-dependent
+      const newHealth = Math.min(100, Math.max(0, 
+        healthRef.current + totalChange
+      ));
+      
+      if (Math.abs(newHealth - healthRef.current) > 0.01) {
+        healthRef.current = newHealth;
+        setCumulativeHealth(prev => {
+          return Math.abs(prev - newHealth) > 0.01 ? newHealth : prev;
+        });
+      }
 
-    return () => clearInterval(interval);
-  }, [resourceLogs, monitoringLogs, commLogs, isTrackingManual]);
+      frameRef.current = requestAnimationFrame(updateHealth);
+    };
+
+    frameRef.current = requestAnimationFrame(updateHealth);
+
+    return () => {
+      isUpdating = false;
+      if (frameRef.current) {
+        cancelAnimationFrame(frameRef.current);
+      }
+    };
+  }, []);
 
   return (
     <div style={{ 
@@ -109,8 +89,7 @@ const SystemHealth = ({
         color: 'white',
         textAlign: 'center',
         padding: '0.5rem',
-        fontWeight: 'bold',
-        flexShrink: 0
+        fontWeight: 'bold'
       }}>
         SYSTEM STATUS
       </div>
@@ -122,14 +101,13 @@ const SystemHealth = ({
         alignItems: 'center',
         padding: '10% 0'
       }}>
-        {/* Health Bar */}
         <div style={{
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
           height: '80%'
         }}>
-          <div>Health</div>
+          <div>Health ({Math.round(cumulativeHealth)}%)</div>
           <div style={{
             height: '100%',
             width: '40px',
@@ -142,21 +120,20 @@ const SystemHealth = ({
               position: 'absolute',
               bottom: 0,
               width: '100%',
-              height: `${health}%`,
-              backgroundColor: '#00ff00',
-              transition: 'height 0.3s ease'
+              height: `${cumulativeHealth}%`,
+              backgroundColor: cumulativeHealth > 50 ? '#00ff00' : '#ff0000',
+              transition: 'height 0.3s ease, background-color 0.3s ease'
             }} />
           </div>
         </div>
 
-        {/* System Load Bar */}
         <div style={{
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
           height: '80%'
         }}>
-          <div>System Load</div>
+          <div>Load ({Math.round(systemLoad)}%)</div>
           <div style={{
             height: '100%',
             width: '40px',
@@ -170,8 +147,8 @@ const SystemHealth = ({
               bottom: 0,
               width: '100%',
               height: `${systemLoad}%`,
-              backgroundColor: '#ff4444',
-              transition: 'height 0.3s ease'
+              backgroundColor: systemLoad > 75 ? '#ff0000' : '#ff4444',
+              transition: 'height 0.3s ease, background-color 0.3s ease'
             }} />
           </div>
         </div>

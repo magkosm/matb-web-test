@@ -1,5 +1,5 @@
 // src/App.js
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import MonitoringTask from './MonitoringTask';
 import CommunicationsTask from './CommunicationsTask';
 import ResourceManagementTask from './ResourceManagementTask';
@@ -19,6 +19,7 @@ function App() {
   // Communications Task controls
   const [commEPM, setCommEPM] = useState(2);
   const [showCommLog, setShowCommLog] = useState(false);
+  const [isCommTaskEnabled, setIsCommTaskEnabled] = useState(true);
 
   // Sidebar control for All Logs
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -41,20 +42,39 @@ function App() {
   const [isTrackingManual, setIsTrackingManual] = useState(false);
   const [isInBox, setIsInBox] = useState(false);
 
+  // Add state for Resource Management task
+  const [isResourceTaskEnabled, setIsResourceTaskEnabled] = useState(true);
+
   // Custom handler to append Tracking logs
   const handleTrackingLogUpdate = useCallback((newEntry) => {
     setTrackingEventLog(prevLog => [...prevLog, newEntry]);
-    console.log('App.js: Appended new tracking log entry', newEntry);
+    // console.log('App.js: Appended new tracking log entry', newEntry);
   }, []);
 
   // **Custom handler to append Resource Management logs**
   const handleResourceLogUpdate = useCallback((newEntry) => {
-    setResourceEventLog(prevLog => [...prevLog, newEntry]);
+    setResourceEventLog(prevLog => Array.isArray(prevLog) ? [...prevLog, newEntry] : [newEntry]);
   }, []);
+
+  // In the Communications Task render section:
+  const [commMetrics, setCommMetrics] = useState({ healthImpact: 0, systemLoad: 0 });
+
+  // Add refs at the top of App component
+  const commTaskRef = useRef(null);
+  const resourceTaskRef = useRef(null);
 
   // -------------------------
   // 2) LAYOUT (MAIN + SIDEBAR)
   // -------------------------
+
+  const [resourceMetrics, setResourceMetrics] = useState(ResourceManagementTask.getDefaultMetrics());
+
+  // Add console log to verify metrics updates
+  const handleResourceMetricsUpdate = (metrics) => {
+    //console.log('App receiving resource metrics:', metrics);
+    setResourceMetrics(metrics);
+  };
+
   return (
     <div className="app-container" style={{ height: '100vh', overflow: 'hidden' }}>
       {/* MAIN CONTENT */}
@@ -65,7 +85,7 @@ function App() {
           gridTemplateRows: '1fr 1fr',
           gap: '1rem',
           height: '100vh',
-          padding: '10rem',
+          padding: '5%',
           boxSizing: 'border-box'
         }}>
           {/* Top Left - System Monitoring */}
@@ -120,6 +140,8 @@ function App() {
               trackingLogs={trackingEventLog}
               isTrackingManual={isTrackingManual}
               isInBox={isInBox}
+              commMetrics={commMetrics}
+              resourceMetrics={resourceMetrics}
             />
           </div>
 
@@ -132,11 +154,26 @@ function App() {
             display: 'flex',
             flexDirection: 'column'
           }}>
-            <CommunicationsTask
-              eventsPerMinute={commEPM}
-              showLog={showCommLog}
-              onLogUpdate={setCommEventLog}
-            />
+            {isCommTaskEnabled ? (
+              <CommunicationsTask
+                ref={commTaskRef}
+                eventsPerMinute={commEPM}
+                showLog={showCommLog}
+                onLogUpdate={setCommEventLog}
+                onMetricsUpdate={setCommMetrics}
+              />
+            ) : (
+              <div style={{
+                height: '100%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                background: '#f5f5f5',
+                color: '#666'
+              }}>
+                Communications Task Disabled
+              </div>
+            )}
           </div>
 
           {/* Resource Management */}
@@ -147,10 +184,13 @@ function App() {
             overflow: 'hidden'
           }}>
             <ResourceManagementTask
+              ref={resourceTaskRef}
               eventsPerMinute={resourceEPM}
               difficulty={resourceDifficulty}
               showLog={showResourceLog}
-              onLogUpdate={handleResourceLogUpdate}
+              onLogUpdate={setResourceEventLog}
+              onMetricsUpdate={handleResourceMetricsUpdate}
+              isEnabled={isResourceTaskEnabled}
             />
           </div>
         </div>
@@ -196,27 +236,56 @@ function App() {
               <h3 style={{ fontSize: '1rem', marginBottom: '0.5rem' }}>Communications Task</h3>
               <div style={{ marginBottom: '0.5rem' }}>
                 <label>
-                  Events/Minute:&nbsp;
-                  <input
-                    type="number"
-                    min={1}
-                    max={20}
-                    value={commEPM}
-                    onChange={(e) => setCommEPM(+e.target.value)}
-                    style={{ width: '60px' }}
-                  />
-                </label>
-              </div>
-              <div>
-                <label>
                   <input
                     type="checkbox"
-                    checked={showCommLog}
-                    onChange={() => setShowCommLog(!showCommLog)}
+                    checked={isCommTaskEnabled}
+                    onChange={() => setIsCommTaskEnabled(!isCommTaskEnabled)}
                   />
-                  &nbsp;Show Log
+                  &nbsp;Task Enabled
                 </label>
               </div>
+              {isCommTaskEnabled && (
+                <>
+                  <div style={{ marginBottom: '0.5rem' }}>
+                    <label>
+                      Events/Minute:&nbsp;
+                      <input
+                        type="number"
+                        min={1}
+                        max={20}
+                        value={commEPM}
+                        onChange={(e) => setCommEPM(+e.target.value)}
+                        style={{ width: '60px' }}
+                      />
+                    </label>
+                  </div>
+                  <div style={{ marginBottom: '0.5rem' }}>
+                    <label>
+                      <input
+                        type="checkbox"
+                        checked={showCommLog}
+                        onChange={() => setShowCommLog(!showCommLog)}
+                      />
+                      &nbsp;Show Log
+                    </label>
+                  </div>
+                  <div style={{ marginBottom: '1rem' }}>
+                    <button
+                      onClick={() => commTaskRef.current?.resetTask()}
+                      style={{
+                        padding: '0.25rem 0.5rem',
+                        background: '#dc3545',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '4px',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      Reset Task
+                    </button>
+                  </div>
+                </>
+              )}
             </div>
 
             {/* Tracking Settings */}
@@ -252,41 +321,70 @@ function App() {
               <h3 style={{ fontSize: '1rem', marginBottom: '0.5rem' }}>Resource Management</h3>
               <div style={{ marginBottom: '0.5rem' }}>
                 <label>
-                  Events/Minute:&nbsp;
-                  <input
-                    type="number"
-                    min={1}
-                    max={20}
-                    value={resourceEPM}
-                    onChange={(e) => setResourceEPM(+e.target.value)}
-                    style={{ width: '60px' }}
-                  />
-                </label>
-              </div>
-              <div style={{ marginBottom: '0.5rem' }}>
-                <label>
-                  Difficulty:&nbsp;
-                  <input
-                    type="range"
-                    min={0}
-                    max={10}
-                    value={resourceDifficulty}
-                    onChange={(e) => setResourceDifficulty(+e.target.value)}
-                    style={{ width: '100px' }}
-                  />
-                  &nbsp;{resourceDifficulty}
-                </label>
-              </div>
-              <div>
-                <label>
                   <input
                     type="checkbox"
-                    checked={showResourceLog}
-                    onChange={() => setShowResourceLog(!showResourceLog)}
+                    checked={isResourceTaskEnabled}
+                    onChange={() => setIsResourceTaskEnabled(!isResourceTaskEnabled)}
                   />
-                  &nbsp;Show Log
+                  &nbsp;Task Enabled
                 </label>
               </div>
+              {isResourceTaskEnabled && (
+                <>
+                  <div style={{ marginBottom: '0.5rem' }}>
+                    <label>
+                      Events/Minute:&nbsp;
+                      <input
+                        type="number"
+                        min={1}
+                        max={20}
+                        value={resourceEPM}
+                        onChange={(e) => setResourceEPM(+e.target.value)}
+                        style={{ width: '60px' }}
+                      />
+                    </label>
+                  </div>
+                  <div style={{ marginBottom: '0.5rem' }}>
+                    <label>
+                      Difficulty:&nbsp;
+                      <input
+                        type="range"
+                        min={0}
+                        max={10}
+                        value={resourceDifficulty}
+                        onChange={(e) => setResourceDifficulty(+e.target.value)}
+                        style={{ width: '100px' }}
+                      />
+                      &nbsp;{resourceDifficulty}
+                    </label>
+                  </div>
+                  <div style={{ marginBottom: '0.5rem' }}>
+                    <label>
+                      <input
+                        type="checkbox"
+                        checked={showResourceLog}
+                        onChange={() => setShowResourceLog(!showResourceLog)}
+                      />
+                      &nbsp;Show Log
+                    </label>
+                  </div>
+                  <div style={{ marginBottom: '1rem' }}>
+                    <button
+                      onClick={() => resourceTaskRef.current?.resetTask()}
+                      style={{
+                        padding: '0.25rem 0.5rem',
+                        background: '#dc3545',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '4px',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      Reset Task
+                    </button>
+                  </div>
+                </>
+              )}
             </div>
           </div>
 
