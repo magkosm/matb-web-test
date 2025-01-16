@@ -45,6 +45,9 @@ function App() {
   // Add state for Resource Management task
   const [isResourceTaskEnabled, setIsResourceTaskEnabled] = useState(true);
 
+  // Add new state for monitoring task enabled/disabled
+  const [isMonitoringTaskEnabled, setIsMonitoringTaskEnabled] = useState(true);
+
   // Custom handler to append Tracking logs
   const handleTrackingLogUpdate = useCallback((newEntry) => {
     setTrackingEventLog(prevLog => [...prevLog, newEntry]);
@@ -63,6 +66,9 @@ function App() {
   const commTaskRef = useRef(null);
   const resourceTaskRef = useRef(null);
 
+  // Add ref for monitoring task
+  const monitoringTaskRef = useRef(null);
+
   // -------------------------
   // 2) LAYOUT (MAIN + SIDEBAR)
   // -------------------------
@@ -74,6 +80,12 @@ function App() {
     //console.log('App receiving resource metrics:', metrics);
     setResourceMetrics(metrics);
   };
+
+  // Add state for monitoring metrics
+  const [monitoringMetrics, setMonitoringMetrics] = useState({
+    healthImpact: 0,
+    systemLoad: 0
+  });
 
   return (
     <div className="app-container" style={{ height: '100vh', overflow: 'hidden' }}>
@@ -97,11 +109,27 @@ function App() {
             display: 'flex',
             flexDirection: 'column'
           }}>
-            <MonitoringTask
-              eventsPerMinute={monitoringEPM}
-              showLog={showMonitoringLog}
-              onLogUpdate={setMonitoringEventLog}
-            />
+            {isMonitoringTaskEnabled ? (
+              <MonitoringTask
+                ref={monitoringTaskRef}
+                eventsPerMinute={monitoringEPM}
+                showLog={showMonitoringLog}
+                onLogUpdate={setMonitoringEventLog}
+                onMetricsUpdate={setMonitoringMetrics}
+                isEnabled={isMonitoringTaskEnabled}
+              />
+            ) : (
+              <div style={{
+                height: '100%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                background: '#f5f5f5',
+                color: '#666'
+              }}>
+                System Monitoring Task Disabled
+              </div>
+            )}
           </div>
 
           {/* Top Middle - Tracking Task */}
@@ -142,6 +170,7 @@ function App() {
               isInBox={isInBox}
               commMetrics={commMetrics}
               resourceMetrics={resourceMetrics}
+              monitoringMetrics={monitoringMetrics}
             />
           </div>
 
@@ -208,27 +237,56 @@ function App() {
               <h3 style={{ fontSize: '1rem', marginBottom: '0.5rem' }}>Monitoring Task</h3>
               <div style={{ marginBottom: '0.5rem' }}>
                 <label>
-                  Events/Minute:&nbsp;
-                  <input
-                    type="number"
-                    min={1}
-                    max={20}
-                    value={monitoringEPM}
-                    onChange={(e) => setMonitoringEPM(+e.target.value)}
-                    style={{ width: '60px' }}
-                  />
-                </label>
-              </div>
-              <div>
-                <label>
                   <input
                     type="checkbox"
-                    checked={showMonitoringLog}
-                    onChange={() => setShowMonitoringLog(!showMonitoringLog)}
+                    checked={isMonitoringTaskEnabled}
+                    onChange={() => setIsMonitoringTaskEnabled(!isMonitoringTaskEnabled)}
                   />
-                  &nbsp;Show Log
+                  &nbsp;Task Enabled
                 </label>
               </div>
+              {isMonitoringTaskEnabled && (
+                <>
+                  <div style={{ marginBottom: '0.5rem' }}>
+                    <label>
+                      Events/Minute:&nbsp;
+                      <input
+                        type="number"
+                        min={1}
+                        max={20}
+                        value={monitoringEPM}
+                        onChange={(e) => setMonitoringEPM(+e.target.value)}
+                        style={{ width: '60px' }}
+                      />
+                    </label>
+                  </div>
+                  <div style={{ marginBottom: '0.5rem' }}>
+                    <label>
+                      <input
+                        type="checkbox"
+                        checked={showMonitoringLog}
+                        onChange={() => setShowMonitoringLog(!showMonitoringLog)}
+                      />
+                      &nbsp;Show Log
+                    </label>
+                  </div>
+                  <div style={{ marginBottom: '1rem' }}>
+                    <button
+                      onClick={() => monitoringTaskRef.current?.resetTask()}
+                      style={{
+                        padding: '0.25rem 0.5rem',
+                        background: '#dc3545',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '4px',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      Reset Task
+                    </button>
+                  </div>
+                </>
+              )}
             </div>
 
             {/* Communications Settings */}

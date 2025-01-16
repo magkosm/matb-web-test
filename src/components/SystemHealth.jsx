@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 
 const SystemHealth = ({ 
+  monitoringMetrics,
   commMetrics,
   resourceMetrics
 }) => {
@@ -9,44 +10,56 @@ const SystemHealth = ({
   const lastUpdateRef = useRef(Date.now());
   const healthRef = useRef(100);
   const frameRef = useRef();
-  const metricsRef = useRef({ commMetrics, resourceMetrics });
+  const metricsRef = useRef({ monitoringMetrics, commMetrics, resourceMetrics });
   const lastImpactTime = useRef(Date.now());
+  const pendingImpacts = useRef([]);
 
   // Update metrics ref when props change
   useEffect(() => {
-    metricsRef.current = { commMetrics, resourceMetrics };
-  }, [commMetrics, resourceMetrics]);
+    metricsRef.current = { monitoringMetrics, commMetrics, resourceMetrics };
+  }, [monitoringMetrics, commMetrics, resourceMetrics]);
 
-  // Handle system load updates - debounced
+  // Reset function
+  const resetHealth = () => {
+    healthRef.current = 100;
+    setCumulativeHealth(100);
+    pendingImpacts.current = [];
+    lastImpactTime.current = Date.now();
+  };
+
+  // Reset when all metrics are null/undefined
   useEffect(() => {
-    const timer = setTimeout(() => {
-      if (!resourceMetrics && !commMetrics) {
-        setSystemLoad(0);
-        return;
+    if (!monitoringMetrics && !commMetrics && !resourceMetrics) {
+      resetHealth();
+    }
+  }, [monitoringMetrics, commMetrics, resourceMetrics]);
+
+  // Add cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (frameRef.current) {
+        cancelAnimationFrame(frameRef.current);
       }
+      resetHealth();
+    };
+  }, []);
 
-      const newLoad = Math.min(100, Math.max(0,
-        (resourceMetrics?.systemLoad || 0) + 
-        (commMetrics?.systemLoad || 0)
-      ));
-      setSystemLoad(newLoad);
-    }, 100); // Add debounce delay
-
-    return () => clearTimeout(timer);
-  }, [resourceMetrics?.systemLoad, commMetrics?.systemLoad]);
-
-  // Handle health updates with RAF
+  // Handle health updates with RAF and forced interval
   useEffect(() => {
     let isUpdating = true;
+    let lastForceUpdate = Date.now();
 
     const updateHealth = () => {
       if (!isUpdating) return;
       const now = Date.now();
+      
+      // Force update every 50ms (was 200ms)
+      if (now - lastForceUpdate >= 50) {
+        setCumulativeHealth(healthRef.current);
+        lastForceUpdate = now;
+      }
+      
       lastUpdateRef.current = now;
-      
-      // Only update the visual state to match the ref
-      setCumulativeHealth(healthRef.current);
-      
       frameRef.current = requestAnimationFrame(updateHealth);
     };
 
@@ -58,40 +71,88 @@ const SystemHealth = ({
         cancelAnimationFrame(frameRef.current);
       }
     };
-  }, []); // Empty dependency array since we're using refs
+  }, []);
 
-  // Modify the health impact effect
+  // Add this effect to handle metrics updates
   useEffect(() => {
-    const now = Date.now();
+    metricsRef.current = { monitoringMetrics, commMetrics, resourceMetrics };
+    
+    // Calculate new load immediately when any metrics change
+    const newLoad = Math.min(100, Math.max(0,
+      (resourceMetrics?.systemLoad || 0) + 
+      (commMetrics?.systemLoad || 0) +
+      (monitoringMetrics?.systemLoad || 0)
+    ));
+    
+    console.log('SystemHealth - Metrics Update:', {
+      resourceLoad: resourceMetrics?.systemLoad || 0,
+      commLoad: commMetrics?.systemLoad || 0,
+      monitoringLoad: monitoringMetrics?.systemLoad || 0,
+      newLoad,
+      currentLoad: systemLoad
+    });
+    
+    setSystemLoad(newLoad);
+  }, [resourceMetrics, commMetrics, monitoringMetrics]);
+
+  // Remove the load update from the other effect
+  useEffect(() => {
     const resourceImpact = resourceMetrics?.healthImpact || 0;
     const commImpact = commMetrics?.healthImpact || 0;
+    const monitoringImpact = monitoringMetrics?.healthImpact || 0;
     
-    console.log('Impact check:', {
-      timeSinceLastImpact: now - lastImpactTime.current,
-      resourceImpact,
-      commImpact,
-      currentHealth: healthRef.current
-    });
-
-    // Only process if there are actual impacts and enough time has passed
-    if ((resourceImpact !== 0 || commImpact !== 0) && 
-        (now - lastImpactTime.current >= 2000)) {
+    if (resourceImpact !== 0 || commImpact !== 0 || monitoringImpact !== 0) {
+      const totalImpact = resourceImpact + commImpact + monitoringImpact;
       
-      const newHealth = Math.min(100, Math.max(0, 
-        healthRef.current + resourceImpact + commImpact
-      ));
-      
-      console.log('Applying impact:', {
-        oldHealth: healthRef.current,
-        newHealth,
-        totalImpact: resourceImpact + commImpact
+      console.log('SystemHealth - Health Impact:', {
+        resource: resourceImpact,
+        comm: commImpact,
+        monitoring: monitoringImpact,
+        total: totalImpact,
+        currentHealth: healthRef.current
       });
       
-      healthRef.current = newHealth;
-      setCumulativeHealth(newHealth);
-      lastImpactTime.current = now;
+      pendingImpacts.current.push({
+        impact: totalImpact,
+        timestamp: Date.now()
+      });
     }
-  }, [resourceMetrics?.healthImpact, commMetrics?.healthImpact]);
+  }, [resourceMetrics?.healthImpact, commMetrics?.healthImpact, monitoringMetrics?.healthImpact]);
+
+  // Process queue with better logging
+  useEffect(() => {
+    const processQueue = () => {
+      const now = Date.now();
+      
+      // Process all impacts immediately
+      while (pendingImpacts.current.length > 0) {
+        const impact = pendingImpacts.current.shift();
+        
+        const newHealth = Math.min(100, Math.max(0, 
+          healthRef.current + impact.impact
+        ));
+        
+        console.log('SystemHealth processing impact:', {
+          impact: impact.impact,
+          oldHealth: healthRef.current,
+          newHealth: newHealth,
+          source: 'ResourceManagement',
+          timestamp: new Date().toISOString()
+        });
+        
+        healthRef.current = newHealth;
+        setCumulativeHealth(newHealth);
+        lastImpactTime.current = now;
+      }
+    };
+
+    const intervalId = setInterval(processQueue, 16); // ~60fps (was slower)
+    
+    return () => {
+      clearInterval(intervalId);
+      pendingImpacts.current = [];
+    };
+  }, []);
 
   return (
     <div style={{ 

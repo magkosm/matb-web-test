@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useImperativeHandle, forwardRef } from 'react';
 import { useAutoScroll } from './hooks/useAutoScroll';
 import { downloadCSV } from './utils/csvExport';
 
@@ -22,10 +22,12 @@ function generateEventId(label) {
 function MonitoringTask({
   eventsPerMinute,
   setEventsPerMinute,
-  showLog,
+  showLog = false,
   setShowLog,
-  onLogUpdate
-}) {
+  onLogUpdate,
+  isEnabled = true,
+  onMetricsUpdate,
+}, ref) {
   // ---------------------
   // 1) STATE
   // ---------------------
@@ -67,11 +69,25 @@ function MonitoringTask({
   const eventTimeoutRef = useRef(null);
   const mainLoopRef = useRef(null);
 
+  // Add new state/refs for metrics
+  const [metrics, setMetrics] = useState({
+    systemLoad: 0,
+    healthImpact: 0
+  });
+
   // ---------------------
   // 2) SCHEDULE EVENTS (Based on EPM)
   // ---------------------
 
   useEffect(() => {
+    if (!isEnabled) {
+      if (eventTimeoutRef.current) {
+        clearTimeout(eventTimeoutRef.current);
+        eventTimeoutRef.current = null;
+      }
+      return;
+    }
+
     // Clear any previous scheduling
     if (eventTimeoutRef.current) {
       clearTimeout(eventTimeoutRef.current);
@@ -96,7 +112,7 @@ function MonitoringTask({
     return () => {
       if (eventTimeoutRef.current) clearTimeout(eventTimeoutRef.current);
     };
-  }, [eventsPerMinute]);
+  }, [eventsPerMinute, isEnabled]);
 
   /**
    * Trigger an event on a random item.
@@ -198,12 +214,18 @@ function MonitoringTask({
           if (evt.type === null) {
             const age = now - evt.timestamp;
             if (age >= 5000) {
-              // MISS
+              // MISS - Add health impact
               evt.type = 'MISS';
               evt.responded = false;
               evt.responseTime = null;
 
-              // Turn off item’s eventActive
+              // Each miss triggers its own impact immediately
+              onMetricsUpdate?.({
+                systemLoad: metrics.systemLoad,
+                healthImpact: -5
+              });
+
+              // Turn off item's eventActive
               setItems((prevItems) =>
                 prevItems.map((it) =>
                   it.label === evt.label ? { ...it, eventActive: false } : it
@@ -211,11 +233,9 @@ function MonitoringTask({
               );
               completed.push(evt);
             } else {
-              // still active
               stillActive.push(evt);
             }
           } else {
-            // Already HIT or FA
             completed.push(evt);
           }
         }
@@ -275,6 +295,13 @@ function MonitoringTask({
       const updated = prevA.map((evt) => {
         if (evt.label === label && evt.type === null) {
           foundActiveEvent = evt;
+          
+          // Each hit triggers its own impact immediately
+          onMetricsUpdate?.({
+            systemLoad: metrics.systemLoad,
+            healthImpact: 2
+          });
+
           return {
             ...evt,
             responded: true,
@@ -286,6 +313,11 @@ function MonitoringTask({
       });
 
       if (!foundActiveEvent) {
+        // Each FA triggers its own impact immediately
+        onMetricsUpdate?.({
+          systemLoad: metrics.systemLoad,
+          healthImpact: -1
+        });
         // FA
         const faId = generateEventId(label);
         const faEvt = {
@@ -303,7 +335,7 @@ function MonitoringTask({
           const lastFA = [...prevLog].reverse().find(
             (log) => log.label === label && log.type === 'FA'
           );
-          if (!lastFA || now - lastFA.timestamp >= 500) {
+          if (!lastFA || now - lastFA.timestamp >= 100) {
             if (!logIds.has(faId)) {
               return [...prevLog, faEvt];
             }
@@ -333,9 +365,100 @@ function MonitoringTask({
     onLogUpdate(eventLog);
   }, [eventLog, onLogUpdate]);
 
+  // Reset function
+  const resetTask = () => {
+    setItems([
+      { label: 'F1', colorNormal: 'green', colorEvent: 'gray', eventActive: false },
+      { label: 'F2', colorNormal: 'gray',  colorEvent: 'red',  eventActive: false },
+      { label: 'F3', level: 5, eventActive: false, eventSide: null },
+      { label: 'F4', level: 5, eventActive: false, eventSide: null },
+      { label: 'F5', level: 5, eventActive: false, eventSide: null },
+      { label: 'F6', level: 5, eventActive: false, eventSide: null },
+    ]);
+    setActiveEvents([]);
+    setEventLog([]);
+    setLastPressTimes({});
+    
+    if (eventTimeoutRef.current) {
+      clearTimeout(eventTimeoutRef.current);
+      eventTimeoutRef.current = null;
+    }
+    setMetrics({
+      systemLoad: 0,
+      healthImpact: 0
+    });
+  };
+
+  // Expose resetTask to ref
+  useImperativeHandle(ref, () => ({
+    resetTask
+  }));
+
+  // Update metrics when active events change
+  useEffect(() => {
+    // Calculate load: each active event contributes 5%
+    const load = activeEvents.length * 5;
+    
+    setMetrics(prev => ({
+      ...prev,
+      systemLoad: Math.min(100, load)
+    }));
+  }, [activeEvents]);
+
+  // Notify parent of metrics changes
+  useEffect(() => {
+    onMetricsUpdate?.(metrics);
+    
+    // Reset health impact after it's been sent, but only if it's non-zero
+    if (metrics.healthImpact !== 0) {
+      // Use a unique timeout for each impact
+      const timeoutId = setTimeout(() => {
+        setMetrics(prev => ({
+          ...prev,
+          healthImpact: 0
+        }));
+      }, 50); // Reduced from 100ms to 50ms for faster reset
+
+      return () => clearTimeout(timeoutId);
+    }
+  }, [metrics, onMetricsUpdate]);
+
+  // Add cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (eventTimeoutRef.current) {
+        clearTimeout(eventTimeoutRef.current);
+      }
+      if (mainLoopRef.current) {
+        clearInterval(mainLoopRef.current);
+      }
+      // Reset metrics on unmount
+      setMetrics({
+        systemLoad: 0,
+        healthImpact: 0
+      });
+    };
+  }, []);
+
   // ---------------------
   // 5) RENDER
   // ---------------------
+  if (!isEnabled) {
+    return (
+      <div style={{
+        width: '100%',
+        height: '100%',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: '#f5f5f5',
+        color: '#666'
+      }}>
+        System Monitoring Task Disabled
+      </div>
+    );
+  }
+
   return (
     <div style={{ 
       width: '100%',
@@ -546,4 +669,4 @@ const Log = ({ eventLog }) => {
 
 MonitoringTask.Log = Log;
 
-export default MonitoringTask;
+export default forwardRef(MonitoringTask);
