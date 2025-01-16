@@ -512,31 +512,34 @@ function ResourceManagementTaskComponent({
 
   // Calculate health impact based on tank states and failures
   const calculateHealthImpact = useCallback(() => {
-    let impact = 0;
+    let impactPerSecond = 0;
+    const TARGET = 2500;
     
-    // Critical tank states have severe health impact
-    if (tanks.a.level < FUEL_RANGES.CRITICAL.min || tanks.a.level > FUEL_RANGES.CRITICAL.max) {
-      impact += 3;
-    }
-    if (tanks.b.level < FUEL_RANGES.CRITICAL.min || tanks.b.level > FUEL_RANGES.CRITICAL.max) {
-      impact += 3;
-    }
+    // Calculate absolute differences from target
+    const diffA = Math.abs(tanks.a.level - TARGET);
+    const diffB = Math.abs(tanks.b.level - TARGET);
     
-    // Warning states have moderate health impact
-    if ((tanks.a.level >= FUEL_RANGES.WARNING.min && tanks.a.level < FUEL_RANGES.OPTIMAL.min) ||
-        (tanks.a.level > FUEL_RANGES.OPTIMAL.max && tanks.a.level <= FUEL_RANGES.WARNING.max)) {
-      impact += 1;
-    }
-    if ((tanks.b.level >= FUEL_RANGES.WARNING.min && tanks.b.level < FUEL_RANGES.OPTIMAL.min) ||
-        (tanks.b.level > FUEL_RANGES.OPTIMAL.max && tanks.b.level <= FUEL_RANGES.WARNING.max)) {
-      impact += 1;
-    }
+    // Calculate impact per second for each tank
+    const getImpactPerSecond = (diff) => {
+      if (diff <= 100) return 0.5;      // Within 100 units: +0.5 per sec
+      if (diff <= 250) return 0.25;     // Within 250 units: +0.25 per sec
+      if (diff <= 500) return 0;        // Within 500 units: no impact
+      return -1;                        // More than 500 units: -1 per sec
+    };
     
-    // Failed pumps impact health
-    impact += failures.size;
+    impactPerSecond += getImpactPerSecond(diffA);
+    impactPerSecond += getImpactPerSecond(diffB);
     
-    return impact;
-  }, [failures.size, tanks.a.level, tanks.b.level]);
+    console.log('Health Impact Per Second:', {
+      tankADiff: diffA,
+      tankBDiff: diffB,
+      tankAImpactPerSec: getImpactPerSecond(diffA),
+      tankBImpactPerSec: getImpactPerSecond(diffB),
+      totalImpactPerSec: impactPerSecond
+    });
+    
+    return impactPerSecond;  // Return per-second rate
+  }, [tanks.a.level, tanks.b.level]);
 
   // Calculate system load based on failures and tank states
   const calculateSystemLoad = useCallback(() => {

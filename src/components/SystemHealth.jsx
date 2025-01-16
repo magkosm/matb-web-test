@@ -95,28 +95,46 @@ const SystemHealth = ({
     setSystemLoad(newLoad);
   }, [resourceMetrics, commMetrics, monitoringMetrics]);
 
-  // Remove the load update from the other effect
+  // Modify the health impact processing effect to handle all tasks consistently
   useEffect(() => {
-    const resourceImpact = resourceMetrics?.healthImpact || 0;
-    const commImpact = commMetrics?.healthImpact || 0;
-    const monitoringImpact = monitoringMetrics?.healthImpact || 0;
-    
-    if (resourceImpact !== 0 || commImpact !== 0 || monitoringImpact !== 0) {
+    const processHealthImpacts = () => {
+      const now = Date.now();
+      const deltaTime = (now - lastImpactTime.current) / 1000; // Convert to seconds
+      
+      // Get current impacts (all are per-second rates)
+      const resourceImpact = (resourceMetrics?.healthImpact || 0) * deltaTime;
+      const commImpact = (commMetrics?.healthImpact || 0);     // Already accounts for time
+      const monitoringImpact = (monitoringMetrics?.healthImpact || 0); // Already accounts for time
+      
+      // Apply all impacts
       const totalImpact = resourceImpact + commImpact + monitoringImpact;
       
-      console.log('SystemHealth - Health Impact:', {
-        resource: resourceImpact,
-        comm: commImpact,
-        monitoring: monitoringImpact,
-        total: totalImpact,
-        currentHealth: healthRef.current
-      });
+      if (totalImpact !== 0) {
+        const newHealth = Math.min(100, Math.max(0, healthRef.current + totalImpact));
+        
+        console.log('SystemHealth - All Tasks Health Update:', {
+          deltaTime,
+          resourcePerSec: resourceMetrics?.healthImpact || 0,
+          resourceImpact,
+          commImpact,
+          monitoringImpact,
+          totalImpact,
+          oldHealth: healthRef.current,
+          newHealth
+        });
+        
+        healthRef.current = newHealth;
+        setCumulativeHealth(newHealth);
+      }
       
-      pendingImpacts.current.push({
-        impact: totalImpact,
-        timestamp: Date.now()
-      });
-    }
+      lastImpactTime.current = now;
+    };
+
+    const intervalId = setInterval(processHealthImpacts, 100); // Update every 100ms
+    
+    return () => {
+      clearInterval(intervalId);
+    };
   }, [resourceMetrics?.healthImpact, commMetrics?.healthImpact, monitoringMetrics?.healthImpact]);
 
   // Process queue with better logging

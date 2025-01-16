@@ -616,18 +616,23 @@ function MonitoringTask({
   );
 }
 
+// First define the Log component
 const Log = ({ eventLog }) => {
   const scrollRef = useAutoScroll();
-  
-  // Get last 50 entries
-  const recentLogs = eventLog.slice(-50);
   
   const handleExport = () => {
     downloadCSV(eventLog, 'monitoring-log');
   };
 
+  if (!eventLog || eventLog.length === 0) {
+    return <div>No monitoring events recorded</div>;
+  }
+
+  // Get last 50 entries
+  const recentLogs = eventLog.slice(-50);
+
   return (
-    <div ref={scrollRef} style={{ width: '100%', overflowX: 'auto', maxHeight: '300px', overflowY: 'auto' }}>
+    <div>
       <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '0.5rem' }}>
         <button 
           onClick={handleExport}
@@ -643,30 +648,39 @@ const Log = ({ eventLog }) => {
           Export CSV
         </button>
       </div>
-      <table style={{ width: '100%', fontSize: '0.75rem', borderCollapse: 'collapse' }}>
-        <thead>
-          <tr style={{ borderBottom: '1px solid #ccc' }}>
-            <th style={{ textAlign: 'left' }}>Label</th>
-            <th style={{ textAlign: 'left' }}>Timestamp</th>
-            <th style={{ textAlign: 'left' }}>RT (ms)</th>
-            <th style={{ textAlign: 'left' }}>Type</th>
-          </tr>
-        </thead>
-        <tbody>
-          {recentLogs.map((e) => (
-            <tr key={e.id} style={{ borderBottom: '1px solid #eee' }}>
-              <td>{e.label}</td>
-              <td>{new Date(e.timestamp).toLocaleTimeString()}</td>
-              <td>{e.responseTime ?? '—'}</td>
-              <td>{e.type}</td>
+      <div ref={scrollRef} style={{ width: '100%', overflowX: 'auto', maxHeight: '300px', overflowY: 'auto' }}>
+        <table style={{ width: '100%', fontSize: '0.75rem', borderCollapse: 'collapse' }}>
+          <thead>
+            <tr style={{ borderBottom: '1px solid #ccc' }}>
+              <th style={{ padding: '0.5rem' }}>Time</th>
+              <th style={{ padding: '0.5rem' }}>Label</th>
+              <th style={{ padding: '0.5rem' }}>Type</th>
+              <th style={{ padding: '0.5rem' }}>RT (ms)</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {recentLogs.map((entry) => (
+              <tr key={entry.id} style={{ borderBottom: '1px solid #eee' }}>
+                <td style={{ padding: '0.5rem' }}>
+                  {new Date(entry.timestamp).toLocaleTimeString()}
+                </td>
+                <td style={{ padding: '0.5rem' }}>{entry.label}</td>
+                <td style={{ padding: '0.5rem' }}>{entry.type}</td>
+                <td style={{ padding: '0.5rem' }}>{entry.responseTime || '—'}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 };
 
-MonitoringTask.Log = Log;
+// Then create the forwarded ref component
+const MonitoringTaskWithRef = forwardRef(MonitoringTask);
 
-export default forwardRef(MonitoringTask);
+// Attach the Log component
+MonitoringTaskWithRef.Log = Log;
+
+// Finally export the component
+export default MonitoringTaskWithRef;
