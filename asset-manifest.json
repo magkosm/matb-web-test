@@ -1,7 +1,7 @@
 {
   "files": {
     "main.css": "/matb-web-test/static/css/main.d8f8e67f.css",
-    "main.js": "/matb-web-test/static/js/main.6b5d0298.js",
+    "main.js": "/matb-web-test/static/js/main.327cb7ac.js",
     "static/js/156.7bf1c5cf.chunk.js": "/matb-web-test/static/js/156.7bf1c5cf.chunk.js",
     "static/media/OTHER_COM1_132-950.wav": "/matb-web-test/static/media/OTHER_COM1_132-950.130ba0098a403adff23d.wav",
     "static/media/OTHER_COM1_124-350.wav": "/matb-web-test/static/media/OTHER_COM1_124-350.69bbc0819e9a8cacf089.wav",
@@ -85,11 +85,11 @@
     "static/media/OWN_COM1_126-525.wav": "/matb-web-test/static/media/OWN_COM1_126-525.ca669956efb65a70f37a.wav",
     "index.html": "/matb-web-test/index.html",
     "main.d8f8e67f.css.map": "/matb-web-test/static/css/main.d8f8e67f.css.map",
-    "main.6b5d0298.js.map": "/matb-web-test/static/js/main.6b5d0298.js.map",
+    "main.327cb7ac.js.map": "/matb-web-test/static/js/main.327cb7ac.js.map",
     "156.7bf1c5cf.chunk.js.map": "/matb-web-test/static/js/156.7bf1c5cf.chunk.js.map"
   },
   "entrypoints": [
     "static/css/main.d8f8e67f.css",
-    "static/js/main.6b5d0298.js"
+    "static/js/main.327cb7ac.js"
   ]
 }
