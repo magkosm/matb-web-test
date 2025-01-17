@@ -520,21 +520,21 @@ const CommunicationsTask = forwardRef(({
     resetTask
   }));
 
-  // Remove the previous load effect since we're handling it in playMessage now
-  useEffect(() => {
-    // Only update metrics when health impact changes
-    onMetricsUpdate?.({ healthImpact, systemLoad });
-  }, [healthImpact, systemLoad]);
-
   // Add useEffect to reset health impact after a short delay
   useEffect(() => {
     if (healthImpact !== 0) {
       const timer = setTimeout(() => {
         setHealthImpact(0);
-      }, 1000); // Reset after 1 second
+      }, 250); // Match monitoring task's 250ms reset time
       return () => clearTimeout(timer);
     }
   }, [healthImpact]);
+
+  // Remove the old 1000ms reset timer
+  useEffect(() => {
+    // Only update metrics when health impact changes
+    onMetricsUpdate?.({ healthImpact, systemLoad });
+  }, [healthImpact, systemLoad]);
 
   // Add getMetrics function to expose current health and load values
   const getMetrics = () => ({
