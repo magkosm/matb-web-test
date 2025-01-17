@@ -63,21 +63,6 @@ const WelcomeScreen = ({ onModeSelect }) => {
         
         <button 
           style={buttonStyle}
-          onClick={() => onModeSelect('custom')}
-          onMouseOver={(e) => {
-            e.target.style.backgroundColor = '#0056b3';
-            e.target.style.transform = 'scale(1.05)';
-          }}
-          onMouseOut={(e) => {
-            e.target.style.backgroundColor = '#007bff';
-            e.target.style.transform = 'scale(1)';
-          }}
-        >
-          Custom Training
-        </button>
-        
-        <button 
-          style={buttonStyle}
           onClick={() => onModeSelect('normal')}
           onMouseOver={(e) => {
             e.target.style.backgroundColor = '#0056b3';

@@ -1,5 +1,5 @@
 // src/App.js
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import MonitoringTask from './MonitoringTask';
 import CommunicationsTask from './CommunicationsTask';
 import ResourceManagementTask from './ResourceManagementTask';
@@ -22,6 +22,7 @@ function App() {
 
   // Mode selection handler - updates the settings panel values
   const handleModeSelect = (mode) => {
+    // First set the game mode
     setGameMode(mode);
     
     // Update settings panel based on mode
@@ -37,9 +38,6 @@ function App() {
           case 'training':
             value = name.includes('difficulty') ? 3 : 1;
             break;
-          case 'custom':
-            // Don't change values for custom mode
-            return;
           case 'normal':
             value = name.includes('difficulty') ? 5 : 
                    name.includes('monitoring') ? 3 : 2;
@@ -58,6 +56,29 @@ function App() {
       });
     }
   };
+
+  // Add effect to reset tasks when game mode changes and components are mounted
+  useEffect(() => {
+    if (gameMode) {
+      // Reset all tasks using optional chaining
+      monitoringTaskRef.current?.resetTask();
+      commTaskRef.current?.resetTask();
+      resourceTaskRef.current?.resetTask();
+      trackingTaskRef.current?.resetTask();
+
+      // Reset all event logs
+      setMonitoringEventLog([]);
+      setCommEventLog([]);
+      setResourceEventLog([]);
+      setTrackingEventLog([]);
+
+      // Reset metrics
+      setMonitoringMetrics({ healthImpact: 0, systemLoad: 0 });
+      setCommMetrics({ healthImpact: 0, systemLoad: 0 });
+      setResourceMetrics(ResourceManagementTask.getDefaultMetrics());
+      setTrackingMetrics(TrackingTask.getDefaultMetrics());
+    }
+  }, [gameMode]); // Run this effect when gameMode changes
 
   // -------------------------
   // 1) STATE & HANDLERS
@@ -141,6 +162,43 @@ function App() {
 
   // Add with other state declarations (around line 20-30)
   const [trackingMetrics, setTrackingMetrics] = useState(TrackingTask.getDefaultMetrics());
+
+  // Add keyboard shortcut handler
+  useEffect(() => {
+    const handleKeyPress = (event) => {
+      // Check for Ctrl + Q
+      if (event.ctrlKey && event.key.toLowerCase() === 'q') {
+        // Reset all tasks using optional chaining
+        monitoringTaskRef.current?.resetTask();
+        commTaskRef.current?.resetTask();
+        resourceTaskRef.current?.resetTask();
+        trackingTaskRef.current?.resetTask();
+
+        // Reset all event logs
+        setMonitoringEventLog([]);
+        setCommEventLog([]);
+        setResourceEventLog([]);
+        setTrackingEventLog([]);
+
+        // Reset metrics
+        setMonitoringMetrics({ healthImpact: 0, systemLoad: 0 });
+        setCommMetrics({ healthImpact: 0, systemLoad: 0 });
+        setResourceMetrics(ResourceManagementTask.getDefaultMetrics());
+        setTrackingMetrics(TrackingTask.getDefaultMetrics());
+
+        // Return to welcome screen
+        setGameMode(null);
+      }
+    };
+
+    // Add event listener
+    window.addEventListener('keydown', handleKeyPress);
+
+    // Cleanup function
+    return () => {
+      window.removeEventListener('keydown', handleKeyPress);
+    };
+  }, []); // Empty dependency array since we don't need to recreate the listener
 
   // If no game mode is selected, show welcome screen
   if (!gameMode) {
