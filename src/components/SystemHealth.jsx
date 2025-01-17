@@ -3,21 +3,22 @@ import React, { useState, useEffect, useRef } from 'react';
 const SystemHealth = ({ 
   monitoringMetrics,
   commMetrics,
-  resourceMetrics
+  resourceMetrics,
+  trackingMetrics
 }) => {
   const [cumulativeHealth, setCumulativeHealth] = useState(100);
   const [systemLoad, setSystemLoad] = useState(0);
   const lastUpdateRef = useRef(Date.now());
   const healthRef = useRef(100);
   const frameRef = useRef();
-  const metricsRef = useRef({ monitoringMetrics, commMetrics, resourceMetrics });
+  const metricsRef = useRef({ monitoringMetrics, commMetrics, resourceMetrics, trackingMetrics });
   const lastImpactTime = useRef(Date.now());
   const pendingImpacts = useRef([]);
 
   // Update metrics ref when props change
   useEffect(() => {
-    metricsRef.current = { monitoringMetrics, commMetrics, resourceMetrics };
-  }, [monitoringMetrics, commMetrics, resourceMetrics]);
+    metricsRef.current = { monitoringMetrics, commMetrics, resourceMetrics, trackingMetrics };
+  }, [monitoringMetrics, commMetrics, resourceMetrics, trackingMetrics]);
 
   // Reset function
   const resetHealth = () => {
@@ -75,13 +76,14 @@ const SystemHealth = ({
 
   // Add this effect to handle metrics updates
   useEffect(() => {
-    metricsRef.current = { monitoringMetrics, commMetrics, resourceMetrics };
+    metricsRef.current = { monitoringMetrics, commMetrics, resourceMetrics, trackingMetrics };
     
     // Calculate new load immediately when any metrics change
     const newLoad = Math.min(100, Math.max(0,
       (resourceMetrics?.systemLoad || 0) + 
       (commMetrics?.systemLoad || 0) +
-      (monitoringMetrics?.systemLoad || 0)
+      (monitoringMetrics?.systemLoad || 0) +
+      (trackingMetrics?.systemLoad || 0)
     ));
     
     console.log('SystemHealth - Metrics Update:', {
@@ -93,7 +95,7 @@ const SystemHealth = ({
     });
     
     setSystemLoad(newLoad);
-  }, [resourceMetrics, commMetrics, monitoringMetrics]);
+  }, [resourceMetrics, commMetrics, monitoringMetrics, trackingMetrics]);
 
   // Modify the health impact processing effect to handle all tasks consistently
   useEffect(() => {
@@ -105,9 +107,10 @@ const SystemHealth = ({
       const resourceImpact = (resourceMetrics?.healthImpact || 0) * deltaTime;
       const commImpact = (commMetrics?.healthImpact || 0);     // Already accounts for time
       const monitoringImpact = (monitoringMetrics?.healthImpact || 0); // Already accounts for time
+      const trackingImpact = (trackingMetrics?.healthImpact || 0) * deltaTime;
       
       // Apply all impacts
-      const totalImpact = resourceImpact + commImpact + monitoringImpact;
+      const totalImpact = resourceImpact + commImpact + monitoringImpact + trackingImpact;
       
       if (totalImpact !== 0) {
         const newHealth = Math.min(100, Math.max(0, healthRef.current + totalImpact));
@@ -118,6 +121,7 @@ const SystemHealth = ({
           resourceImpact,
           commImpact,
           monitoringImpact,
+          trackingImpact,
           totalImpact,
           oldHealth: healthRef.current,
           newHealth
@@ -135,7 +139,7 @@ const SystemHealth = ({
     return () => {
       clearInterval(intervalId);
     };
-  }, [resourceMetrics?.healthImpact, commMetrics?.healthImpact, monitoringMetrics?.healthImpact]);
+  }, [resourceMetrics?.healthImpact, commMetrics?.healthImpact, monitoringMetrics?.healthImpact, trackingMetrics?.healthImpact]);
 
   // Process queue with better logging
   useEffect(() => {

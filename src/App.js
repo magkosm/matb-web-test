@@ -48,6 +48,12 @@ function App() {
   // Add new state for monitoring task enabled/disabled
   const [isMonitoringTaskEnabled, setIsMonitoringTaskEnabled] = useState(true);
 
+  // Add new state for tracking task enabled/disabled
+  const [isTrackingTaskEnabled, setIsTrackingTaskEnabled] = useState(true);
+
+  // Add state for tracking difficulty
+  const [trackingDifficulty, setTrackingDifficulty] = useState(5);
+
   // Custom handler to append Tracking logs
   const handleTrackingLogUpdate = useCallback((newEntry) => {
     setTrackingEventLog(prevLog => [...prevLog, newEntry]);
@@ -69,6 +75,9 @@ function App() {
   // Add ref for monitoring task
   const monitoringTaskRef = useRef(null);
 
+  // Add ref for tracking task
+  const trackingTaskRef = useRef(null);
+
   // -------------------------
   // 2) LAYOUT (MAIN + SIDEBAR)
   // -------------------------
@@ -86,6 +95,9 @@ function App() {
     healthImpact: 0,
     systemLoad: 0
   });
+
+  // Add with other state declarations (around line 20-30)
+  const [trackingMetrics, setTrackingMetrics] = useState(TrackingTask.getDefaultMetrics());
 
   return (
     <div className="app-container" style={{ height: '100vh', overflow: 'hidden' }}>
@@ -142,13 +154,17 @@ function App() {
             flexDirection: 'column'
           }}>
             <TrackingTask
+              ref={trackingTaskRef}
               eventsPerMinute={trackingEPM}
+              difficulty={trackingDifficulty}
               showLog={showTrackingLog}
               onLogUpdate={handleTrackingLogUpdate}
               onStatusUpdate={({ isManual, isInBox }) => {
                 setIsTrackingManual(isManual);
                 setIsInBox(isInBox);
               }}
+              onMetricsUpdate={setTrackingMetrics}
+              isEnabled={isTrackingTaskEnabled}
             />
           </div>
 
@@ -171,6 +187,7 @@ function App() {
               commMetrics={commMetrics}
               resourceMetrics={resourceMetrics}
               monitoringMetrics={monitoringMetrics}
+              trackingMetrics={trackingMetrics}
             />
           </div>
 
@@ -351,27 +368,77 @@ function App() {
               <h3 style={{ fontSize: '1rem', marginBottom: '0.5rem' }}>Tracking Task</h3>
               <div style={{ marginBottom: '0.5rem' }}>
                 <label>
-                  Events/Minute:&nbsp;
-                  <input
-                    type="number"
-                    min={1}
-                    max={20}
-                    value={trackingEPM}
-                    onChange={(e) => setTrackingEPM(+e.target.value)}
-                    style={{ width: '60px' }}
-                  />
-                </label>
-              </div>
-              <div>
-                <label>
                   <input
                     type="checkbox"
-                    checked={showTrackingLog}
-                    onChange={() => setShowTrackingLog(!showTrackingLog)}
+                    checked={isTrackingTaskEnabled}
+                    onChange={() => setIsTrackingTaskEnabled(!isTrackingTaskEnabled)}
                   />
-                  &nbsp;Show Log
+                  &nbsp;Task Enabled
                 </label>
               </div>
+              {isTrackingTaskEnabled && (
+                <>
+                  <div style={{ marginBottom: '0.5rem' }}>
+                    <label>
+                      Events/Minute:&nbsp;
+                      <input
+                        type="number"
+                        min={1}
+                        max={20}
+                        value={trackingEPM}
+                        onChange={(e) => setTrackingEPM(+e.target.value)}
+                        style={{ width: '60px' }}
+                      />
+                    </label>
+                  </div>
+                  <div style={{ marginBottom: '0.5rem' }}>
+                    <label>
+                      Difficulty:&nbsp;
+                      <input
+                        type="range"
+                        min="0"
+                        max="10"
+                        value={trackingDifficulty}
+                        onChange={(e) => setTrackingDifficulty(Number(e.target.value))}
+                        style={{ width: '100px' }}
+                      />
+                      &nbsp;{trackingDifficulty}
+                    </label>
+                  </div>
+                  <div style={{ marginBottom: '0.5rem' }}>
+                    <label>
+                      <input
+                        type="checkbox"
+                        checked={showTrackingLog}
+                        onChange={() => setShowTrackingLog(!showTrackingLog)}
+                      />
+                      &nbsp;Show Log
+                    </label>
+                  </div>
+                  <div style={{ marginBottom: '1rem' }}>
+                    <button
+                      onClick={() => {
+                        console.log('Resetting tracking task...');
+                        if (trackingTaskRef.current) {
+                          trackingTaskRef.current.resetTask();
+                        } else {
+                          console.warn('Tracking task ref not available');
+                        }
+                      }}
+                      style={{
+                        padding: '0.25rem 0.5rem',
+                        background: '#dc3545',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '4px',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      Reset Task
+                    </button>
+                  </div>
+                </>
+              )}
             </div>
 
             {/* Resource Management Settings */}

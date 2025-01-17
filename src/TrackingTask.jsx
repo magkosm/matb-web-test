@@ -1,17 +1,31 @@
-import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo, useImperativeHandle, forwardRef } from 'react';
 import TrackingDisplay from './components/TrackingDisplay';
 import { useGamepads } from './hooks/useGamepads';
 import { useAutoScroll } from './hooks/useAutoScroll';
 import { downloadCSV } from './utils/csvExport';
 
-function TrackingTask({ 
-  eventsPerMinute = 2, 
+const INITIAL_STATE = {
+  cursorPosition: { x: 0, y: 0 },
+  targetPosition: { x: 0, y: 0 },
+  inputMode: 'keyboard',
+  isAuto: true,
+  automationFailure: false,
+  trackingLog: [],
+  driftX: 0,
+  driftY: 0
+};
+
+const TrackingTask = forwardRef(({ 
+  eventsPerMinute = 2,
+  difficulty = 5,
   showLog = false, 
   onLogUpdate,
-  onStatusUpdate
-}) {
+  onStatusUpdate,
+  onMetricsUpdate,
+  isEnabled = true
+}, ref) => {
   const [cursorPosition, setCursorPosition] = useState({ x: 0, y: 0 });
-  const targetPosition = { x: 0, y: 0 };
+  const [targetPosition, setTargetPosition] = useState({ x: 0, y: 0 });
   const [inputMode, setInputMode] = useState('keyboard');
   const [isAuto, setIsAuto] = useState(true);
   const [trackingLog, setTrackingLog] = useState([]);
@@ -37,9 +51,16 @@ function TrackingTask({
 
   // Add this with other refs near the top (around line 20)
   const positionRef = useRef({ x: 0, y: 0 });
+  const targetRef = useRef({ x: 0, y: 0 });
+
+  // Add near the top with other state
+  const [healthImpact, setHealthImpact] = useState(0);
+  const [systemLoad, setSystemLoad] = useState(0);
 
   // Schedule automation failures based on eventsPerMinute
   useEffect(() => {
+    if (!isEnabled) return;
+    
     const scheduleNextFailure = () => {
       if (failureTimeoutRef.current) {
         clearTimeout(failureTimeoutRef.current);
@@ -71,7 +92,7 @@ function TrackingTask({
         clearTimeout(failureTimeoutRef.current);
       }
     };
-  }, [isAuto, automationFailure, eventsPerMinute]);
+  }, [isAuto, automationFailure, eventsPerMinute, isEnabled]);
 
   // Auto-recovery after manual intervention
   useEffect(() => {
@@ -92,66 +113,60 @@ function TrackingTask({
     };
   }, [isAuto, automationFailure]);
 
-  // Physics effect with cursor position updates
+  // Physics effect
   useEffect(() => {
-    const driftSpeed = 0.5;
-    const autoCorrection = 0.4;
-    const joystickDeadzone = 0.1;
-    const maxDriftVelocity = 2;
+    if (!isEnabled) return;
     
-    // Update position ref when cursor position changes
-    positionRef.current = cursorPosition;
+    // Scale drift parameters based on difficulty (0-10)
+    // Reduced maximum multiplier from 2x to 1.5x for manual mode
+    const manualDriftMultiplier = 0.25 + (difficulty / 10) * 1.25; // Scales from 0.25x to 1.5x
+    const driftMultiplier = isAuto ? 1.0 : manualDriftMultiplier; // Auto mode always uses base multiplier
+    
+    const driftSpeed = 0.5 * driftMultiplier;
+    const autoCorrection = 0.4; // Auto correction no longer scales with difficulty
+    const joystickDeadzone = 0.1;
+    const maxDriftVelocity = 2 * driftMultiplier;
 
     const interval = setInterval(() => {
       const now = Date.now();
       const dt = now - lastUpdateRef.current;
       lastUpdateRef.current = now;
 
-      // Add random acceleration to drift
-      driftXRef.current += (Math.random() - 0.5) * 0.4;
-      driftYRef.current += (Math.random() - 0.5) * 0.4;
+      // Add random acceleration to drift (scaled by multiplier only in manual mode)
+      driftXRef.current += (Math.random() - 0.5) * 0.4 * driftMultiplier;
+      driftYRef.current += (Math.random() - 0.5) * 0.4 * driftMultiplier;
 
       // Limit maximum drift velocity
       driftXRef.current = Math.max(-maxDriftVelocity, Math.min(maxDriftVelocity, driftXRef.current));
       driftYRef.current = Math.max(-maxDriftVelocity, Math.min(maxDriftVelocity, driftYRef.current));
 
-      let newX = positionRef.current.x + driftXRef.current * driftSpeed;
-      let newY = positionRef.current.y + driftYRef.current * driftSpeed;
+      setCursorPosition(prev => {
+        let newX = prev.x + driftXRef.current * driftSpeed;
+        let newY = prev.y + driftYRef.current * driftSpeed;
 
-      // Auto mode correction
-      if (isAuto && !automationFailure) {
-        const correctionFactor = dt / 200 * autoCorrection;
-        newX -= newX * correctionFactor;
-        newY -= newY * correctionFactor;
-      }
+        // Auto mode correction - now consistent regardless of difficulty
+        if (isAuto && !automationFailure) {
+          const correctionFactor = dt / 200 * autoCorrection;
+          newX -= newX * correctionFactor;
+          newY -= newY * correctionFactor;
+        }
 
-      // Handle manual input
-      if (!isAuto && inputMode === 'joystick' && gamepadsRef.current[0]) {
-        const gamepad = gamepadsRef.current[0];
-        const moveStep = 2;
-        
-        const joyX = Math.abs(gamepad.axes[0]) > joystickDeadzone ? gamepad.axes[0] : 0;
-        const joyY = Math.abs(gamepad.axes[1]) > joystickDeadzone ? gamepad.axes[1] : 0;
+        // Bounce off boundaries
+        if (Math.abs(newX) > 150) {
+          driftXRef.current = -driftXRef.current * 0.8;
+          newX = Math.sign(newX) * 150;
+        }
+        if (Math.abs(newY) > 150) {
+          driftYRef.current = -driftYRef.current * 0.8;
+          newY = Math.sign(newY) * 150;
+        }
 
-        newX += joyX * moveStep;
-        newY += joyY * moveStep;
-      }
-
-      // Bounce off boundaries
-      if (Math.abs(newX) > 150) {
-        driftXRef.current = -driftXRef.current * 0.8;
-        newX = Math.sign(newX) * 150;
-      }
-      if (Math.abs(newY) > 150) {
-        driftYRef.current = -driftYRef.current * 0.8;
-        newY = Math.sign(newY) * 150;
-      }
-
-      setCursorPosition({ x: newX, y: newY });
+        return { x: newX, y: newY };
+      });
     }, 16);
 
     return () => clearInterval(interval);
-  }, [isAuto, inputMode, automationFailure, cursorPosition]);
+  }, [isAuto, inputMode, automationFailure, isEnabled, difficulty]);
 
   // Separate effect for logging system
   useEffect(() => {
@@ -204,10 +219,10 @@ function TrackingTask({
     return () => window.removeEventListener('keypress', handleKeyPress);
   }, []);
 
-  // Keyboard input handling
+  // Keyboard input handling (separate from physics)
   useEffect(() => {
-    if (isAuto || inputMode !== 'keyboard') return;
-
+    if (isAuto || inputMode !== 'keyboard' || !isEnabled) return;
+    
     const keysPressed = new Set();
     const moveStep = 2;
 
@@ -219,7 +234,6 @@ function TrackingTask({
       keysPressed.delete(e.key.toLowerCase());
     };
 
-    // Continuous movement while keys are held
     const moveInterval = setInterval(() => {
       let dx = 0, dy = 0;
       
@@ -234,7 +248,7 @@ function TrackingTask({
           y: Math.max(-150, Math.min(150, prev.y + dy))
         }));
       }
-    }, 16); // ~60fps
+    }, 16);
 
     window.addEventListener('keydown', handleKeyDown);
     window.addEventListener('keyup', handleKeyUp);
@@ -244,7 +258,7 @@ function TrackingTask({
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('keyup', handleKeyUp);
     };
-  }, [isAuto, inputMode]);
+  }, [isAuto, inputMode, isEnabled]);
 
   // Touch input handling
   const handleTouchStart = (e) => {
@@ -379,6 +393,150 @@ function TrackingTask({
     };
   }, [isAuto, inputMode]);
 
+  const resetTask = useCallback(() => {
+    // Reset all state to initial values
+    setCursorPosition(INITIAL_STATE.cursorPosition);
+    setInputMode(INITIAL_STATE.inputMode);
+    setIsAuto(INITIAL_STATE.isAuto);
+    setTrackingLog(INITIAL_STATE.trackingLog);
+    setAutomationFailure(INITIAL_STATE.automationFailure);
+    
+    // Reset all refs
+    driftXRef.current = INITIAL_STATE.driftX;
+    driftYRef.current = INITIAL_STATE.driftY;
+    touchStartRef.current = null;
+    lastUpdateRef.current = Date.now();
+    lastLogTimeRef.current = Date.now();
+    positionRef.current = { ...INITIAL_STATE.cursorPosition };
+    targetRef.current = { x: 0, y: 0 };
+    statusRef.current = { isManual: false, isInBox: true };
+    
+    // Clear all timeouts and intervals
+    if (failureTimeoutRef.current) {
+      clearTimeout(failureTimeoutRef.current);
+      failureTimeoutRef.current = null;
+    }
+    if (moveIntervalRef.current) {
+      clearInterval(moveIntervalRef.current);
+      moveIntervalRef.current = null;
+    }
+    if (logIntervalRef.current) {
+      clearInterval(logIntervalRef.current);
+      logIntervalRef.current = null;
+    }
+    
+    // Cancel any pending animation frames
+    if (frameRef.current) {
+      cancelAnimationFrame(frameRef.current);
+      frameRef.current = null;
+    }
+
+    // Restart automation immediately
+    startAutomation();
+
+    // Notify parent components of reset
+    requestAnimationFrame(() => {
+      onStatusUpdate?.({ isManual: false, isInBox: true });
+      onLogUpdate?.({
+        id: `reset-${Date.now()}`,
+        time: new Date().toISOString(),
+        rmsError: 0,
+        isWithinTarget: true,
+        isAuto: true,
+        inputMode: 'keyboard',
+        position: { x: 0, y: 0 }
+      });
+    });
+
+    // Reset metrics
+    setHealthImpact(0);
+    setSystemLoad(0);
+    onMetricsUpdate?.({ healthImpact: 0, systemLoad: 0 });
+  }, [onStatusUpdate, onLogUpdate, onMetricsUpdate]);
+
+  const startAutomation = () => {
+    if (moveIntervalRef.current) {
+      clearInterval(moveIntervalRef.current);
+    }
+    
+    moveIntervalRef.current = setInterval(() => {
+      if (!isAuto) return;
+      
+      const targetPos = targetRef.current;
+      const currentPos = positionRef.current;
+      
+      // Move cursor towards target
+      const dx = (targetPos.x - currentPos.x) * 0.1;
+      const dy = (targetPos.y - currentPos.y) * 0.1;
+      
+      positionRef.current = {
+        x: currentPos.x + dx,
+        y: currentPos.y + dy
+      };
+      
+      setCursorPosition(positionRef.current);
+    }, 16); // 60fps
+  };
+
+  useImperativeHandle(ref, () => ({
+    resetTask
+  }), [resetTask]);
+
+  // Add metrics calculation effect
+  useEffect(() => {
+    if (!isEnabled) {
+      onMetricsUpdate?.(TrackingTask.getDefaultMetrics());
+      return;
+    }
+
+    const calculateHealthImpact = () => {
+      if (isAuto) return 0;
+      return isWithinTarget ? 0.5 : -0.5;
+    };
+
+    const calculateSystemLoad = () => {
+      if (isAuto) return 0;
+      return isWithinTarget ? 15 : 30;
+    };
+
+    const updateInterval = setInterval(() => {
+      const healthImpact = calculateHealthImpact();
+      const systemLoad = calculateSystemLoad();
+      
+      onMetricsUpdate?.({
+        healthImpact,
+        systemLoad
+      });
+      
+      console.log('Tracking Task Metrics Update:', {
+        isAuto,
+        isWithinTarget,
+        healthImpact,
+        systemLoad,
+        timestamp: new Date().toISOString()
+      });
+      
+    }, 100);
+
+    return () => clearInterval(updateInterval);
+  }, [isEnabled, isAuto, isWithinTarget, onMetricsUpdate]);
+
+  if (!isEnabled) {
+    return (
+      <div style={{
+        width: '100%',
+        height: '100%',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: '#f5f5f5',
+        color: '#666'
+      }}>
+        Tracking Task Disabled
+      </div>
+    );
+  }
+
   return (
     <div style={{ 
       width: '100%', 
@@ -448,7 +606,7 @@ function TrackingTask({
       </div>
     </div>
   );
-}
+});
 
 // Add this static Log component to TrackingTask
 TrackingTask.Log = function TrackingLog({ trackingLog }) {
@@ -527,6 +685,12 @@ TrackingTask.Log = function TrackingLog({ trackingLog }) {
     </div>
   );
 };
+
+// Add this static method like ResourceManagementTask has
+TrackingTask.getDefaultMetrics = () => ({
+  healthImpact: 0,
+  systemLoad: 0
+});
 
 // Make sure to export both the component and its Log
 export default TrackingTask;
