@@ -6,11 +6,13 @@ import ResourceManagementTask from './ResourceManagementTask';
 import TrackingTask from './TrackingTask';
 import SystemHealth from './components/SystemHealth';
 import WelcomeScreen from './components/WelcomeScreen';
+import NormalMode from './components/NormalMode';
 import './App.css';
 
 function App() {
   // Add game mode state
   const [gameMode, setGameMode] = useState(null);
+  const systemHealthRef = useRef(null);
 
   // Initialize with reasonable defaults
   const [monitoringEPM, setMonitoringEPM] = useState(2);
@@ -39,8 +41,8 @@ function App() {
             value = name.includes('difficulty') ? 3 : 1;
             break;
           case 'normal':
-            value = name.includes('difficulty') ? 5 : 
-                   name.includes('monitoring') ? 3 : 2;
+            // Start with training mode settings for normal mode
+            value = name.includes('difficulty') ? 3 : 1;
             break;
           case 'infinite':
             value = name.includes('difficulty') ? 7 : 
@@ -55,6 +57,13 @@ function App() {
         input.dispatchEvent(new Event('change', { bubbles: true }));
       });
     }
+  };
+
+  // Handle game end
+  const handleGameEnd = (finalScore, healthLog) => {
+    console.log('Game ended with score:', finalScore);
+    console.log('Health log:', healthLog);
+    // You can add additional logic here, like saving scores
   };
 
   // Add effect to reset tasks when game mode changes and components are mounted
@@ -207,146 +216,180 @@ function App() {
 
   return (
     <div className="app-container" style={{ height: '100vh', overflow: 'hidden' }}>
+      {/* Show welcome screen if no mode selected */}
+      {!gameMode && <WelcomeScreen onModeSelect={handleModeSelect} />}
+
+      {/* Show normal mode UI if normal mode selected */}
+      {gameMode === 'normal' && (
+        <NormalMode
+          onGameEnd={handleGameEnd}
+          systemHealthRef={systemHealthRef}
+          isActive={gameMode === 'normal'}
+          onReset={() => {
+            // Reset all tasks
+            monitoringTaskRef.current?.resetTask();
+            commTaskRef.current?.resetTask();
+            resourceTaskRef.current?.resetTask();
+            trackingTaskRef.current?.resetTask();
+
+            // Reset all event logs
+            setMonitoringEventLog([]);
+            setCommEventLog([]);
+            setResourceEventLog([]);
+            setTrackingEventLog([]);
+
+            // Reset metrics
+            setMonitoringMetrics({ healthImpact: 0, systemLoad: 0 });
+            setCommMetrics({ healthImpact: 0, systemLoad: 0 });
+            setResourceMetrics(ResourceManagementTask.getDefaultMetrics());
+            setTrackingMetrics(TrackingTask.getDefaultMetrics());
+          }}
+        />
+      )}
+
       {/* MAIN CONTENT */}
-      <div className={`main-content ${isSidebarOpen ? 'sidebar-open' : ''}`}>
-        <div style={{ 
-          display: 'grid',
-          gridTemplateColumns: 'repeat(6, 1fr)',
-          gridTemplateRows: '1fr 1fr',
-          gap: '1rem',
-          height: '100vh',
-          padding: '5%',
-          boxSizing: 'border-box'
-        }}>
-          {/* Top Left - System Monitoring */}
+      {gameMode && (
+        <div className={`main-content ${isSidebarOpen ? 'sidebar-open' : ''}`}>
           <div style={{ 
-            gridColumn: '1 / span 2',
-            gridRow: '1',
-            border: '1px solid #ccc',
-            overflow: 'hidden',
-            display: 'flex',
-            flexDirection: 'column'
+            display: 'grid',
+            gridTemplateColumns: 'repeat(6, 1fr)',
+            gridTemplateRows: '1fr 1fr',
+            gap: '1rem',
+            height: '100vh',
+            padding: '5%',
+            boxSizing: 'border-box'
           }}>
-            {isMonitoringTaskEnabled ? (
-              <MonitoringTask
-                ref={monitoringTaskRef}
-                eventsPerMinute={monitoringEPM}
-                showLog={showMonitoringLog}
-                onLogUpdate={setMonitoringEventLog}
-                onMetricsUpdate={setMonitoringMetrics}
-                isEnabled={isMonitoringTaskEnabled}
+            {/* Top Left - System Monitoring */}
+            <div style={{ 
+              gridColumn: '1 / span 2',
+              gridRow: '1',
+              border: '1px solid #ccc',
+              overflow: 'hidden',
+              display: 'flex',
+              flexDirection: 'column'
+            }}>
+              {isMonitoringTaskEnabled ? (
+                <MonitoringTask
+                  ref={monitoringTaskRef}
+                  eventsPerMinute={monitoringEPM}
+                  showLog={showMonitoringLog}
+                  onLogUpdate={setMonitoringEventLog}
+                  onMetricsUpdate={setMonitoringMetrics}
+                  isEnabled={isMonitoringTaskEnabled}
+                />
+              ) : (
+                <div style={{
+                  height: '100%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  background: '#f5f5f5',
+                  color: '#666'
+                }}>
+                  System Monitoring Task Disabled
+                </div>
+              )}
+            </div>
+
+            {/* Top Middle - Tracking Task */}
+            <div style={{ 
+              gridColumn: '3 / span 3',
+              gridRow: '1',
+              border: '1px solid #ccc',
+              overflow: 'hidden',
+              display: 'flex',
+              flexDirection: 'column'
+            }}>
+              <TrackingTask
+                ref={trackingTaskRef}
+                eventsPerMinute={trackingEPM}
+                difficulty={trackingDifficulty}
+                showLog={showTrackingLog}
+                onLogUpdate={handleTrackingLogUpdate}
+                onStatusUpdate={({ isManual, isInBox }) => {
+                  setIsTrackingManual(isManual);
+                  setIsInBox(isInBox);
+                }}
+                onMetricsUpdate={setTrackingMetrics}
+                isEnabled={isTrackingTaskEnabled}
               />
-            ) : (
-              <div style={{
-                height: '100%',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                background: '#f5f5f5',
-                color: '#666'
-              }}>
-                System Monitoring Task Disabled
-              </div>
-            )}
-          </div>
+            </div>
 
-          {/* Top Middle - Tracking Task */}
-          <div style={{ 
-            gridColumn: '3 / span 3',
-            gridRow: '1',
-            border: '1px solid #ccc',
-            overflow: 'hidden',
-            display: 'flex',
-            flexDirection: 'column'
-          }}>
-            <TrackingTask
-              ref={trackingTaskRef}
-              eventsPerMinute={trackingEPM}
-              difficulty={trackingDifficulty}
-              showLog={showTrackingLog}
-              onLogUpdate={handleTrackingLogUpdate}
-              onStatusUpdate={({ isManual, isInBox }) => {
-                setIsTrackingManual(isManual);
-                setIsInBox(isInBox);
-              }}
-              onMetricsUpdate={setTrackingMetrics}
-              isEnabled={isTrackingTaskEnabled}
-            />
-          </div>
-
-          {/* Top Right - System Health */}
-          <div style={{ 
-            gridColumn: '6',
-            gridRow: '1',
-            border: '1px solid #ccc',
-            overflow: 'hidden',
-            display: 'flex',
-            flexDirection: 'column'
-          }}>
-            <SystemHealth
-              monitoringLogs={monitoringEventLog}
-              resourceLogs={resourceEventLog}
-              commLogs={commEventLog}
-              trackingLogs={trackingEventLog}
-              isTrackingManual={isTrackingManual}
-              isInBox={isInBox}
-              commMetrics={commMetrics}
-              resourceMetrics={resourceMetrics}
-              monitoringMetrics={monitoringMetrics}
-              trackingMetrics={trackingMetrics}
-            />
-          </div>
-
-          {/* Bottom Left - Communications Task */}
-          <div style={{ 
-            gridColumn: '1 / span 2',
-            gridRow: '2',
-            border: '1px solid #ccc',
-            overflow: 'hidden',
-            display: 'flex',
-            flexDirection: 'column'
-          }}>
-            {isCommTaskEnabled ? (
-              <CommunicationsTask
-                ref={commTaskRef}
-                eventsPerMinute={commEPM}
-                showLog={showCommLog}
-                onLogUpdate={setCommEventLog}
-                onMetricsUpdate={setCommMetrics}
+            {/* Top Right - System Health */}
+            <div style={{ 
+              gridColumn: '6',
+              gridRow: '1',
+              border: '1px solid #ccc',
+              overflow: 'hidden',
+              display: 'flex',
+              flexDirection: 'column'
+            }}>
+              <SystemHealth
+                ref={systemHealthRef}
+                monitoringLogs={monitoringEventLog}
+                resourceLogs={resourceEventLog}
+                commLogs={commEventLog}
+                trackingLogs={trackingEventLog}
+                isTrackingManual={isTrackingManual}
+                isInBox={isInBox}
+                commMetrics={commMetrics}
+                resourceMetrics={resourceMetrics}
+                monitoringMetrics={monitoringMetrics}
+                trackingMetrics={trackingMetrics}
               />
-            ) : (
-              <div style={{
-                height: '100%',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                background: '#f5f5f5',
-                color: '#666'
-              }}>
-                Communications Task Disabled
-              </div>
-            )}
-          </div>
+            </div>
 
-          {/* Resource Management */}
-          <div style={{ 
-            gridColumn: '3 / span 4',
-            gridRow: '2',
-            border: '1px solid #ccc',
-            overflow: 'hidden'
-          }}>
-            <ResourceManagementTask
-              ref={resourceTaskRef}
-              eventsPerMinute={resourceEPM}
-              difficulty={resourceDifficulty}
-              showLog={showResourceLog}
-              onLogUpdate={setResourceEventLog}
-              onMetricsUpdate={handleResourceMetricsUpdate}
-              isEnabled={isResourceTaskEnabled}
-            />
+            {/* Bottom Left - Communications Task */}
+            <div style={{ 
+              gridColumn: '1 / span 2',
+              gridRow: '2',
+              border: '1px solid #ccc',
+              overflow: 'hidden',
+              display: 'flex',
+              flexDirection: 'column'
+            }}>
+              {isCommTaskEnabled ? (
+                <CommunicationsTask
+                  ref={commTaskRef}
+                  eventsPerMinute={commEPM}
+                  showLog={showCommLog}
+                  onLogUpdate={setCommEventLog}
+                  onMetricsUpdate={setCommMetrics}
+                />
+              ) : (
+                <div style={{
+                  height: '100%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  background: '#f5f5f5',
+                  color: '#666'
+                }}>
+                  Communications Task Disabled
+                </div>
+              )}
+            </div>
+
+            {/* Resource Management */}
+            <div style={{ 
+              gridColumn: '3 / span 4',
+              gridRow: '2',
+              border: '1px solid #ccc',
+              overflow: 'hidden'
+            }}>
+              <ResourceManagementTask
+                ref={resourceTaskRef}
+                eventsPerMinute={resourceEPM}
+                difficulty={resourceDifficulty}
+                showLog={showResourceLog}
+                onLogUpdate={setResourceEventLog}
+                onMetricsUpdate={handleResourceMetricsUpdate}
+                isEnabled={isResourceTaskEnabled}
+              />
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* SIDEBAR */}
       <div className={`sidebar ${isSidebarOpen ? 'open' : ''}`}>

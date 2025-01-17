@@ -1,11 +1,17 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
 
-const SystemHealth = ({ 
+const SystemHealth = forwardRef(({ 
   monitoringMetrics,
   commMetrics,
   resourceMetrics,
-  trackingMetrics
-}) => {
+  trackingMetrics,
+  monitoringLogs,
+  resourceLogs,
+  commLogs,
+  trackingLogs,
+  isTrackingManual,
+  isInBox
+}, ref) => {
   const [cumulativeHealth, setCumulativeHealth] = useState(100);
   const [systemLoad, setSystemLoad] = useState(0);
   const lastUpdateRef = useRef(Date.now());
@@ -15,23 +21,29 @@ const SystemHealth = ({
   const lastImpactTime = useRef(Date.now());
   const pendingImpacts = useRef([]);
 
+  // Expose healthRef to parent components
+  useImperativeHandle(ref, () => ({
+    healthRef,
+    resetHealth: () => {
+      healthRef.current = 100;
+      setCumulativeHealth(100);
+      pendingImpacts.current = [];
+      lastImpactTime.current = Date.now();
+    }
+  }));
+
   // Update metrics ref when props change
   useEffect(() => {
     metricsRef.current = { monitoringMetrics, commMetrics, resourceMetrics, trackingMetrics };
   }, [monitoringMetrics, commMetrics, resourceMetrics, trackingMetrics]);
 
-  // Reset function
-  const resetHealth = () => {
-    healthRef.current = 100;
-    setCumulativeHealth(100);
-    pendingImpacts.current = [];
-    lastImpactTime.current = Date.now();
-  };
-
   // Reset when all metrics are null/undefined
   useEffect(() => {
     if (!monitoringMetrics && !commMetrics && !resourceMetrics) {
-      resetHealth();
+      healthRef.current = 100;
+      setCumulativeHealth(100);
+      pendingImpacts.current = [];
+      lastImpactTime.current = Date.now();
     }
   }, [monitoringMetrics, commMetrics, resourceMetrics]);
 
@@ -41,7 +53,10 @@ const SystemHealth = ({
       if (frameRef.current) {
         cancelAnimationFrame(frameRef.current);
       }
-      resetHealth();
+      healthRef.current = 100;
+      setCumulativeHealth(100);
+      pendingImpacts.current = [];
+      lastImpactTime.current = Date.now();
     };
   }, []);
 
@@ -54,7 +69,7 @@ const SystemHealth = ({
       if (!isUpdating) return;
       const now = Date.now();
       
-      // Force update every 50ms (was 200ms)
+      // Force update every 50ms
       if (now - lastForceUpdate >= 50) {
         setCumulativeHealth(healthRef.current);
         lastForceUpdate = now;
@@ -86,14 +101,6 @@ const SystemHealth = ({
       (trackingMetrics?.systemLoad || 0)
     ));
     
-    console.log('SystemHealth - Metrics Update:', {
-      resourceLoad: resourceMetrics?.systemLoad || 0,
-      commLoad: commMetrics?.systemLoad || 0,
-      monitoringLoad: monitoringMetrics?.systemLoad || 0,
-      newLoad,
-      currentLoad: systemLoad
-    });
-    
     setSystemLoad(newLoad);
   }, [resourceMetrics, commMetrics, monitoringMetrics, trackingMetrics]);
 
@@ -114,19 +121,6 @@ const SystemHealth = ({
       
       if (totalImpact !== 0) {
         const newHealth = Math.min(100, Math.max(0, healthRef.current + totalImpact));
-        
-        console.log('SystemHealth - All Tasks Health Update:', {
-          deltaTime,
-          resourcePerSec: resourceMetrics?.healthImpact || 0,
-          resourceImpact,
-          commImpact,
-          monitoringImpact,
-          trackingImpact,
-          totalImpact,
-          oldHealth: healthRef.current,
-          newHealth
-        });
-        
         healthRef.current = newHealth;
         setCumulativeHealth(newHealth);
       }
@@ -140,41 +134,6 @@ const SystemHealth = ({
       clearInterval(intervalId);
     };
   }, [resourceMetrics?.healthImpact, commMetrics?.healthImpact, monitoringMetrics?.healthImpact, trackingMetrics?.healthImpact]);
-
-  // Process queue with better logging
-  useEffect(() => {
-    const processQueue = () => {
-      const now = Date.now();
-      
-      // Process all impacts immediately
-      while (pendingImpacts.current.length > 0) {
-        const impact = pendingImpacts.current.shift();
-        
-        const newHealth = Math.min(100, Math.max(0, 
-          healthRef.current + impact.impact
-        ));
-        
-        console.log('SystemHealth processing impact:', {
-          impact: impact.impact,
-          oldHealth: healthRef.current,
-          newHealth: newHealth,
-          source: 'ResourceManagement',
-          timestamp: new Date().toISOString()
-        });
-        
-        healthRef.current = newHealth;
-        setCumulativeHealth(newHealth);
-        lastImpactTime.current = now;
-      }
-    };
-
-    const intervalId = setInterval(processQueue, 16); // ~60fps (was slower)
-    
-    return () => {
-      clearInterval(intervalId);
-      pendingImpacts.current = [];
-    };
-  }, []);
 
   return (
     <div style={{ 
@@ -255,6 +214,6 @@ const SystemHealth = ({
       </div>
     </div>
   );
-};
+});
 
 export default SystemHealth; 
