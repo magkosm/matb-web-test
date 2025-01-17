@@ -5,19 +5,68 @@ import CommunicationsTask from './CommunicationsTask';
 import ResourceManagementTask from './ResourceManagementTask';
 import TrackingTask from './TrackingTask';
 import SystemHealth from './components/SystemHealth';
+import WelcomeScreen from './components/WelcomeScreen';
 import './App.css';
 
 function App() {
+  // Add game mode state
+  const [gameMode, setGameMode] = useState(null);
+
+  // Initialize with reasonable defaults
+  const [monitoringEPM, setMonitoringEPM] = useState(2);
+  const [commEPM, setCommEPM] = useState(2);
+  const [resourceEPM, setResourceEPM] = useState(2);
+  const [trackingEPM, setTrackingEPM] = useState(2);
+  const [trackingDifficulty, setTrackingDifficulty] = useState(5);
+  const [resourceDifficulty, setResourceDifficulty] = useState(5);
+
+  // Mode selection handler - updates the settings panel values
+  const handleModeSelect = (mode) => {
+    setGameMode(mode);
+    
+    // Update settings panel based on mode
+    const settingsPanel = document.querySelector('.settings-section');
+    if (settingsPanel) {
+      const inputs = settingsPanel.querySelectorAll('input[type="number"], input[type="range"]');
+      
+      inputs.forEach(input => {
+        const name = input.parentElement.textContent.toLowerCase();
+        let value;
+
+        switch (mode) {
+          case 'training':
+            value = name.includes('difficulty') ? 3 : 1;
+            break;
+          case 'custom':
+            // Don't change values for custom mode
+            return;
+          case 'normal':
+            value = name.includes('difficulty') ? 5 : 
+                   name.includes('monitoring') ? 3 : 2;
+            break;
+          case 'infinite':
+            value = name.includes('difficulty') ? 7 : 
+                   name.includes('monitoring') ? 4 : 3;
+            break;
+          default:
+            return;
+        }
+
+        // Update the input value and trigger change event
+        input.value = value;
+        input.dispatchEvent(new Event('change', { bubbles: true }));
+      });
+    }
+  };
+
   // -------------------------
   // 1) STATE & HANDLERS
   // -------------------------
 
   // Monitoring Task controls
-  const [monitoringEPM, setMonitoringEPM] = useState(3);
   const [showMonitoringLog, setShowMonitoringLog] = useState(false);
 
   // Communications Task controls
-  const [commEPM, setCommEPM] = useState(2);
   const [showCommLog, setShowCommLog] = useState(false);
   const [isCommTaskEnabled, setIsCommTaskEnabled] = useState(true);
 
@@ -28,13 +77,10 @@ function App() {
   const [commEventLog, setCommEventLog] = useState([]);
 
   // Resource Management controls
-  const [resourceEPM, setResourceEPM] = useState(2);
-  const [resourceDifficulty, setResourceDifficulty] = useState(5);
   const [showResourceLog, setShowResourceLog] = useState(false);
   const [resourceEventLog, setResourceEventLog] = useState([]);
 
   // Tracking Task controls
-  const [trackingEPM, setTrackingEPM] = useState(2);
   const [showTrackingLog, setShowTrackingLog] = useState(false);
   const [trackingEventLog, setTrackingEventLog] = useState([]);
 
@@ -50,9 +96,6 @@ function App() {
 
   // Add new state for tracking task enabled/disabled
   const [isTrackingTaskEnabled, setIsTrackingTaskEnabled] = useState(true);
-
-  // Add state for tracking difficulty
-  const [trackingDifficulty, setTrackingDifficulty] = useState(5);
 
   // Custom handler to append Tracking logs
   const handleTrackingLogUpdate = useCallback((newEntry) => {
@@ -98,6 +141,11 @@ function App() {
 
   // Add with other state declarations (around line 20-30)
   const [trackingMetrics, setTrackingMetrics] = useState(TrackingTask.getDefaultMetrics());
+
+  // If no game mode is selected, show welcome screen
+  if (!gameMode) {
+    return <WelcomeScreen onModeSelect={handleModeSelect} />;
+  }
 
   return (
     <div className="app-container" style={{ height: '100vh', overflow: 'hidden' }}>
