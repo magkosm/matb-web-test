@@ -70,6 +70,7 @@ function MonitoringTask({
   const mainLoopRef = useRef(null);
 
   // Add new state/refs for metrics
+  const [healthImpact, setHealthImpact] = useState(0);
   const [metrics, setMetrics] = useState({
     systemLoad: 0,
     healthImpact: 0
@@ -214,16 +215,13 @@ function MonitoringTask({
           if (evt.type === null) {
             const age = now - evt.timestamp;
             if (age >= 5000) {
-              // MISS - Add health impact
+              // MISS - Set health impact
               evt.type = 'MISS';
               evt.responded = false;
               evt.responseTime = null;
 
-              // Each miss triggers its own impact immediately
-              onMetricsUpdate?.({
-                systemLoad: metrics.systemLoad,
-                healthImpact: -5
-              });
+              // Set health impact for MISS
+              setHealthImpact(-5);
 
               // Turn off item's eventActive
               setItems((prevItems) =>
@@ -296,11 +294,8 @@ function MonitoringTask({
         if (evt.label === label && evt.type === null) {
           foundActiveEvent = evt;
           
-          // Each hit triggers its own impact immediately
-          onMetricsUpdate?.({
-            systemLoad: metrics.systemLoad,
-            healthImpact: 2
-          });
+          // Set health impact for HIT
+          setHealthImpact(2);
 
           return {
             ...evt,
@@ -313,11 +308,9 @@ function MonitoringTask({
       });
 
       if (!foundActiveEvent) {
-        // Each FA triggers its own impact immediately
-        onMetricsUpdate?.({
-          systemLoad: metrics.systemLoad,
-          healthImpact: -1
-        });
+        // Set health impact for FA
+        setHealthImpact(-1);
+        
         // FA
         const faId = generateEventId(label);
         const faEvt = {
@@ -343,7 +336,7 @@ function MonitoringTask({
           return prevLog;
         });
       } else {
-        // Turn off the item’s event
+        // Turn off the item's event
         setItems((prevItems) =>
           prevItems.map((it) =>
             it.label === label ? { ...it, eventActive: false } : it
@@ -394,34 +387,18 @@ function MonitoringTask({
     resetTask
   }));
 
-  // Update metrics when active events change
+  // Add effect to update metrics when health impact changes
   useEffect(() => {
-    // Calculate load: each active event contributes 5%
-    const load = activeEvents.length * 5;
+    onMetricsUpdate?.({ healthImpact, systemLoad: metrics.systemLoad });
     
-    setMetrics(prev => ({
-      ...prev,
-      systemLoad: Math.min(100, load)
-    }));
-  }, [activeEvents]);
-
-  // Notify parent of metrics changes
-  useEffect(() => {
-    onMetricsUpdate?.(metrics);
-    
-    // Reset health impact after it's been sent, but only if it's non-zero
-    if (metrics.healthImpact !== 0) {
-      // Use a unique timeout for each impact
-      const timeoutId = setTimeout(() => {
-        setMetrics(prev => ({
-          ...prev,
-          healthImpact: 0
-        }));
-      }, 50); // Reduced from 100ms to 50ms for faster reset
-
-      return () => clearTimeout(timeoutId);
+    // Reset health impact after a delay
+    if (healthImpact !== 0) {
+      const timer = setTimeout(() => {
+        setHealthImpact(0);
+      }, 250);
+      return () => clearTimeout(timer);
     }
-  }, [metrics, onMetricsUpdate]);
+  }, [healthImpact, metrics.systemLoad]);
 
   // Add cleanup on unmount
   useEffect(() => {

@@ -106,7 +106,7 @@ const SystemHealth = ({
       // Get current impacts (all are per-second rates)
       const resourceImpact = (resourceMetrics?.healthImpact || 0) * deltaTime;
       const commImpact = (commMetrics?.healthImpact || 0);     // Already accounts for time
-      const monitoringImpact = (monitoringMetrics?.healthImpact || 0); // Already accounts for time
+      const monitoringImpact = (monitoringMetrics?.healthImpact || 0);  // Direct impact, no time scaling needed
       const trackingImpact = (trackingMetrics?.healthImpact || 0) * deltaTime;
       
       // Apply all impacts
