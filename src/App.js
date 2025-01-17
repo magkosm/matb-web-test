@@ -7,12 +7,18 @@ import TrackingTask from './TrackingTask';
 import SystemHealth from './components/SystemHealth';
 import WelcomeScreen from './components/WelcomeScreen';
 import NormalMode from './components/NormalMode';
+import InfiniteMode from './components/InfiniteMode';
+import Leaderboard from './components/Leaderboard';
 import './App.css';
 
 function App() {
   // Add game mode state
   const [gameMode, setGameMode] = useState(null);
   const systemHealthRef = useRef(null);
+  const [showLeaderboard, setShowLeaderboard] = useState(false);
+  const [leaderboardMode, setLeaderboardMode] = useState(null);
+  const [currentScore, setCurrentScore] = useState(null);
+  const [isNewScore, setIsNewScore] = useState(false);
 
   // Initialize with reasonable defaults
   const [monitoringEPM, setMonitoringEPM] = useState(2);
@@ -59,11 +65,22 @@ function App() {
     }
   };
 
-  // Handle game end
-  const handleGameEnd = (finalScore, healthLog) => {
-    console.log('Game ended with score:', finalScore);
-    console.log('Health log:', healthLog);
-    // You can add additional logic here, like saving scores
+  // Handle game end for both modes
+  const handleGameEnd = (score, mode) => {
+    setCurrentScore(score);
+    setLeaderboardMode(mode);
+    setIsNewScore(true);
+    setShowLeaderboard(true);
+  };
+
+  // Update settings handler for infinite mode
+  const handleUpdateSettings = (settings) => {
+    if (settings.monitoringEPM !== undefined) setMonitoringEPM(settings.monitoringEPM);
+    if (settings.commEPM !== undefined) setCommEPM(settings.commEPM);
+    if (settings.resourceEPM !== undefined) setResourceEPM(settings.resourceEPM);
+    if (settings.trackingEPM !== undefined) setTrackingEPM(settings.trackingEPM);
+    if (settings.trackingDifficulty !== undefined) setTrackingDifficulty(settings.trackingDifficulty);
+    if (settings.resourceDifficulty !== undefined) setResourceDifficulty(settings.resourceDifficulty);
   };
 
   // Add effect to reset tasks when game mode changes and components are mounted
@@ -222,7 +239,7 @@ function App() {
       {/* Show normal mode UI if normal mode selected */}
       {gameMode === 'normal' && (
         <NormalMode
-          onGameEnd={handleGameEnd}
+          onGameEnd={(score) => handleGameEnd(score, 'normal')}
           systemHealthRef={systemHealthRef}
           isActive={gameMode === 'normal'}
           onReset={() => {
@@ -246,6 +263,50 @@ function App() {
           }}
         />
       )}
+
+      {/* Show infinite mode UI if infinite mode selected */}
+      {gameMode === 'infinite' && (
+        <InfiniteMode
+          onGameEnd={(score) => handleGameEnd(score, 'infinite')}
+          systemHealthRef={systemHealthRef}
+          isActive={gameMode === 'infinite'}
+          onReset={() => {
+            // Reset all tasks
+            monitoringTaskRef.current?.resetTask();
+            commTaskRef.current?.resetTask();
+            resourceTaskRef.current?.resetTask();
+            trackingTaskRef.current?.resetTask();
+
+            // Reset all event logs
+            setMonitoringEventLog([]);
+            setCommEventLog([]);
+            setResourceEventLog([]);
+            setTrackingEventLog([]);
+
+            // Reset metrics
+            setMonitoringMetrics({ healthImpact: 0, systemLoad: 0 });
+            setCommMetrics({ healthImpact: 0, systemLoad: 0 });
+            setResourceMetrics(ResourceManagementTask.getDefaultMetrics());
+            setTrackingMetrics(TrackingTask.getDefaultMetrics());
+          }}
+          onUpdateSettings={handleUpdateSettings}
+        />
+      )}
+
+      {/* Leaderboard */}
+      <Leaderboard
+        isOpen={showLeaderboard}
+        onClose={() => {
+          setShowLeaderboard(false);
+          setIsNewScore(false);
+          if (!isNewScore) {
+            setGameMode(null); // Return to menu only if not submitting a new score
+          }
+        }}
+        mode={leaderboardMode}
+        currentScore={currentScore}
+        isNewScore={isNewScore}
+      />
 
       {/* MAIN CONTENT */}
       {gameMode && (
@@ -394,273 +455,275 @@ function App() {
       {/* SIDEBAR */}
       <div className={`sidebar ${isSidebarOpen ? 'open' : ''}`}>
         <div className="sidebar-content">
-          {/* Settings Section */}
-          <div className="settings-section">
-            <h2 style={{ marginTop: 0 }}>Settings</h2>
-            
-            {/* Monitoring Settings */}
-            <div style={{ marginBottom: '1.5rem' }}>
-              <h3 style={{ fontSize: '1rem', marginBottom: '0.5rem' }}>Monitoring Task</h3>
-              <div style={{ marginBottom: '0.5rem' }}>
-                <label>
-                  <input
-                    type="checkbox"
-                    checked={isMonitoringTaskEnabled}
-                    onChange={() => setIsMonitoringTaskEnabled(!isMonitoringTaskEnabled)}
-                  />
-                  &nbsp;Task Enabled
-                </label>
+          {/* Settings Section - Hide in Infinite Mode */}
+          {gameMode !== 'infinite' && (
+            <div className="settings-section">
+              <h2 style={{ marginTop: 0 }}>Settings</h2>
+              
+              {/* Monitoring Settings */}
+              <div style={{ marginBottom: '1.5rem' }}>
+                <h3 style={{ fontSize: '1rem', marginBottom: '0.5rem' }}>Monitoring Task</h3>
+                <div style={{ marginBottom: '0.5rem' }}>
+                  <label>
+                    <input
+                      type="checkbox"
+                      checked={isMonitoringTaskEnabled}
+                      onChange={() => setIsMonitoringTaskEnabled(!isMonitoringTaskEnabled)}
+                    />
+                    &nbsp;Task Enabled
+                  </label>
+                </div>
+                {isMonitoringTaskEnabled && (
+                  <>
+                    <div style={{ marginBottom: '0.5rem' }}>
+                      <label>
+                        Events/Minute:&nbsp;
+                        <input
+                          type="number"
+                          min={1}
+                          max={20}
+                          value={monitoringEPM}
+                          onChange={(e) => setMonitoringEPM(+e.target.value)}
+                          style={{ width: '60px' }}
+                        />
+                      </label>
+                    </div>
+                    <div style={{ marginBottom: '0.5rem' }}>
+                      <label>
+                        <input
+                          type="checkbox"
+                          checked={showMonitoringLog}
+                          onChange={() => setShowMonitoringLog(!showMonitoringLog)}
+                        />
+                        &nbsp;Show Log
+                      </label>
+                    </div>
+                    <div style={{ marginBottom: '1rem' }}>
+                      <button
+                        onClick={() => monitoringTaskRef.current?.resetTask()}
+                        style={{
+                          padding: '0.25rem 0.5rem',
+                          background: '#dc3545',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: '4px',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        Reset Task
+                      </button>
+                    </div>
+                  </>
+                )}
               </div>
-              {isMonitoringTaskEnabled && (
-                <>
-                  <div style={{ marginBottom: '0.5rem' }}>
-                    <label>
-                      Events/Minute:&nbsp;
-                      <input
-                        type="number"
-                        min={1}
-                        max={20}
-                        value={monitoringEPM}
-                        onChange={(e) => setMonitoringEPM(+e.target.value)}
-                        style={{ width: '60px' }}
-                      />
-                    </label>
-                  </div>
-                  <div style={{ marginBottom: '0.5rem' }}>
-                    <label>
-                      <input
-                        type="checkbox"
-                        checked={showMonitoringLog}
-                        onChange={() => setShowMonitoringLog(!showMonitoringLog)}
-                      />
-                      &nbsp;Show Log
-                    </label>
-                  </div>
-                  <div style={{ marginBottom: '1rem' }}>
-                    <button
-                      onClick={() => monitoringTaskRef.current?.resetTask()}
-                      style={{
-                        padding: '0.25rem 0.5rem',
-                        background: '#dc3545',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: '4px',
-                        cursor: 'pointer'
-                      }}
-                    >
-                      Reset Task
-                    </button>
-                  </div>
-                </>
-              )}
-            </div>
 
-            {/* Communications Settings */}
-            <div>
-              <h3 style={{ fontSize: '1rem', marginBottom: '0.5rem' }}>Communications Task</h3>
-              <div style={{ marginBottom: '0.5rem' }}>
-                <label>
-                  <input
-                    type="checkbox"
-                    checked={isCommTaskEnabled}
-                    onChange={() => setIsCommTaskEnabled(!isCommTaskEnabled)}
-                  />
-                  &nbsp;Task Enabled
-                </label>
+              {/* Communications Settings */}
+              <div>
+                <h3 style={{ fontSize: '1rem', marginBottom: '0.5rem' }}>Communications Task</h3>
+                <div style={{ marginBottom: '0.5rem' }}>
+                  <label>
+                    <input
+                      type="checkbox"
+                      checked={isCommTaskEnabled}
+                      onChange={() => setIsCommTaskEnabled(!isCommTaskEnabled)}
+                    />
+                    &nbsp;Task Enabled
+                  </label>
+                </div>
+                {isCommTaskEnabled && (
+                  <>
+                    <div style={{ marginBottom: '0.5rem' }}>
+                      <label>
+                        Events/Minute:&nbsp;
+                        <input
+                          type="number"
+                          min={1}
+                          max={20}
+                          value={commEPM}
+                          onChange={(e) => setCommEPM(+e.target.value)}
+                          style={{ width: '60px' }}
+                        />
+                      </label>
+                    </div>
+                    <div style={{ marginBottom: '0.5rem' }}>
+                      <label>
+                        <input
+                          type="checkbox"
+                          checked={showCommLog}
+                          onChange={() => setShowCommLog(!showCommLog)}
+                        />
+                        &nbsp;Show Log
+                      </label>
+                    </div>
+                    <div style={{ marginBottom: '1rem' }}>
+                      <button
+                        onClick={() => commTaskRef.current?.resetTask()}
+                        style={{
+                          padding: '0.25rem 0.5rem',
+                          background: '#dc3545',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: '4px',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        Reset Task
+                      </button>
+                    </div>
+                  </>
+                )}
               </div>
-              {isCommTaskEnabled && (
-                <>
-                  <div style={{ marginBottom: '0.5rem' }}>
-                    <label>
-                      Events/Minute:&nbsp;
-                      <input
-                        type="number"
-                        min={1}
-                        max={20}
-                        value={commEPM}
-                        onChange={(e) => setCommEPM(+e.target.value)}
-                        style={{ width: '60px' }}
-                      />
-                    </label>
-                  </div>
-                  <div style={{ marginBottom: '0.5rem' }}>
-                    <label>
-                      <input
-                        type="checkbox"
-                        checked={showCommLog}
-                        onChange={() => setShowCommLog(!showCommLog)}
-                      />
-                      &nbsp;Show Log
-                    </label>
-                  </div>
-                  <div style={{ marginBottom: '1rem' }}>
-                    <button
-                      onClick={() => commTaskRef.current?.resetTask()}
-                      style={{
-                        padding: '0.25rem 0.5rem',
-                        background: '#dc3545',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: '4px',
-                        cursor: 'pointer'
-                      }}
-                    >
-                      Reset Task
-                    </button>
-                  </div>
-                </>
-              )}
-            </div>
 
-            {/* Tracking Settings */}
-            <div style={{ marginBottom: '1.5rem' }}>
-              <h3 style={{ fontSize: '1rem', marginBottom: '0.5rem' }}>Tracking Task</h3>
-              <div style={{ marginBottom: '0.5rem' }}>
-                <label>
-                  <input
-                    type="checkbox"
-                    checked={isTrackingTaskEnabled}
-                    onChange={() => setIsTrackingTaskEnabled(!isTrackingTaskEnabled)}
-                  />
-                  &nbsp;Task Enabled
-                </label>
+              {/* Tracking Settings */}
+              <div style={{ marginBottom: '1.5rem' }}>
+                <h3 style={{ fontSize: '1rem', marginBottom: '0.5rem' }}>Tracking Task</h3>
+                <div style={{ marginBottom: '0.5rem' }}>
+                  <label>
+                    <input
+                      type="checkbox"
+                      checked={isTrackingTaskEnabled}
+                      onChange={() => setIsTrackingTaskEnabled(!isTrackingTaskEnabled)}
+                    />
+                    &nbsp;Task Enabled
+                  </label>
+                </div>
+                {isTrackingTaskEnabled && (
+                  <>
+                    <div style={{ marginBottom: '0.5rem' }}>
+                      <label>
+                        Events/Minute:&nbsp;
+                        <input
+                          type="number"
+                          min={1}
+                          max={20}
+                          value={trackingEPM}
+                          onChange={(e) => setTrackingEPM(+e.target.value)}
+                          style={{ width: '60px' }}
+                        />
+                      </label>
+                    </div>
+                    <div style={{ marginBottom: '0.5rem' }}>
+                      <label>
+                        Difficulty:&nbsp;
+                        <input
+                          type="range"
+                          min="0"
+                          max="10"
+                          value={trackingDifficulty}
+                          onChange={(e) => setTrackingDifficulty(Number(e.target.value))}
+                          style={{ width: '100px' }}
+                        />
+                        &nbsp;{trackingDifficulty}
+                      </label>
+                    </div>
+                    <div style={{ marginBottom: '0.5rem' }}>
+                      <label>
+                        <input
+                          type="checkbox"
+                          checked={showTrackingLog}
+                          onChange={() => setShowTrackingLog(!showTrackingLog)}
+                        />
+                        &nbsp;Show Log
+                      </label>
+                    </div>
+                    <div style={{ marginBottom: '1rem' }}>
+                      <button
+                        onClick={() => {
+                          console.log('Resetting tracking task...');
+                          if (trackingTaskRef.current) {
+                            trackingTaskRef.current.resetTask();
+                          } else {
+                            console.warn('Tracking task ref not available');
+                          }
+                        }}
+                        style={{
+                          padding: '0.25rem 0.5rem',
+                          background: '#dc3545',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: '4px',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        Reset Task
+                      </button>
+                    </div>
+                  </>
+                )}
               </div>
-              {isTrackingTaskEnabled && (
-                <>
-                  <div style={{ marginBottom: '0.5rem' }}>
-                    <label>
-                      Events/Minute:&nbsp;
-                      <input
-                        type="number"
-                        min={1}
-                        max={20}
-                        value={trackingEPM}
-                        onChange={(e) => setTrackingEPM(+e.target.value)}
-                        style={{ width: '60px' }}
-                      />
-                    </label>
-                  </div>
-                  <div style={{ marginBottom: '0.5rem' }}>
-                    <label>
-                      Difficulty:&nbsp;
-                      <input
-                        type="range"
-                        min="0"
-                        max="10"
-                        value={trackingDifficulty}
-                        onChange={(e) => setTrackingDifficulty(Number(e.target.value))}
-                        style={{ width: '100px' }}
-                      />
-                      &nbsp;{trackingDifficulty}
-                    </label>
-                  </div>
-                  <div style={{ marginBottom: '0.5rem' }}>
-                    <label>
-                      <input
-                        type="checkbox"
-                        checked={showTrackingLog}
-                        onChange={() => setShowTrackingLog(!showTrackingLog)}
-                      />
-                      &nbsp;Show Log
-                    </label>
-                  </div>
-                  <div style={{ marginBottom: '1rem' }}>
-                    <button
-                      onClick={() => {
-                        console.log('Resetting tracking task...');
-                        if (trackingTaskRef.current) {
-                          trackingTaskRef.current.resetTask();
-                        } else {
-                          console.warn('Tracking task ref not available');
-                        }
-                      }}
-                      style={{
-                        padding: '0.25rem 0.5rem',
-                        background: '#dc3545',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: '4px',
-                        cursor: 'pointer'
-                      }}
-                    >
-                      Reset Task
-                    </button>
-                  </div>
-                </>
-              )}
-            </div>
 
-            {/* Resource Management Settings */}
-            <div>
-              <h3 style={{ fontSize: '1rem', marginBottom: '0.5rem' }}>Resource Management</h3>
-              <div style={{ marginBottom: '0.5rem' }}>
-                <label>
-                  <input
-                    type="checkbox"
-                    checked={isResourceTaskEnabled}
-                    onChange={() => setIsResourceTaskEnabled(!isResourceTaskEnabled)}
-                  />
-                  &nbsp;Task Enabled
-                </label>
+              {/* Resource Management Settings */}
+              <div>
+                <h3 style={{ fontSize: '1rem', marginBottom: '0.5rem' }}>Resource Management</h3>
+                <div style={{ marginBottom: '0.5rem' }}>
+                  <label>
+                    <input
+                      type="checkbox"
+                      checked={isResourceTaskEnabled}
+                      onChange={() => setIsResourceTaskEnabled(!isResourceTaskEnabled)}
+                    />
+                    &nbsp;Task Enabled
+                  </label>
+                </div>
+                {isResourceTaskEnabled && (
+                  <>
+                    <div style={{ marginBottom: '0.5rem' }}>
+                      <label>
+                        Events/Minute:&nbsp;
+                        <input
+                          type="number"
+                          min={1}
+                          max={20}
+                          value={resourceEPM}
+                          onChange={(e) => setResourceEPM(+e.target.value)}
+                          style={{ width: '60px' }}
+                        />
+                      </label>
+                    </div>
+                    <div style={{ marginBottom: '0.5rem' }}>
+                      <label>
+                        Difficulty:&nbsp;
+                        <input
+                          type="range"
+                          min={0}
+                          max={10}
+                          value={resourceDifficulty}
+                          onChange={(e) => setResourceDifficulty(+e.target.value)}
+                          style={{ width: '100px' }}
+                        />
+                        &nbsp;{resourceDifficulty}
+                      </label>
+                    </div>
+                    <div style={{ marginBottom: '0.5rem' }}>
+                      <label>
+                        <input
+                          type="checkbox"
+                          checked={showResourceLog}
+                          onChange={() => setShowResourceLog(!showResourceLog)}
+                        />
+                        &nbsp;Show Log
+                      </label>
+                    </div>
+                    <div style={{ marginBottom: '1rem' }}>
+                      <button
+                        onClick={() => resourceTaskRef.current?.resetTask()}
+                        style={{
+                          padding: '0.25rem 0.5rem',
+                          background: '#dc3545',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: '4px',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        Reset Task
+                      </button>
+                    </div>
+                  </>
+                )}
               </div>
-              {isResourceTaskEnabled && (
-                <>
-                  <div style={{ marginBottom: '0.5rem' }}>
-                    <label>
-                      Events/Minute:&nbsp;
-                      <input
-                        type="number"
-                        min={1}
-                        max={20}
-                        value={resourceEPM}
-                        onChange={(e) => setResourceEPM(+e.target.value)}
-                        style={{ width: '60px' }}
-                      />
-                    </label>
-                  </div>
-                  <div style={{ marginBottom: '0.5rem' }}>
-                    <label>
-                      Difficulty:&nbsp;
-                      <input
-                        type="range"
-                        min={0}
-                        max={10}
-                        value={resourceDifficulty}
-                        onChange={(e) => setResourceDifficulty(+e.target.value)}
-                        style={{ width: '100px' }}
-                      />
-                      &nbsp;{resourceDifficulty}
-                    </label>
-                  </div>
-                  <div style={{ marginBottom: '0.5rem' }}>
-                    <label>
-                      <input
-                        type="checkbox"
-                        checked={showResourceLog}
-                        onChange={() => setShowResourceLog(!showResourceLog)}
-                      />
-                      &nbsp;Show Log
-                    </label>
-                  </div>
-                  <div style={{ marginBottom: '1rem' }}>
-                    <button
-                      onClick={() => resourceTaskRef.current?.resetTask()}
-                      style={{
-                        padding: '0.25rem 0.5rem',
-                        background: '#dc3545',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: '4px',
-                        cursor: 'pointer'
-                      }}
-                    >
-                      Reset Task
-                    </button>
-                  </div>
-                </>
-              )}
             </div>
-          </div>
+          )}
 
           {/* Logs Section */}
           <div className="logs-section">
@@ -692,13 +755,15 @@ function App() {
         </div>
       </div>
 
-      {/* Toggle Button */}
-      <button
-        className="toggle-button"
-        onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-      >
-        {isSidebarOpen ? 'Close Settings' : 'Open Settings'}
-      </button>
+      {/* Toggle Button - Hide in Infinite Mode */}
+      {gameMode !== 'infinite' && (
+        <button
+          className="toggle-button"
+          onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+        >
+          {isSidebarOpen ? 'Close Settings' : 'Open Settings'}
+        </button>
+      )}
     </div>
   );
 }
