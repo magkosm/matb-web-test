@@ -10,6 +10,9 @@ import NormalMode from './components/NormalMode';
 import InfiniteMode from './components/InfiniteMode';
 import Leaderboard from './components/Leaderboard';
 import './App.css';
+import Cupola from './backgrounds/Cupola.jpg';
+import Columbus from './backgrounds/Columbus.jpg';
+import CASA from './backgrounds/CASA.jpeg';
 
 function App() {
   // Add game mode state
@@ -243,6 +246,22 @@ function App() {
     setIsViewingLeaderboard(false);
   };
 
+  // Add state for background selection
+  const [background, setBackground] = useState('white');
+
+  // Function to handle background change
+  const handleBackgroundChange = (event) => {
+    setBackground(event.target.value);
+  };
+
+  // Add background style
+  const appStyle = {
+    height: '100vh',
+    overflow: 'hidden',
+    backgroundImage: background === 'white' ? 'none' : `url(${background})`,
+    backgroundSize: 'cover',
+  };
+
   // If no game mode is selected, show welcome screen
   if (!gameMode) {
     return (
@@ -250,6 +269,11 @@ function App() {
         <WelcomeScreen 
           onModeSelect={handleModeSelect}
           onViewLeaderboard={handleViewLeaderboard}
+          background={background}
+          onBackgroundChange={handleBackgroundChange}
+          Cupola={Cupola}
+          Columbus={Columbus}
+          CASA={CASA}
         />
         <Leaderboard
           isOpen={showLeaderboard}
@@ -262,7 +286,7 @@ function App() {
   }
 
   return (
-    <div className="app-container" style={{ height: '100vh', overflow: 'hidden' }}>
+    <div className="app-container" style={appStyle}>
       {/* Show welcome screen if no mode selected */}
       {!gameMode && <WelcomeScreen onModeSelect={handleModeSelect} />}
 
@@ -787,6 +811,17 @@ function App() {
           {isSidebarOpen ? 'Close Settings' : 'Open Settings'}
         </button>
       )}
+
+      {/* Background Selector
+      <div style={{ position: 'absolute', top: '10px', right: '10px', zIndex: 1000 }}>
+        <label>Background: </label>
+        <select value={background} onChange={handleBackgroundChange}>
+          <option value="white">White</option>
+          <option value={Cupola}>Cupola</option>
+          <option value={Columbus}>Columbus</option>
+          <option value={CASA}>CASA</option>
+        </select>
+      </div> */}
     </div>
   );
 }

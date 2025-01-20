@@ -1,6 +1,6 @@
 import React from 'react';
 
-const WelcomeScreen = ({ onModeSelect, onViewLeaderboard }) => {
+const WelcomeScreen = ({ onModeSelect, onViewLeaderboard, background, onBackgroundChange, Cupola, Columbus, CASA }) => {
   const buttonStyle = {
     padding: '15px 30px',
     margin: '10px',
@@ -45,6 +45,16 @@ const WelcomeScreen = ({ onModeSelect, onViewLeaderboard }) => {
       
       <div style={contentStyle}>
         <h2 style={{ marginBottom: '30px', color: '#333' }}>Welcome! Please select a mode to begin:</h2>
+        
+        <div style={{ marginBottom: '20px' }}>
+          <label>Background: </label>
+          <select value={background} onChange={onBackgroundChange}>
+            <option value="white">White</option>
+            <option value={Cupola}>Cupola</option>
+            <option value={Columbus}>Columbus</option>
+            <option value={CASA}>CASA</option>
+          </select>
+        </div>
         
         <button 
           style={buttonStyle} 

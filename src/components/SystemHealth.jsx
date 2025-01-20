@@ -141,7 +141,8 @@ const SystemHealth = forwardRef(({
       height: '100%',
       display: 'flex',
       flexDirection: 'column',
-      overflow: 'hidden'
+      overflow: 'hidden',
+      backgroundColor: 'white'
     }}>
       <div style={{
         background: 'blue',
