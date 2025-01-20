@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import Leaderboard from './Leaderboard';
 
 const NormalMode = ({ 
   onGameEnd,
@@ -9,10 +10,13 @@ const NormalMode = ({
 }) => {
   const [timeRemaining, setTimeRemaining] = useState(defaultDuration);
   const [score, setScore] = useState(0);
-  const [isRunning, setIsRunning] = useState(false); // Don't start automatically
+  const [isRunning, setIsRunning] = useState(false);
   const [duration, setDuration] = useState(defaultDuration);
-  const timerRef = useRef(null);
+  const [showLeaderboard, setShowLeaderboard] = useState(false);
+  const [finalScore, setFinalScore] = useState(null);
+  const endTimeRef = useRef(null);
   const scoreIntervalRef = useRef(null);
+  const animationFrameRef = useRef(null);
 
   // Handle duration change
   const handleDurationChange = (minutes) => {
@@ -23,7 +27,15 @@ const NormalMode = ({
 
   // Start game
   const startGame = () => {
+    if (scoreIntervalRef.current) {
+      clearInterval(scoreIntervalRef.current);
+    }
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current);
+    }
+    
     if (onReset) onReset();
+    endTimeRef.current = Date.now() + duration * 1000;
     setTimeRemaining(duration);
     setScore(0);
     setIsRunning(true);
@@ -34,7 +46,6 @@ const NormalMode = ({
     if (isRunning && isActive) {
       scoreIntervalRef.current = setInterval(() => {
         const currentHealth = systemHealthRef.current?.healthRef?.current || 0;
-        // Add current health to score (health per second = score points)
         setScore(prevScore => prevScore + currentHealth);
       }, 1000);
     }
@@ -45,32 +56,41 @@ const NormalMode = ({
     };
   }, [isRunning, isActive, systemHealthRef]);
 
-  // Handle game timer
+  // Handle game timer using requestAnimationFrame
   useEffect(() => {
-    if (isRunning && isActive) {
-      timerRef.current = setInterval(() => {
-        setTimeRemaining(prev => {
-          if (prev <= 1) {
-            // Game over
-            setIsRunning(false);
-            clearInterval(timerRef.current);
-            if (onGameEnd) {
-              onGameEnd(score);
-            }
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
+    const updateTimer = () => {
+      if (!isRunning || !isActive || !endTimeRef.current) return;
 
-      // Cleanup
-      return () => {
-        if (timerRef.current) {
-          clearInterval(timerRef.current);
+      const now = Date.now();
+      const remaining = Math.max(0, Math.ceil((endTimeRef.current - now) / 1000));
+      
+      setTimeRemaining(remaining);
+
+      if (remaining <= 0) {
+        setIsRunning(false);
+        if (scoreIntervalRef.current) {
+          clearInterval(scoreIntervalRef.current);
         }
-      };
+        const roundedScore = Math.round(score);
+        if (onGameEnd) {
+          onGameEnd(roundedScore);
+        }
+        return;
+      }
+
+      animationFrameRef.current = requestAnimationFrame(updateTimer);
+    };
+
+    if (isRunning && isActive) {
+      animationFrameRef.current = requestAnimationFrame(updateTimer);
     }
-  }, [isRunning, isActive, onGameEnd]);
+
+    return () => {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+    };
+  }, [isRunning, isActive, onGameEnd, score]);
 
   // Format time as MM:SS
   const formatTime = (seconds) => {
@@ -79,8 +99,29 @@ const NormalMode = ({
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (scoreIntervalRef.current) {
+        clearInterval(scoreIntervalRef.current);
+      }
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+    };
+  }, []);
+
   return (
     <>
+      {/* Leaderboard */}
+      <Leaderboard
+        isOpen={showLeaderboard}
+        onClose={() => setShowLeaderboard(false)}
+        mode="normal"
+        currentScore={finalScore}
+        isNewScore={finalScore !== null}
+      />
+
       {/* Pre-game overlay */}
       {!isRunning && (
         <div style={{

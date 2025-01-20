@@ -5,19 +5,43 @@ const Leaderboard = ({
   onClose, 
   mode, 
   currentScore,
-  isNewScore = false
+  isNewScore = false,
+  isViewOnly = false
 }) => {
   const [scores, setScores] = useState([]);
   const [playerName, setPlayerName] = useState('');
   const [showNameInput, setShowNameInput] = useState(isNewScore);
+  const [adminMode, setAdminMode] = useState(false);
 
-  // Load scores from localStorage on mount
+  // Reset state when leaderboard opens/closes
   useEffect(() => {
-    const savedScores = localStorage.getItem(`leaderboard_${mode}`);
+    if (isOpen && isNewScore) {
+      setShowNameInput(true);
+      setPlayerName('');
+    }
+  }, [isOpen, isNewScore]);
+
+  // Load scores from localStorage
+  useEffect(() => {
+    const storageKey = `leaderboard_${mode}`;
+    const savedScores = localStorage.getItem(storageKey);
     if (savedScores) {
       setScores(JSON.parse(savedScores));
     }
   }, [mode]);
+
+  // Add keyboard event listener for admin mode
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.ctrlKey && e.altKey && e.key.toLowerCase() === 'e') {
+        setAdminMode(prev => !prev);
+        console.log('Admin mode:', !adminMode);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [adminMode]);
 
   // Handle score submission
   const handleSubmitScore = () => {
@@ -50,6 +74,27 @@ const Leaderboard = ({
     }
   };
 
+  // Function to remove specific score
+  const handleRemoveScore = (scoreToRemove) => {
+    const storageKey = `leaderboard_${mode}`;
+    
+    // Get current scores from localStorage
+    const currentScores = JSON.parse(localStorage.getItem(storageKey) || '[]');
+    
+    // Filter out the score to remove
+    const updatedScores = currentScores.filter(score => 
+      score.id !== scoreToRemove.id || 
+      score.name !== scoreToRemove.name || 
+      score.score !== scoreToRemove.score
+    );
+    
+    // Update localStorage
+    localStorage.setItem(storageKey, JSON.stringify(updatedScores));
+    
+    // Update state
+    setScores(updatedScores);
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -76,9 +121,11 @@ const Leaderboard = ({
       }}>
         <h2 style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
           {mode === 'normal' ? 'Normal Mode' : 'Infinite Mode'} Leaderboard
+          {isViewOnly && ' (View Only)'}
+          {adminMode && ' (Admin Mode)'}
         </h2>
 
-        {showNameInput && (
+        {showNameInput && !isViewOnly && (
           <div style={{ marginBottom: '2rem', textAlign: 'center' }}>
             <h3>New {mode === 'normal' ? 'Score' : 'Time'}: {formatScore(currentScore)}</h3>
             <input
@@ -112,35 +159,49 @@ const Leaderboard = ({
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
             <tr style={{ borderBottom: '2px solid #ddd' }}>
-              <th style={{ padding: '0.5rem' }}>Rank</th>
-              <th style={{ padding: '0.5rem' }}>Name</th>
-              <th style={{ padding: '0.5rem' }}>{mode === 'normal' ? 'Score' : 'Time'}</th>
-              <th style={{ padding: '0.5rem' }}>Date</th>
+              <th style={{ padding: '0.5rem', textAlign: 'center' }}>Rank</th>
+              <th style={{ padding: '0.5rem', textAlign: 'left' }}>Name</th>
+              <th style={{ padding: '0.5rem', textAlign: 'center' }}>
+                {mode === 'normal' ? 'Score' : 'Time'}
+              </th>
+              {adminMode && <th style={{ padding: '0.5rem', width: '50px' }}></th>}
             </tr>
           </thead>
           <tbody>
             {scores.map((score, index) => (
-              <tr 
-                key={index}
-                style={{ 
-                  borderBottom: '1px solid #ddd',
-                  backgroundColor: score.score === currentScore ? '#e6f3ff' : 'transparent'
-                }}
-              >
+              <tr key={`${score.id}-${score.name}-${score.score}`} style={{ borderBottom: '1px solid #eee' }}>
                 <td style={{ padding: '0.5rem', textAlign: 'center' }}>{index + 1}</td>
-                <td style={{ padding: '0.5rem' }}>{score.name}</td>
-                <td style={{ padding: '0.5rem', textAlign: 'right' }}>
+                <td style={{ padding: '0.5rem', textAlign: 'left' }}>{score.name}</td>
+                <td style={{ padding: '0.5rem', textAlign: 'center' }}>
                   {formatScore(score.score)}
                 </td>
-                <td style={{ padding: '0.5rem', fontSize: '0.9em' }}>
-                  {new Date(score.date).toLocaleDateString()}
-                </td>
+                {adminMode && (
+                  <td style={{ padding: '0.5rem', textAlign: 'center' }}>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleRemoveScore(score);
+                      }}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        color: 'red',
+                        cursor: 'pointer',
+                        fontSize: '1.2rem',
+                        padding: '0 5px'
+                      }}
+                      title="Remove entry"
+                    >
+                      ×
+                    </button>
+                  </td>
+                )}
               </tr>
             ))}
           </tbody>
         </table>
 
-        <div style={{ textAlign: 'center', marginTop: '2rem' }}>
+        <div style={{ marginTop: '2rem', textAlign: 'center' }}>
           <button
             onClick={onClose}
             style={{

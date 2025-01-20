@@ -1,6 +1,6 @@
 import React from 'react';
 
-const WelcomeScreen = ({ onModeSelect }) => {
+const WelcomeScreen = ({ onModeSelect, onViewLeaderboard }) => {
   const buttonStyle = {
     padding: '15px 30px',
     margin: '10px',
@@ -90,6 +90,52 @@ const WelcomeScreen = ({ onModeSelect }) => {
         >
           Infinite Mode
         </button>
+        
+        <div style={{ 
+          marginTop: '30px', 
+          borderTop: '1px solid #ddd',
+          paddingTop: '20px',
+          width: '100%',
+          display: 'flex',
+          justifyContent: 'center',
+          gap: '10px'
+        }}>
+          <button 
+            style={{
+              ...buttonStyle,
+              backgroundColor: '#28a745'
+            }}
+            onClick={() => onViewLeaderboard('normal')}
+            onMouseOver={(e) => {
+              e.target.style.backgroundColor = '#218838';
+              e.target.style.transform = 'scale(1.05)';
+            }}
+            onMouseOut={(e) => {
+              e.target.style.backgroundColor = '#28a745';
+              e.target.style.transform = 'scale(1)';
+            }}
+          >
+            View Normal Leaderboard
+          </button>
+          
+          <button 
+            style={{
+              ...buttonStyle,
+              backgroundColor: '#28a745'
+            }}
+            onClick={() => onViewLeaderboard('infinite')}
+            onMouseOver={(e) => {
+              e.target.style.backgroundColor = '#218838';
+              e.target.style.transform = 'scale(1.05)';
+            }}
+            onMouseOut={(e) => {
+              e.target.style.backgroundColor = '#28a745';
+              e.target.style.transform = 'scale(1)';
+            }}
+          >
+            View Infinite Leaderboard
+          </button>
+        </div>
       </div>
     </div>
   );
