@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useImperativeHandle, forwardRef } from 'react';
+import React, { useState, useEffect, useRef, useImperativeHandle, forwardRef, useCallback } from 'react';
 import { useAutoScroll } from './hooks/useAutoScroll';
 import { downloadCSV } from './utils/csvExport';
 
@@ -27,10 +27,21 @@ function MonitoringTask({
   onLogUpdate,
   isEnabled = true,
   onMetricsUpdate,
+  onOptionsUpdate,
 }, ref) {
   // ---------------------
-  // 1) STATE
+  // 1) STATE & REFS
   // ---------------------
+  const [startTime] = useState(Date.now());
+  const [taskMetrics, setTaskMetrics] = useState({
+    runTime: 0,
+    currentHealth: 100,
+    activeEvents: 0,
+    totalEvents: 0,
+    hits: 0,
+    misses: 0,
+    falseAlarms: 0
+  });
 
   // Items: F1, F2 (buttons), F3–F6 (gauges)
   // For gauges: track level (0..10) + eventSide ('low'|'high'|null)
@@ -44,7 +55,7 @@ function MonitoringTask({
   ]);
 
   /**
-   * `activeEvents` holds in-progress events that haven’t been marked final
+   * `activeEvents` holds in-progress events that haven't been marked final
    * Each event: {
    *   id: string,            // unique ID
    *   label: string,         // "F1"..."F6"
@@ -58,16 +69,18 @@ function MonitoringTask({
 
   /**
    * The master log of finalized events (HIT, MISS, or FA).
-   * Once an event is logged here, it won’t be added again.
+   * Once an event is logged here, it won't be added again.
    */
   const [eventLog, setEventLog] = useState([]);
 
   // To prevent accidental double key/click logs within 250ms
   const [lastPressTimes, setLastPressTimes] = useState({});
 
-  // Refs for scheduling
+  // Refs for scheduling and timing
   const eventTimeoutRef = useRef(null);
   const mainLoopRef = useRef(null);
+  const metricsLoopRef = useRef(null);
+  const isEnabledRef = useRef(isEnabled);
 
   // Add new state/refs for metrics
   const [healthImpact, setHealthImpact] = useState(0);
@@ -76,10 +89,85 @@ function MonitoringTask({
     healthImpact: 0
   });
 
-  // ---------------------
-  // 2) SCHEDULE EVENTS (Based on EPM)
-  // ---------------------
+  // Update enabled ref when prop changes
+  useEffect(() => {
+    isEnabledRef.current = isEnabled;
+  }, [isEnabled]);
 
+  /**
+   * Trigger a new monitoring event
+   * @param {string} [specificLabel] - Optional specific indicator to trigger
+   * @returns {boolean} - Whether event was successfully triggered
+   */
+  const triggerEvent = useCallback((specificLabel = null) => {
+    if (!isEnabledRef.current) return false;
+
+    setItems((prev) => {
+      const newItems = [...prev];
+      let idx;
+
+      if (specificLabel) {
+        idx = newItems.findIndex(item => item.label === specificLabel);
+        if (idx === -1 || newItems[idx].eventActive) return prev; // Invalid label or already active
+      } else {
+        // Find available indicators
+        const availableIndices = newItems
+          .map((item, i) => !item.eventActive ? i : -1)
+          .filter(i => i !== -1);
+        
+        if (availableIndices.length === 0) return prev; // All indicators active
+        idx = availableIndices[Math.floor(Math.random() * availableIndices.length)];
+      }
+
+      const item = newItems[idx];
+      item.eventActive = true;
+
+      // Handle gauge-specific logic
+      if (/F[3-6]/.test(item.label)) {
+        if (item.level === 5) {
+          item.eventSide = Math.random() < 0.5 ? 'high' : 'low';
+          item.level = item.eventSide === 'high' ? 8 : 2;
+        } else if (item.level > 5) {
+          item.eventSide = 'high';
+          if (item.level < 8) item.level = 8;
+        } else {
+          item.eventSide = 'low';
+          if (item.level > 2) item.level = 2;
+        }
+      }
+
+      // Create new event record
+      const eventId = generateEventId(item.label);
+      const newEvent = {
+        id: eventId,
+        label: item.label,
+        timestamp: Date.now(),
+        responded: false,
+        responseTime: null,
+        type: null
+      };
+
+      setActiveEvents(prev => [...prev, newEvent]);
+      setTaskMetrics(prev => ({
+        ...prev,
+        activeEvents: prev.activeEvents + 1,
+        totalEvents: prev.totalEvents + 1
+      }));
+
+      return newItems;
+    });
+
+    return true;
+  }, []);
+
+  // Expose methods via ref
+  useImperativeHandle(ref, () => ({
+    resetTask,
+    triggerEvent,
+    getMetrics: () => taskMetrics
+  }));
+
+  // Schedule events based on EPM
   useEffect(() => {
     if (!isEnabled) {
       if (eventTimeoutRef.current) {
@@ -89,80 +177,133 @@ function MonitoringTask({
       return;
     }
 
-    // Clear any previous scheduling
-    if (eventTimeoutRef.current) {
-      clearTimeout(eventTimeoutRef.current);
-      eventTimeoutRef.current = null;
-    }
-
     const scheduleNextEvent = () => {
-      // Base interval = 60,000 / EPM
       const baseIntervalMs = 60000 / eventsPerMinute;
-      // Add random jitter 80%..120%
-      const jitter = Math.random() * 0.4 + 0.8;
+      const jitter = Math.random() * 0.4 + 0.8; // 80-120% of base interval
       const waitMs = baseIntervalMs * jitter;
 
       eventTimeoutRef.current = setTimeout(() => {
-        triggerRandomEvent();
+        if (isEnabledRef.current) {
+          triggerEvent();
         scheduleNextEvent();
+        }
       }, waitMs);
     };
 
     scheduleNextEvent();
+    
+    // Notify options of EPM change
+    onOptionsUpdate?.({ eventsPerMinute });
 
     return () => {
       if (eventTimeoutRef.current) clearTimeout(eventTimeoutRef.current);
     };
-  }, [eventsPerMinute, isEnabled]);
+  }, [eventsPerMinute, isEnabled, triggerEvent]);
 
-  /**
-   * Trigger an event on a random item.
-   * If it's a gauge (F3-F6), lock it to the red side (low/high).
-   */
-  const triggerRandomEvent = () => {
-    setItems((prev) => {
-      const newItems = [...prev];
-      const idx = Math.floor(Math.random() * newItems.length);
+  // Update metrics periodically
+  useEffect(() => {
+    const updateMetrics = () => {
+      const now = Date.now();
+      setTaskMetrics(prev => ({
+        ...prev,
+        runTime: Math.floor((now - startTime) / 1000)
+      }));
+    };
 
-      newItems[idx].eventActive = true;
-      // If gauge, decide red side
-      if (/F[3-6]/.test(newItems[idx].label)) {
-        // push below 3 => low, or above 7 => high
-        const gauge = newItems[idx];
-        if (gauge.level === 5) {
-          // random side
-          const pickHigh = Math.random() < 0.5;
-          gauge.eventSide = pickHigh ? 'high' : 'low';
-          gauge.level = pickHigh ? 8 : 2;
-        } else if (gauge.level > 5) {
-          gauge.eventSide = 'high';
-          if (gauge.level < 8) gauge.level = 8;
+    metricsLoopRef.current = setInterval(updateMetrics, 1000);
+    return () => {
+      if (metricsLoopRef.current) clearInterval(metricsLoopRef.current);
+    };
+  }, [startTime]);
+
+  // Handle event completion and health impact
+  useEffect(() => {
+    const now = Date.now();
+    setActiveEvents(prev => {
+      const stillActive = [];
+      const completed = [];
+
+      for (const evt of prev) {
+        if (evt.type === null) {
+          const age = now - evt.timestamp;
+          if (age >= 5000) {
+            // MISS
+            evt.type = 'MISS';
+            evt.responded = false;
+            evt.responseTime = null;
+            setHealthImpact(-5);
+            setTaskMetrics(prev => ({
+              ...prev,
+              misses: prev.misses + 1,
+              activeEvents: prev.activeEvents - 1
+            }));
+
+            // Deactivate indicator
+            setItems(prevItems =>
+              prevItems.map(it =>
+                it.label === evt.label ? { ...it, eventActive: false } : it
+              )
+            );
+            completed.push(evt);
+          } else {
+            stillActive.push(evt);
+          }
         } else {
-          gauge.eventSide = 'low';
-          if (gauge.level > 2) gauge.level = 2;
+          completed.push(evt);
         }
       }
 
-      // Create the new event
-      const now = Date.now();
-      const eventId = generateEventId(newItems[idx].label);
-      const newEvent = {
-        id: eventId,
-        label: newItems[idx].label,
-        timestamp: now,
-        responded: false,
-        responseTime: null,
-        type: null, // until we know
-      };
+      if (completed.length > 0) {
+        setEventLog(prev => {
+          const logIds = new Set(prev.map(x => x.id));
+          const uniqueCompleted = completed.filter(e => !logIds.has(e.id));
+          return [...prev, ...uniqueCompleted];
+        });
+      }
 
-      // Append to activeEvents
-      setActiveEvents((prevA) => [...prevA, newEvent]);
-      return newItems;
+      return stillActive;
     });
-  };
+  }, []);
+
+  // Reset function with enhanced cleanup
+  const resetTask = useCallback(() => {
+    setItems([
+      { label: 'F1', colorNormal: 'green', colorEvent: 'gray', eventActive: false },
+      { label: 'F2', colorNormal: 'gray',  colorEvent: 'red',  eventActive: false },
+      { label: 'F3', level: 5, eventActive: false, eventSide: null },
+      { label: 'F4', level: 5, eventActive: false, eventSide: null },
+      { label: 'F5', level: 5, eventActive: false, eventSide: null },
+      { label: 'F6', level: 5, eventActive: false, eventSide: null },
+    ]);
+    setActiveEvents([]);
+    setEventLog([]);
+    setLastPressTimes({});
+    setTaskMetrics({
+      runTime: 0,
+      currentHealth: 100,
+      activeEvents: 0,
+      totalEvents: 0,
+      hits: 0,
+      misses: 0,
+      falseAlarms: 0
+    });
+    
+    if (eventTimeoutRef.current) {
+      clearTimeout(eventTimeoutRef.current);
+      eventTimeoutRef.current = null;
+    }
+    if (metricsLoopRef.current) {
+      clearInterval(metricsLoopRef.current);
+      metricsLoopRef.current = null;
+    }
+    setMetrics({
+      systemLoad: 0,
+      healthImpact: 0
+    });
+  }, []);
 
   // ---------------------
-  // 3) MAIN LOOP (Gauge updates & timeouts)
+  // 2) MAIN LOOP (Gauge updates & timeouts)
   // ---------------------
 
   useEffect(() => {
@@ -358,38 +499,22 @@ function MonitoringTask({
     onLogUpdate(eventLog);
   }, [eventLog, onLogUpdate]);
 
-  // Reset function
-  const resetTask = () => {
-    setItems([
-      { label: 'F1', colorNormal: 'green', colorEvent: 'gray', eventActive: false },
-      { label: 'F2', colorNormal: 'gray',  colorEvent: 'red',  eventActive: false },
-      { label: 'F3', level: 5, eventActive: false, eventSide: null },
-      { label: 'F4', level: 5, eventActive: false, eventSide: null },
-      { label: 'F5', level: 5, eventActive: false, eventSide: null },
-      { label: 'F6', level: 5, eventActive: false, eventSide: null },
-    ]);
-    setActiveEvents([]);
-    setEventLog([]);
-    setLastPressTimes({});
-    
-    if (eventTimeoutRef.current) {
-      clearTimeout(eventTimeoutRef.current);
-      eventTimeoutRef.current = null;
-    }
-    setMetrics({
-      systemLoad: 0,
-      healthImpact: 0
-    });
-  };
-
-  // Expose resetTask to ref
-  useImperativeHandle(ref, () => ({
-    resetTask
-  }));
-
   // Add effect to update metrics when health impact changes
   useEffect(() => {
-    onMetricsUpdate?.({ healthImpact, systemLoad: metrics.systemLoad });
+    // Calculate load based on number of active indicators (5% each)
+    const activeCount = items.filter(item => item.eventActive).length;
+    const calculatedLoad = activeCount * 5;
+    
+    setMetrics(prev => ({
+      ...prev,
+      systemLoad: calculatedLoad,
+      healthImpact: healthImpact
+    }));
+
+    onMetricsUpdate?.({ 
+      healthImpact, 
+      systemLoad: calculatedLoad 
+    });
     
     // Reset health impact after a delay
     if (healthImpact !== 0) {
@@ -398,7 +523,7 @@ function MonitoringTask({
       }, 250);
       return () => clearTimeout(timer);
     }
-  }, [healthImpact, metrics.systemLoad]);
+  }, [healthImpact, items]);
 
   // Add cleanup on unmount
   useEffect(() => {
@@ -450,9 +575,41 @@ function MonitoringTask({
         textAlign: 'center',
         padding: '0.5rem',
         fontWeight: 'bold',
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center'
       }}>
-        SYSTEM MONITORING
+        <div style={{ flex: 1, textAlign: 'left', fontSize: '0.8rem' }}>
+          Time: {String(Math.floor(taskMetrics.runTime / 60)).padStart(2, '0')}:
+                {String(taskMetrics.runTime % 60).padStart(2, '0')}
+        </div>
+        <div style={{ flex: 2 }}>SYSTEM MONITORING</div>
+        <div style={{ flex: 1, textAlign: 'right', fontSize: '0.8rem' }}>
+          Health: {taskMetrics.currentHealth}%
+        </div>
       </div>
+
+      {/* Debug metrics panel - can be toggled */}
+      {showLog && (
+        <div style={{
+          position: 'absolute',
+          top: '3rem',
+          right: '1rem',
+          background: 'rgba(0,0,0,0.8)',
+          color: 'white',
+          padding: '0.5rem',
+          borderRadius: '4px',
+          fontSize: '0.8rem',
+          zIndex: 1000
+        }}>
+          <div>Active Events: {taskMetrics.activeEvents}</div>
+          <div>Total Events: {taskMetrics.totalEvents}</div>
+          <div>Hits: {taskMetrics.hits}</div>
+          <div>Misses: {taskMetrics.misses}</div>
+          <div>False Alarms: {taskMetrics.falseAlarms}</div>
+          <div>EPM: {eventsPerMinute}</div>
+        </div>
+      )}
 
       {/* Main Content Container */}
       <div style={{
