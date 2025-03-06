@@ -1,11 +1,11 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
 
-const SystemHealth = ({ 
+const SystemHealth = forwardRef(({ 
   monitoringMetrics,
   commMetrics,
   resourceMetrics,
   trackingMetrics
-}) => {
+}, ref) => {
   const [cumulativeHealth, setCumulativeHealth] = useState(100);
   const [systemLoad, setSystemLoad] = useState(0);
   const lastUpdateRef = useRef(Date.now());
@@ -21,12 +21,24 @@ const SystemHealth = ({
   }, [monitoringMetrics, commMetrics, resourceMetrics, trackingMetrics]);
 
   // Reset function
-  const resetHealth = () => {
-    healthRef.current = 100;
-    setCumulativeHealth(100);
+  const resetHealth = (initialValue = 100) => {
+    healthRef.current = initialValue;
+    setCumulativeHealth(initialValue);
     pendingImpacts.current = [];
     lastImpactTime.current = Date.now();
   };
+
+  // Get current health value
+  const getCurrentHealth = () => {
+    console.log("SystemHealth: getCurrentHealth returning", cumulativeHealth);
+    return cumulativeHealth;
+  };
+
+  // Expose methods to parent component via ref
+  useImperativeHandle(ref, () => ({
+    resetHealth,
+    getCurrentHealth
+  }));
 
   // Reset when all metrics are null/undefined
   useEffect(() => {
@@ -255,6 +267,6 @@ const SystemHealth = ({
       </div>
     </div>
   );
-};
+});
 
 export default SystemHealth; 

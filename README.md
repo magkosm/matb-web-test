@@ -1,70 +1,88 @@
-# Getting Started with Create React App
+# MATB-II: Multi-Attribute Task Battery
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+MATB-II is a cognitive workload assessment tool designed to measure multitasking ability and cognitive load. This application is a web-based implementation of the NASA Multi-Attribute Task Battery, featuring multiple interactive tasks that must be managed simultaneously.
 
-## Available Scripts
+## Game Modes
 
-In the project directory, you can run:
+### Custom Training
+- Configure and practice each task at your own pace
+- Adjust difficulty settings for each task individually
+- Focus on specific tasks by enabling/disabling others
+- Perfect for learning the mechanics of each task
 
-### `npm start`
+### Normal Mode
+- Timed game mode with configurable duration (1-20 minutes)
+- Score is calculated by summing health percentage every second
+- Focus on maintaining high health by responding to all tasks correctly
+- Best for controlled assessment with a defined endpoint
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+### Infinite Mode
+- Survival-based game mode with progressively increasing difficulty
+- Difficulty increases every 30 seconds
+- Score is based on survival time in seconds
+- Great for measuring performance degradation under increasing cognitive load
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+## Tasks
 
-### `npm test`
+The application includes four primary tasks that must be managed simultaneously:
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+### System Monitoring
+Monitor for system anomalies and respond quickly to deviations.
 
-### `npm run build`
+### Communications
+Listen for and respond to communications requests directed at your call sign.
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+### Resource Management
+Maintain fuel levels in tanks by managing pumps and flow rates.
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+### Tracking
+Keep a moving target centered in a box with manual control.
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+## Health System
 
-### `npm run eject`
+- Each task contributes to the overall system health
+- Poor performance in any task decreases health
+- When health reaches zero in Infinite Mode, the game ends
+- In Normal Mode, health directly impacts your score
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+## Leaderboards
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+The application includes leaderboards for both Normal and Infinite modes:
+- Normal Mode: Highest scores based on cumulative health
+- Infinite Mode: Longest survival times with level reached
+- Enter your name to save your scores
+- Top 10 scores for each mode are saved
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+## Keyboard Shortcuts
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+- **Ctrl+Q**: Return to main menu from any game mode
 
-## Learn More
+## Installation and Running the App
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+1. Ensure you have Node.js installed (v14+ recommended)
+2. Clone the repository
+3. Install dependencies:
+   ```
+   npm install
+   ```
+4. Start the development server:
+   ```
+   npm start
+   ```
+5. Open http://localhost:3000 in your browser
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+## Built With
 
-### Code Splitting
+- React.js - Front-end framework
+- JavaScript - Programming language
+- CSS - Styling
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+## Performance Considerations
 
-### Analyzing the Bundle Size
+- The application uses requestAnimationFrame for smooth animations
+- Health is calculated with high precision for accurate scoring
+- Local storage is used to persist leaderboard data
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+## License
 
-### Making a Progressive Web App
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+This project is educational in nature and is not affiliated with NASA's official MATB-II software.

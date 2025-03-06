@@ -580,12 +580,10 @@ function MonitoringTask({
         alignItems: 'center'
       }}>
         <div style={{ flex: 1, textAlign: 'left', fontSize: '0.8rem' }}>
-          Time: {String(Math.floor(taskMetrics.runTime / 60)).padStart(2, '0')}:
-                {String(taskMetrics.runTime % 60).padStart(2, '0')}
         </div>
         <div style={{ flex: 2 }}>SYSTEM MONITORING</div>
         <div style={{ flex: 1, textAlign: 'right', fontSize: '0.8rem' }}>
-          Health: {taskMetrics.currentHealth}%
+          {/* Health indicator removed */}
         </div>
       </div>
 

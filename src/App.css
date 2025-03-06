@@ -141,3 +141,1057 @@
   flex-direction: column;
   align-items: center;
 }
+
+/* App.css */
+
+/* General App Styling */
+.App {
+  text-align: center;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background-color: #f5f5f5;
+}
+
+/* Header Styling */
+.header {
+  background-color: #e0e0e0;
+  padding: 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #ccc;
+}
+
+.title {
+  font-size: 1.5rem;
+  font-weight: bold;
+}
+
+.controls {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.menu-button {
+  padding: 0.5rem 1rem;
+  background-color: #4a90e2;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: background-color 0.3s;
+}
+
+.menu-button:hover {
+  background-color: #357ab8;
+}
+
+/* Task Grid Layout */
+.task-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(2, 1fr);
+  gap: 10px;
+  width: 100%;
+  height: 100%;
+  min-height: 500px;
+}
+
+/* Task Container Styling */
+.task-container {
+  border: 1px solid #ccc;
+  background-color: white;
+  border-radius: 4px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* System Monitoring - Top Left */
+.monitoring-container {
+  grid-column: 1 / span 2;
+  grid-row: 1;
+}
+
+/* Tracking Task - Top Middle */
+.tracking-container {
+  grid-column: 3 / span 3;
+  grid-row: 1;
+}
+
+/* System Health - Top Right */
+.health-container {
+  grid-column: 6;
+  grid-row: 1;
+}
+
+/* Communications Task - Bottom Left */
+.communications-container {
+  grid-column: 1 / span 2;
+  grid-row: 2;
+}
+
+/* Resource Management - Bottom Right */
+.resource-container {
+  grid-column: 3 / span 4;
+  grid-row: 2;
+}
+
+/* Task Header Styling */
+.task-header {
+  background-color: #f0f0f0;
+  padding: 0.5rem;
+  border-bottom: 1px solid #ccc;
+  font-weight: bold;
+}
+
+/* Sidebar Styling */
+.sidebar {
+  position: fixed;
+  right: -400px;
+  top: 0;
+  width: 400px;
+  height: 100vh;
+  background-color: white;
+  box-shadow: -2px 0 5px rgba(0, 0, 0, 0.2);
+  transition: right 0.3s ease;
+  z-index: 100;
+  overflow-y: auto;
+}
+
+.sidebar.open {
+  right: 0;
+}
+
+.sidebar-content {
+  padding: 1.5rem;
+}
+
+.toggle-button {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  padding: 0.75rem 1rem;
+  background-color: #4a90e2;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+  z-index: 101;
+}
+
+/* Responsive adjustments */
+@media (max-width: 1200px) {
+  .task-grid {
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: auto;
+  }
+
+  .monitoring-container,
+  .tracking-container,
+  .health-container,
+  .communications-container,
+  .resource-container {
+    grid-column: auto;
+    grid-row: auto;
+  }
+}
+
+/* Keyboard shortcut info display */
+.keyboard-shortcut-info {
+  font-size: 0.85rem;
+  color: #666;
+  background-color: #f2f2f2;
+  padding: 0.3rem 0.8rem;
+  border-radius: 4px;
+  margin-left: 0.5rem;
+  display: flex;
+  align-items: center;
+}
+
+/* CustomTraining Component Styles */
+.custom-training-container {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 2rem;
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.custom-training-container h2 {
+  margin-top: 0;
+  margin-bottom: 1rem;
+  color: #333;
+  text-align: center;
+}
+
+.custom-training-container p {
+  margin-bottom: 2rem;
+  color: #666;
+  text-align: center;
+}
+
+.task-settings-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.task-setting-card {
+  background-color: #f9f9f9;
+  border-radius: 6px;
+  padding: 1.25rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.task-setting-card h3 {
+  margin-top: 0;
+  margin-bottom: 1rem;
+  font-size: 1.1rem;
+  color: #444;
+}
+
+.task-toggle {
+  display: flex;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.task-toggle span {
+  margin-left: 0.5rem;
+  font-weight: 500;
+}
+
+/* Toggle Switch Styles */
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 50px;
+  height: 24px;
+}
+
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #ccc;
+  transition: .4s;
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 16px;
+  width: 16px;
+  left: 4px;
+  bottom: 4px;
+  background-color: white;
+  transition: .4s;
+}
+
+input:checked + .slider {
+  background-color: #4a90e2;
+}
+
+input:focus + .slider {
+  box-shadow: 0 0 1px #4a90e2;
+}
+
+input:checked + .slider:before {
+  transform: translateX(26px);
+}
+
+.slider.round {
+  border-radius: 24px;
+}
+
+.slider.round:before {
+  border-radius: 50%;
+}
+
+.task-configuration {
+  padding-top: 1rem;
+  border-top: 1px solid #e0e0e0;
+}
+
+.setting-row {
+  display: flex;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.setting-row label {
+  flex: 1;
+  font-size: 0.9rem;
+  color: #555;
+}
+
+.setting-row input[type="range"] {
+  flex: 2;
+  margin: 0 1rem;
+}
+
+.setting-row span {
+  width: 30px;
+  text-align: right;
+  font-weight: 500;
+}
+
+.reset-task-button {
+  background-color: #f44336;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 0.5rem 1rem;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.reset-task-button:hover {
+  background-color: #d32f2f;
+}
+
+.health-warning {
+  background-color: #fff8e1;
+  border-left: 4px solid #ffc107;
+  padding: 0.75rem 1rem;
+  margin-bottom: 2rem;
+  border-radius: 4px;
+}
+
+.health-warning p {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #795548;
+  text-align: left;
+}
+
+.button-container {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+}
+
+.cancel-button {
+  background-color: #e0e0e0;
+  color: #333;
+  border: none;
+  border-radius: 4px;
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.cancel-button:hover {
+  background-color: #d5d5d5;
+}
+
+.start-button {
+  background-color: #4caf50;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.start-button:hover {
+  background-color: #43a047;
+}
+
+@media (max-width: 768px) {
+  .task-settings-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* CustomTraining info-text styles */
+.info-text {
+  margin-bottom: 0.8rem;
+  font-style: italic;
+  color: #666;
+}
+
+.info-text small {
+  font-size: 0.8rem;
+}
+
+/* NormalMode Component Styles */
+.normal-mode-container {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 2rem;
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.normal-mode-settings {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.normal-mode-settings h2 {
+  margin-top: 0;
+  margin-bottom: 1rem;
+  color: #333;
+  text-align: center;
+}
+
+.normal-mode-settings p {
+  margin-bottom: 2rem;
+  color: #666;
+  text-align: center;
+}
+
+.setting-section {
+  background-color: #f9f9f9;
+  padding: 1.5rem;
+  border-radius: 8px;
+  margin-bottom: 2rem;
+  width: 100%;
+  max-width: 500px;
+}
+
+.setting-section h3 {
+  margin-top: 0;
+  margin-bottom: 1rem;
+  font-size: 1.2rem;
+  color: #444;
+}
+
+.duration-setting {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.duration-controls {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.duration-btn {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  background-color: #4a90e2;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.duration-display {
+  font-size: 1.5rem;
+  font-weight: bold;
+  width: 40px;
+  text-align: center;
+}
+
+.info-section {
+  background-color: #fff8e1;
+  padding: 1.5rem;
+  border-radius: 8px;
+  margin-bottom: 2rem;
+  width: 100%;
+  max-width: 500px;
+  border-left: 4px solid #ffc107;
+}
+
+.info-section h3 {
+  margin-top: 0;
+  margin-bottom: 0.5rem;
+  font-size: 1.2rem;
+  color: #795548;
+}
+
+.info-section p {
+  margin-bottom: 0;
+  color: #5d4037;
+  text-align: left;
+}
+
+.game-interface {
+  width: 100%;
+}
+
+.game-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: #f5f5f5;
+  padding: 1rem;
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+}
+
+.timer, .score {
+  font-size: 1.3rem;
+  font-weight: bold;
+  padding: 0.5rem 1rem;
+  background-color: white;
+  border-radius: 4px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.controls {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.pause-button, .resume-button, .end-button {
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 4px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.pause-button {
+  background-color: #ff9800;
+  color: white;
+}
+
+.resume-button {
+  background-color: #4caf50;
+  color: white;
+}
+
+.end-button {
+  background-color: #f44336;
+  color: white;
+}
+
+.pause-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.pause-modal {
+  background-color: white;
+  padding: 2rem;
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  text-align: center;
+  width: 100%;
+  max-width: 400px;
+}
+
+.pause-modal h2 {
+  margin-top: 0;
+  margin-bottom: 1.5rem;
+}
+
+.pause-modal button {
+  margin: 0.5rem;
+  padding: 0.75rem 1.5rem;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .game-header {
+    flex-direction: column;
+    gap: 1rem;
+  }
+}
+
+/* InfiniteMode Component Styles */
+.infinite-mode-container {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 2rem;
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.infinite-mode-settings {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.infinite-mode-settings h2 {
+  margin-top: 0;
+  margin-bottom: 1rem;
+  color: #333;
+  text-align: center;
+}
+
+.infinite-mode-settings p {
+  margin-bottom: 2rem;
+  color: #666;
+  text-align: center;
+}
+
+.difficulty-setting {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.units {
+  font-weight: 500;
+  color: #666;
+}
+
+.difficulty-info {
+  display: flex;
+  justify-content: space-between;
+  background-color: #f5f5f5;
+  padding: 1rem;
+  border-radius: 8px;
+  margin-top: 1rem;
+  flex-wrap: wrap;
+}
+
+.difficulty-metric {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.difficulty-metric span {
+  background-color: white;
+  padding: 0.5rem 0.75rem;
+  border-radius: 4px;
+  font-weight: 500;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.health-display {
+  font-size: 1.3rem;
+  font-weight: bold;
+  padding: 0.5rem 1rem;
+  background-color: white;
+  border-radius: 4px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  color: #4caf50;
+}
+
+.survival-time {
+  font-size: 1.3rem;
+  font-weight: bold;
+  padding: 0.5rem 1rem;
+  background-color: white;
+  border-radius: 4px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  color: #2196f3;
+}
+
+.difficulty-display {
+  font-size: 1.3rem;
+  font-weight: bold;
+  padding: 0.5rem 1rem;
+  background-color: white;
+  border-radius: 4px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  color: #ff9800;
+}
+
+/* Leaderboard Component Styles */
+.leaderboard-container {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 2rem;
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.leaderboard-header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.leaderboard-header h2 {
+  margin-top: 0;
+  margin-bottom: 1.5rem;
+  color: #333;
+}
+
+.tab-navigation {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+}
+
+.tab-button {
+  padding: 0.75rem 1.5rem;
+  background-color: #f5f5f5;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.tab-button.active {
+  background-color: #4a90e2;
+  color: white;
+}
+
+.name-input-container {
+  text-align: center;
+  margin: 2rem 0;
+}
+
+.name-input-container h3 {
+  margin-top: 0;
+  margin-bottom: 1rem;
+  color: #333;
+}
+
+.name-input-field {
+  margin: 1.5rem 0;
+}
+
+.name-input-field input {
+  width: 100%;
+  max-width: 400px;
+  padding: 0.75rem;
+  font-size: 1.1rem;
+  border: 2px solid #ddd;
+  border-radius: 4px;
+  text-align: center;
+}
+
+.name-input-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.save-score-button {
+  padding: 0.75rem 1.5rem;
+  background-color: #4caf50;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.skip-button {
+  padding: 0.75rem 1.5rem;
+  background-color: #f5f5f5;
+  color: #666;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.scores-table-container {
+  margin: 2rem 0;
+  overflow-x: auto;
+}
+
+.scores-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.scores-table th,
+.scores-table td {
+  padding: 1rem;
+  text-align: left;
+  border-bottom: 1px solid #eee;
+}
+
+.scores-table th {
+  background-color: #f5f5f5;
+  font-weight: 600;
+  color: #333;
+}
+
+.scores-table tbody tr:hover {
+  background-color: #f9f9f9;
+}
+
+.scores-table .empty-row {
+  color: #ccc;
+}
+
+.scores-table .highlighted-score {
+  background-color: #e3f2fd;
+  font-weight: 500;
+}
+
+.rank-col {
+  width: 60px;
+}
+
+.name-col {
+  width: 30%;
+}
+
+.score-col {
+  width: 120px;
+}
+
+.date-col {
+  width: 120px;
+}
+
+.level-col {
+  width: 80px;
+}
+
+.no-scores-message {
+  text-align: center;
+  padding: 2rem;
+  color: #666;
+  font-style: italic;
+}
+
+.leaderboard-footer {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 2rem;
+}
+
+.close-button {
+  padding: 0.75rem 1.5rem;
+  background-color: #4a90e2;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.clear-scores-button {
+  padding: 0.75rem 1.5rem;
+  background-color: #f44336;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+@media (max-width: 768px) {
+  .leaderboard-container {
+    padding: 1.5rem;
+  }
+  
+  .scores-table th,
+  .scores-table td {
+    padding: 0.75rem 0.5rem;
+    font-size: 0.9rem;
+  }
+  
+  .tab-button {
+    padding: 0.5rem 1rem;
+  }
+}
+
+/* Main Menu Styles */
+.menu-container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 2rem;
+  text-align: center;
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  margin-top: 2rem;
+}
+
+.menu-container h1 {
+  font-size: 3rem;
+  margin-bottom: 0.5rem;
+  color: #4a90e2;
+}
+
+.menu-container p {
+  font-size: 1.2rem;
+  color: #666;
+  margin-bottom: 2rem;
+}
+
+.menu-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  max-width: 300px;
+  margin: 0 auto;
+}
+
+.menu-buttons button {
+  padding: 1rem;
+  background-color: #4a90e2;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 1.1rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.menu-buttons button:hover {
+  background-color: #3a80d2;
+}
+
+/* Overlay for Leaderboard */
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  padding: 1rem;
+}
+
+@media (max-width: 768px) {
+  .menu-container {
+    margin-top: 1rem;
+    padding: 1.5rem;
+  }
+  
+  .menu-container h1 {
+    font-size: 2.5rem;
+  }
+  
+  .menu-buttons {
+    max-width: 100%;
+  }
+}
+
+/* Add shortcut info styles */
+.shortcut-info {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background-color: rgba(0, 0, 0, 0.6);
+  color: white;
+  padding: 8px 12px;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  z-index: 10;
+}
+
+/* Add training interface styles */
+.training-interface {
+  width: 100%;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.training-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: #f5f5f5;
+  padding: 1rem;
+  border-bottom: 1px solid #ddd;
+}
+
+.training-header h2 {
+  margin: 0;
+  font-size: 1.5rem;
+  color: #333;
+}
+
+.matb-task-container {
+  flex: 1;
+  overflow: auto;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Game over overlay styles */
+.game-over {
+  text-align: center;
+  background-color: white;
+  padding: 2rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  margin-top: 2rem;
+}
+
+.game-over h3 {
+  margin-top: 0;
+  font-size: 1.8rem;
+  color: #333;
+}
+
+.game-over p {
+  font-size: 1.1rem;
+  margin: 1rem 0;
+}
+
+.game-over-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.restart-button, .leaderboard-button, .menu-button {
+  padding: 0.75rem 1.25rem;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.restart-button {
+  background-color: #4caf50;
+  color: white;
+}
+
+.leaderboard-button {
+  background-color: #2196f3;
+  color: white;
+}
+
+.menu-button {
+  background-color: #f5f5f5;
+  color: #333;
+}

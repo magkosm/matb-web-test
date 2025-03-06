@@ -1,16 +1,25 @@
 // src/App.js
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import MonitoringTask from './MonitoringTask';
 import CommunicationsTask from './CommunicationsTask';
 import ResourceManagementTask from './ResourceManagementTask';
 import TrackingTask from './TrackingTask';
 import SystemHealth from './components/SystemHealth';
+import WelcomeScreen from './components/WelcomeScreen';
+import CustomTraining from './components/CustomTraining';
+import NormalMode from './components/NormalMode';
+import InfiniteMode from './components/InfiniteMode';
+import Leaderboard from './components/Leaderboard';
 import './App.css';
 
 function App() {
   // -------------------------
   // 1) STATE & HANDLERS
   // -------------------------
+
+  // Game mode state
+  const [gameMode, setGameMode] = useState(null);
+  const [isGameActive, setIsGameActive] = useState(false);
 
   // Monitoring Task controls
   const [monitoringEPM, setMonitoringEPM] = useState(3);
@@ -54,6 +63,122 @@ function App() {
   // Add state for tracking difficulty
   const [trackingDifficulty, setTrackingDifficulty] = useState(5);
 
+  // Game modes
+  const [currentView, setCurrentView] = useState('main-menu');
+  const [showLeaderboard, setShowLeaderboard] = useState(false);
+  const [leaderboardData, setLeaderboardData] = useState({
+    gameMode: 'normal',
+    score: null,
+    level: null
+  });
+
+  // Game mode selection handler
+  const handleModeSelect = (mode) => {
+    setGameMode(mode);
+    
+    // Only set isGameActive to true if not in custom mode or normal mode (which need setup first)
+    if (mode !== 'custom' && mode !== 'normal') {
+      setIsGameActive(true);
+    }
+    
+    // Configure game settings based on mode
+    switch(mode) {
+      case 'training':
+        // Training mode configuration
+        setMonitoringEPM(2);
+        setCommEPM(1);
+        setResourceEPM(1);
+        setTrackingEPM(1);
+        setResourceDifficulty(3);
+        setTrackingDifficulty(3);
+        // Enable all tasks in training mode
+        setIsMonitoringTaskEnabled(true);
+        setIsCommTaskEnabled(true);
+        setIsResourceTaskEnabled(true);
+        setIsTrackingTaskEnabled(true);
+        break;
+      case 'custom':
+        // Custom training configuration - don't change anything yet
+        // User will configure settings in the CustomTraining component
+        break;
+      case 'normal':
+        // Normal mode configuration - don't change anything yet
+        // User will configure settings in the NormalMode component
+        break;
+      case 'infinite':
+        // Infinite mode configuration
+        setMonitoringEPM(5);
+        setCommEPM(4);
+        setResourceEPM(4);
+        setTrackingEPM(4);
+        setResourceDifficulty(8);
+        setTrackingDifficulty(8);
+        // Enable all tasks in infinite mode
+        setIsMonitoringTaskEnabled(true);
+        setIsCommTaskEnabled(true);
+        setIsResourceTaskEnabled(true);
+        setIsTrackingTaskEnabled(true);
+        break;
+      default:
+        break;
+    }
+  };
+
+  // Handle starting custom training session
+  const handleStartCustomTraining = () => {
+    setIsGameActive(true);
+  };
+
+  // Handle canceling custom training setup
+  const handleCancelCustomTraining = () => {
+    setGameMode(null);
+  };
+  
+  // Handle normal mode game end
+  const handleNormalModeGameEnd = (gameStats) => {
+    console.log('Game ended with stats:', gameStats);
+    // Here you can implement logic to save scores, show results, etc.
+    setIsGameActive(true); // Show the game UI with results
+    
+    // Optional: Display score in an alert
+    alert(`Game Over!\nYour score: ${Math.round(gameStats.score)}\nAverage health: ${Math.round(gameStats.averageHealth)}%`);
+    
+    // Return to main menu
+    setGameMode(null);
+    setIsGameActive(false);
+  };
+  
+  // Handle canceling normal mode setup
+  const handleCancelNormalMode = () => {
+    setGameMode(null);
+  };
+
+  // Return to main menu
+  const handleReturnToMenu = useCallback(() => {
+    setCurrentView('main-menu');
+    setShowLeaderboard(false);
+  }, []);
+  
+  // Global keyboard shortcut handler for Ctrl+Q
+  const handleKeyDown = useCallback((event) => {
+    // Check for Ctrl+Q combination
+    if (event.ctrlKey && event.key === 'q') {
+      console.log('Ctrl+Q pressed: Returning to main menu');
+      handleReturnToMenu();
+    }
+  }, [handleReturnToMenu]);
+  
+  // Setup and cleanup keyboard event listeners
+  useEffect(() => {
+    // Add event listener when component mounts
+    window.addEventListener('keydown', handleKeyDown);
+    
+    // Clean up event listener when component unmounts
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [handleKeyDown]);
+
   // Custom handler to append Tracking logs
   const handleTrackingLogUpdate = useCallback((newEntry) => {
     setTrackingEventLog(prevLog => [...prevLog, newEntry]);
@@ -68,15 +193,12 @@ function App() {
   // In the Communications Task render section:
   const [commMetrics, setCommMetrics] = useState({ healthImpact: 0, systemLoad: 0 });
 
-  // Add refs at the top of App component
+  // References for task components
+  const monitoringTaskRef = useRef(null);
   const commTaskRef = useRef(null);
   const resourceTaskRef = useRef(null);
-
-  // Add ref for monitoring task
-  const monitoringTaskRef = useRef(null);
-
-  // Add ref for tracking task
   const trackingTaskRef = useRef(null);
+  const systemHealthRef = useRef(null);
 
   // -------------------------
   // 2) LAYOUT (MAIN + SIDEBAR)
@@ -99,457 +221,90 @@ function App() {
   // Add with other state declarations (around line 20-30)
   const [trackingMetrics, setTrackingMetrics] = useState(TrackingTask.getDefaultMetrics());
 
+  // Handle switching to leaderboard with score data
+  const handleShowLeaderboard = (gameMode, score, level) => {
+    // First hide the other views by setting the current view to null
+    // This prevents the overlay issue
+    setCurrentView('leaderboard');
+    
+    // Then set the leaderboard data and show it
+    setLeaderboardData({
+      gameMode,
+      score,
+      level
+    });
+    setShowLeaderboard(true);
+  };
+  
+  // Handle closing the leaderboard
+  const handleCloseLeaderboard = () => {
+    setShowLeaderboard(false);
+    setCurrentView('main-menu');
+  };
+
+  // -------------------------
+  // 3) RENDER
+  // -------------------------
   return (
-    <div className="app-container" style={{ height: '100vh', overflow: 'hidden' }}>
-      {/* MAIN CONTENT */}
-      <div className={`main-content ${isSidebarOpen ? 'sidebar-open' : ''}`}>
-        <div style={{ 
-          display: 'grid',
-          gridTemplateColumns: 'repeat(6, 1fr)',
-          gridTemplateRows: '1fr 1fr',
-          gap: '1rem',
-          height: '100vh',
-          padding: '5%',
-          boxSizing: 'border-box'
-        }}>
-          {/* Top Left - System Monitoring */}
-          <div style={{ 
-            gridColumn: '1 / span 2',
-            gridRow: '1',
-            border: '1px solid #ccc',
-            overflow: 'hidden',
-            display: 'flex',
-            flexDirection: 'column'
-          }}>
-            {isMonitoringTaskEnabled ? (
-              <MonitoringTask
-                ref={monitoringTaskRef}
-                eventsPerMinute={monitoringEPM}
-                showLog={showMonitoringLog}
-                onLogUpdate={setMonitoringEventLog}
-                onMetricsUpdate={setMonitoringMetrics}
-                isEnabled={isMonitoringTaskEnabled}
-              />
-            ) : (
-              <div style={{
-                height: '100%',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                background: '#f5f5f5',
-                color: '#666'
-              }}>
-                System Monitoring Task Disabled
-              </div>
-            )}
-          </div>
-
-          {/* Top Middle - Tracking Task */}
-          <div style={{ 
-            gridColumn: '3 / span 3',
-            gridRow: '1',
-            border: '1px solid #ccc',
-            overflow: 'hidden',
-            display: 'flex',
-            flexDirection: 'column'
-          }}>
-            <TrackingTask
-              ref={trackingTaskRef}
-              eventsPerMinute={trackingEPM}
-              difficulty={trackingDifficulty}
-              showLog={showTrackingLog}
-              onLogUpdate={handleTrackingLogUpdate}
-              onStatusUpdate={({ isManual, isInBox }) => {
-                setIsTrackingManual(isManual);
-                setIsInBox(isInBox);
-              }}
-              onMetricsUpdate={setTrackingMetrics}
-              isEnabled={isTrackingTaskEnabled}
-            />
-          </div>
-
-          {/* Top Right - System Health */}
-          <div style={{ 
-            gridColumn: '6',
-            gridRow: '1',
-            border: '1px solid #ccc',
-            overflow: 'hidden',
-            display: 'flex',
-            flexDirection: 'column'
-          }}>
-            <SystemHealth
-              monitoringLogs={monitoringEventLog}
-              resourceLogs={resourceEventLog}
-              commLogs={commEventLog}
-              trackingLogs={trackingEventLog}
-              isTrackingManual={isTrackingManual}
-              isInBox={isInBox}
-              commMetrics={commMetrics}
-              resourceMetrics={resourceMetrics}
-              monitoringMetrics={monitoringMetrics}
-              trackingMetrics={trackingMetrics}
-            />
-          </div>
-
-          {/* Bottom Left - Communications Task */}
-          <div style={{ 
-            gridColumn: '1 / span 2',
-            gridRow: '2',
-            border: '1px solid #ccc',
-            overflow: 'hidden',
-            display: 'flex',
-            flexDirection: 'column'
-          }}>
-            {isCommTaskEnabled ? (
-              <CommunicationsTask
-                ref={commTaskRef}
-                eventsPerMinute={commEPM}
-                showLog={showCommLog}
-                onLogUpdate={setCommEventLog}
-                onMetricsUpdate={setCommMetrics}
-              />
-            ) : (
-              <div style={{
-                height: '100%',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                background: '#f5f5f5',
-                color: '#666'
-              }}>
-                Communications Task Disabled
-              </div>
-            )}
-          </div>
-
-          {/* Resource Management */}
-          <div style={{ 
-            gridColumn: '3 / span 4',
-            gridRow: '2',
-            border: '1px solid #ccc',
-            overflow: 'hidden'
-          }}>
-            <ResourceManagementTask
-              ref={resourceTaskRef}
-              eventsPerMinute={resourceEPM}
-              difficulty={resourceDifficulty}
-              showLog={showResourceLog}
-              onLogUpdate={setResourceEventLog}
-              onMetricsUpdate={handleResourceMetricsUpdate}
-              isEnabled={isResourceTaskEnabled}
-            />
+    <div className="App">
+      {/* Main Menu */}
+      {currentView === 'main-menu' && (
+        <div className="menu-container">
+          <h1>MATB-II</h1>
+          <p>Multi-Attribute Task Battery</p>
+          
+          <div className="menu-buttons">
+            <button onClick={() => setCurrentView('normal-mode')}>
+              Normal Mode
+            </button>
+            <button onClick={() => setCurrentView('infinite-mode')}>
+              Infinite Mode
+            </button>
+            <button onClick={() => setCurrentView('custom-training')}>
+              Custom Training
+            </button>
+            <button onClick={() => setShowLeaderboard(true)}>
+              Leaderboard
+            </button>
           </div>
         </div>
-      </div>
-
-      {/* SIDEBAR */}
-      <div className={`sidebar ${isSidebarOpen ? 'open' : ''}`}>
-        <div className="sidebar-content">
-          {/* Settings Section */}
-          <div className="settings-section">
-            <h2 style={{ marginTop: 0 }}>Settings</h2>
-            
-            {/* Monitoring Settings */}
-            <div style={{ marginBottom: '1.5rem' }}>
-              <h3 style={{ fontSize: '1rem', marginBottom: '0.5rem' }}>Monitoring Task</h3>
-              <div style={{ marginBottom: '0.5rem' }}>
-                <label>
-                  <input
-                    type="checkbox"
-                    checked={isMonitoringTaskEnabled}
-                    onChange={() => setIsMonitoringTaskEnabled(!isMonitoringTaskEnabled)}
-                  />
-                  &nbsp;Task Enabled
-                </label>
-              </div>
-              {isMonitoringTaskEnabled && (
-                <>
-                  <div style={{ marginBottom: '0.5rem' }}>
-                    <label>
-                      Events/Minute:&nbsp;
-                      <input
-                        type="number"
-                        min={1}
-                        max={20}
-                        value={monitoringEPM}
-                        onChange={(e) => setMonitoringEPM(+e.target.value)}
-                        style={{ width: '60px' }}
-                      />
-                    </label>
-                  </div>
-                  <div style={{ marginBottom: '0.5rem' }}>
-                    <label>
-                      <input
-                        type="checkbox"
-                        checked={showMonitoringLog}
-                        onChange={() => setShowMonitoringLog(!showMonitoringLog)}
-                      />
-                      &nbsp;Show Log
-                    </label>
-                  </div>
-                  <div style={{ marginBottom: '1rem' }}>
-                    <button
-                      onClick={() => monitoringTaskRef.current?.resetTask()}
-                      style={{
-                        padding: '0.25rem 0.5rem',
-                        background: '#dc3545',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: '4px',
-                        cursor: 'pointer'
-                      }}
-                    >
-                      Reset Task
-                    </button>
-                  </div>
-                </>
-              )}
-            </div>
-
-            {/* Communications Settings */}
-            <div>
-              <h3 style={{ fontSize: '1rem', marginBottom: '0.5rem' }}>Communications Task</h3>
-              <div style={{ marginBottom: '0.5rem' }}>
-                <label>
-                  <input
-                    type="checkbox"
-                    checked={isCommTaskEnabled}
-                    onChange={() => setIsCommTaskEnabled(!isCommTaskEnabled)}
-                  />
-                  &nbsp;Task Enabled
-                </label>
-              </div>
-              {isCommTaskEnabled && (
-                <>
-                  <div style={{ marginBottom: '0.5rem' }}>
-                    <label>
-                      Events/Minute:&nbsp;
-                      <input
-                        type="number"
-                        min={1}
-                        max={20}
-                        value={commEPM}
-                        onChange={(e) => setCommEPM(+e.target.value)}
-                        style={{ width: '60px' }}
-                      />
-                    </label>
-                  </div>
-                  <div style={{ marginBottom: '0.5rem' }}>
-                    <label>
-                      <input
-                        type="checkbox"
-                        checked={showCommLog}
-                        onChange={() => setShowCommLog(!showCommLog)}
-                      />
-                      &nbsp;Show Log
-                    </label>
-                  </div>
-                  <div style={{ marginBottom: '1rem' }}>
-                    <button
-                      onClick={() => commTaskRef.current?.resetTask()}
-                      style={{
-                        padding: '0.25rem 0.5rem',
-                        background: '#dc3545',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: '4px',
-                        cursor: 'pointer'
-                      }}
-                    >
-                      Reset Task
-                    </button>
-                  </div>
-                </>
-              )}
-            </div>
-
-            {/* Tracking Settings */}
-            <div style={{ marginBottom: '1.5rem' }}>
-              <h3 style={{ fontSize: '1rem', marginBottom: '0.5rem' }}>Tracking Task</h3>
-              <div style={{ marginBottom: '0.5rem' }}>
-                <label>
-                  <input
-                    type="checkbox"
-                    checked={isTrackingTaskEnabled}
-                    onChange={() => setIsTrackingTaskEnabled(!isTrackingTaskEnabled)}
-                  />
-                  &nbsp;Task Enabled
-                </label>
-              </div>
-              {isTrackingTaskEnabled && (
-                <>
-                  <div style={{ marginBottom: '0.5rem' }}>
-                    <label>
-                      Events/Minute:&nbsp;
-                      <input
-                        type="number"
-                        min={1}
-                        max={20}
-                        value={trackingEPM}
-                        onChange={(e) => setTrackingEPM(+e.target.value)}
-                        style={{ width: '60px' }}
-                      />
-                    </label>
-                  </div>
-                  <div style={{ marginBottom: '0.5rem' }}>
-                    <label>
-                      Difficulty:&nbsp;
-                      <input
-                        type="range"
-                        min="0"
-                        max="10"
-                        value={trackingDifficulty}
-                        onChange={(e) => setTrackingDifficulty(Number(e.target.value))}
-                        style={{ width: '100px' }}
-                      />
-                      &nbsp;{trackingDifficulty}
-                    </label>
-                  </div>
-                  <div style={{ marginBottom: '0.5rem' }}>
-                    <label>
-                      <input
-                        type="checkbox"
-                        checked={showTrackingLog}
-                        onChange={() => setShowTrackingLog(!showTrackingLog)}
-                      />
-                      &nbsp;Show Log
-                    </label>
-                  </div>
-                  <div style={{ marginBottom: '1rem' }}>
-                    <button
-                      onClick={() => {
-                        console.log('Resetting tracking task...');
-                        if (trackingTaskRef.current) {
-                          trackingTaskRef.current.resetTask();
-                        } else {
-                          console.warn('Tracking task ref not available');
-                        }
-                      }}
-                      style={{
-                        padding: '0.25rem 0.5rem',
-                        background: '#dc3545',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: '4px',
-                        cursor: 'pointer'
-                      }}
-                    >
-                      Reset Task
-                    </button>
-                  </div>
-                </>
-              )}
-            </div>
-
-            {/* Resource Management Settings */}
-            <div>
-              <h3 style={{ fontSize: '1rem', marginBottom: '0.5rem' }}>Resource Management</h3>
-              <div style={{ marginBottom: '0.5rem' }}>
-                <label>
-                  <input
-                    type="checkbox"
-                    checked={isResourceTaskEnabled}
-                    onChange={() => setIsResourceTaskEnabled(!isResourceTaskEnabled)}
-                  />
-                  &nbsp;Task Enabled
-                </label>
-              </div>
-              {isResourceTaskEnabled && (
-                <>
-                  <div style={{ marginBottom: '0.5rem' }}>
-                    <label>
-                      Events/Minute:&nbsp;
-                      <input
-                        type="number"
-                        min={1}
-                        max={20}
-                        value={resourceEPM}
-                        onChange={(e) => setResourceEPM(+e.target.value)}
-                        style={{ width: '60px' }}
-                      />
-                    </label>
-                  </div>
-                  <div style={{ marginBottom: '0.5rem' }}>
-                    <label>
-                      Difficulty:&nbsp;
-                      <input
-                        type="range"
-                        min={0}
-                        max={10}
-                        value={resourceDifficulty}
-                        onChange={(e) => setResourceDifficulty(+e.target.value)}
-                        style={{ width: '100px' }}
-                      />
-                      &nbsp;{resourceDifficulty}
-                    </label>
-                  </div>
-                  <div style={{ marginBottom: '0.5rem' }}>
-                    <label>
-                      <input
-                        type="checkbox"
-                        checked={showResourceLog}
-                        onChange={() => setShowResourceLog(!showResourceLog)}
-                      />
-                      &nbsp;Show Log
-                    </label>
-                  </div>
-                  <div style={{ marginBottom: '1rem' }}>
-                    <button
-                      onClick={() => resourceTaskRef.current?.resetTask()}
-                      style={{
-                        padding: '0.25rem 0.5rem',
-                        background: '#dc3545',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: '4px',
-                        cursor: 'pointer'
-                      }}
-                    >
-                      Reset Task
-                    </button>
-                  </div>
-                </>
-              )}
-            </div>
-          </div>
-
-          {/* Logs Section */}
-          <div className="logs-section">
-            {showMonitoringLog && (
-              <div>
-                <h3>Monitoring Log</h3>
-                <MonitoringTask.Log eventLog={monitoringEventLog} />
-              </div>
-            )}
-            {showCommLog && (
-              <div>
-                <h3>Communications Log</h3>
-                <CommunicationsTask.Log commLog={commEventLog} />
-              </div>
-            )}
-            {showTrackingLog && (
-              <div className="log-section">
-                <h3>Tracking Log</h3>
-                <TrackingTask.Log trackingLog={trackingEventLog} />
-              </div>
-            )}
-            {showResourceLog && (
-              <div className="log-section">
-                <h3>Resource Management Log</h3>
-                <ResourceManagementTask.Log resourceLog={resourceEventLog} />
-              </div>
-            )}
-          </div>
+      )}
+      
+      {/* Normal Mode View */}
+      {currentView === 'normal-mode' && (
+        <NormalMode 
+          onBackToMenu={handleReturnToMenu}
+          onLeaderboard={handleShowLeaderboard}
+        />
+      )}
+      
+      {/* Infinite Mode View */}
+      {currentView === 'infinite-mode' && (
+        <InfiniteMode 
+          onBackToMenu={handleReturnToMenu}
+          onLeaderboard={(gameMode, score, level) => handleShowLeaderboard(gameMode, score, level)}
+        />
+      )}
+      
+      {/* Custom Training View */}
+      {currentView === 'custom-training' && (
+        <CustomTraining 
+          onBackToMenu={handleReturnToMenu}
+        />
+      )}
+      
+      {/* Leaderboard View */}
+      {currentView === 'leaderboard' && showLeaderboard && (
+        <div className="overlay">
+          <div className="shortcut-info">Press Ctrl+Q to return to main menu</div>
+          <Leaderboard 
+            onClose={handleCloseLeaderboard}
+            gameMode={leaderboardData.gameMode}
+            score={leaderboardData.score}
+            level={leaderboardData.level}
+          />
         </div>
-      </div>
-
-      {/* Toggle Button */}
-      <button
-        className="toggle-button"
-        onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-      >
-        {isSidebarOpen ? 'Close Settings' : 'Open Settings'}
-      </button>
+      )}
     </div>
   );
 }
