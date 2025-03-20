@@ -37,6 +37,40 @@ class EventService {
         defaultFailureDuration: 45000 // 45 seconds of pump failure
       }
     };
+
+    // Scheduler state
+    this.schedulerState = {
+      initialized: false,
+      isActive: false,
+      nextEvents: {
+        comm: null,
+        monitoring: null,
+        tracking: null,
+        resource: null
+      },
+      timeouts: {
+        comm: null,
+        monitoring: null,
+        tracking: null,
+        resource: null
+      },
+      lastTriggered: {
+        comm: 0,
+        monitoring: 0,
+        tracking: 0,
+        resource: 0
+      },
+      settings: {
+        comm: { isEnabled: false, eventsPerMinute: 0, difficulty: 5 },
+        monitoring: { isEnabled: false, eventsPerMinute: 0, difficulty: 5 },
+        tracking: { isEnabled: false, eventsPerMinute: 0, difficulty: 5 },
+        resource: { isEnabled: false, eventsPerMinute: 0, difficulty: 5 }
+      },
+      listeners: [],
+      updateDebounceTimeout: null,
+      lastSettingsUpdate: 0,
+      stateNotificationInterval: null
+    };
   }
   
   // Register task references
@@ -125,8 +159,11 @@ class EventService {
     }
     
     try {
+      // Get difficulty level if provided (used for logging only for manual events)
+      const difficulty = config.difficulty || this.schedulerState.settings.comm?.difficulty || 5;
+      
       // Determine the response window in milliseconds
-      const responseWindow = config.responseWindow || 10000; // Default to 10 seconds
+      const responseWindow = config.responseWindow * 1000 || 10000; // Default to 10 seconds
       
       // Build the event configuration
       const eventConfig = {
@@ -135,7 +172,7 @@ class EventService {
         useExternalAudio: config.useExternalAudio === true, // Use external audio if explicitly requested
       };
       
-      console.log('EventService: Triggering communications call with config:', eventConfig);
+      console.log(`EventService: Triggering communications call with config: ${JSON.stringify(eventConfig)}, difficulty: ${difficulty}`);
       
       // Log available methods
       if (this.commTaskRef.current) {
@@ -165,13 +202,31 @@ class EventService {
       return false;
     }
     
-    const eventConfig = {
-      triggerCount: config.triggerCount || this.eventConfigs.monitoring.defaultTriggerCount,
-      duration: config.duration || this.eventConfigs.monitoring.defaultDuration
-    };
+    // Get difficulty level if not provided in config
+    const difficulty = config.difficulty || this.schedulerState.settings.monitoring?.difficulty || 5;
     
-    // Validate trigger count (1-6)
-    eventConfig.triggerCount = Math.min(6, Math.max(1, eventConfig.triggerCount));
+    // If triggerCount not specified, calculate based on difficulty (1-6)
+    let triggerCount = config.triggerCount;
+    if (triggerCount === undefined) {
+      const minIndicators = 1;
+      const maxIndicators = 6;
+      triggerCount = Math.min(maxIndicators, Math.max(minIndicators, 
+        Math.round(minIndicators + ((maxIndicators - minIndicators) * (difficulty - 1) / 9))
+      ));
+    }
+    
+    // If duration not specified, calculate based on difficulty (8s-5s)
+    let duration = config.duration;
+    if (duration === undefined) {
+      const maxDuration = 8000; // 8 seconds in ms
+      const minDuration = 5000; // 5 seconds in ms
+      duration = Math.round(maxDuration - ((maxDuration - minDuration) * (difficulty - 1) / 9));
+    }
+    
+    const eventConfig = {
+      triggerCount: Math.min(6, Math.max(1, triggerCount)),
+      duration: duration || this.eventConfigs.monitoring.defaultDuration
+    };
     
     // Set monitoring event as active
     this.activeEvents.monitoring = true;
@@ -194,12 +249,29 @@ class EventService {
       return false;
     }
     
+    // Get difficulty level if not provided in config
+    const difficulty = config.difficulty || this.schedulerState.settings.tracking?.difficulty || 5;
+    
+    // If duration not specified, calculate based on difficulty (6s-12s)
+    let duration = config.duration;
+    if (duration === undefined) {
+      const minDuration = 6000; // 6 seconds in ms
+      const maxDuration = 12000; // 12 seconds in ms
+      duration = Math.round(minDuration + ((maxDuration - minDuration) * (difficulty - 1) / 9));
+    }
+    
+    // Calculate drift force based on difficulty
+    // Scale linearly from 130% at difficulty 1 to 50% at difficulty 10
+    // This makes higher difficulty even easier to handle in terms of drift
+    const driftForceMultiplier = 1.3 - ((1.3 - 0.5) * (difficulty - 1) / 9);
+    
     const eventConfig = {
-      duration: config.duration || this.eventConfigs.tracking.defaultDuration,
-      difficulty: config.difficulty || this.eventConfigs.tracking.defaultDifficulty
+      duration: duration || this.eventConfigs.tracking.defaultDuration,
+      difficulty: difficulty,
+      driftForceMultiplier: driftForceMultiplier
     };
     
-    console.log(`EventService: Processing tracking event request - duration: ${eventConfig.duration}ms (${eventConfig.duration/1000}s), difficulty: ${eventConfig.difficulty}`);
+    console.log(`EventService: Processing tracking event request - duration: ${eventConfig.duration}ms (${eventConfig.duration/1000}s), difficulty: ${eventConfig.difficulty}, drift force: ${(driftForceMultiplier * 100).toFixed(0)}%`);
     
     // Set tracking event as active
     this.activeEvents.tracking = true;
@@ -217,7 +289,7 @@ class EventService {
       return false;
     }
     
-    console.log(`EventService: Manual tracking mode activated successfully for ${eventConfig.duration/1000}s`);
+    console.log(`EventService: Manual tracking mode activated successfully for ${eventConfig.duration/1000}s with drift force at ${(driftForceMultiplier * 100).toFixed(0)}%`);
     
     // Set up callback to mark event as complete
     setTimeout(() => {
@@ -235,11 +307,25 @@ class EventService {
       return false;
     }
     
+    // Get difficulty level if not provided in config
+    const difficulty = config.difficulty || this.schedulerState.settings.resource?.difficulty || 5;
+    
     // Default to pump failure if not specified
     const eventType = config.eventType || 'pumpFailure';
-    const duration = config.duration || this.eventConfigs.resource.defaultFailureDuration;
     
-    console.log('EventService: triggerResourceEvent called with config:', config);
+    // If duration not specified, calculate based on difficulty (4s-11s)
+    let duration = config.duration;
+    if (duration === undefined) {
+      const minDuration = 4000; // 4 seconds in ms
+      const maxDuration = 11000; // 11 seconds in ms
+      duration = Math.round(minDuration + ((maxDuration - minDuration) * (difficulty - 1) / 9));
+    }
+    
+    console.log('EventService: triggerResourceEvent called with config:', {
+      ...config,
+      difficulty,
+      calculatedDuration: duration
+    });
     
     // Set resource event as active
     this.activeEvents.resource = true;
@@ -249,11 +335,17 @@ class EventService {
     
     try {
       if (eventType === 'pumpFailure') {
-        // Get count of pumps to fail - ensure it's properly passed
-        // Standardize on pumpFailureCount for consistency
-        const pumpFailureCount = config.pumpFailureCount || config.pumpCount || this.eventConfigs.resource.defaultPumpFailureCount;
+        // If pumpFailureCount not specified, calculate based on difficulty (1-4)
+        let pumpFailureCount = config.pumpFailureCount || config.pumpCount;
+        if (pumpFailureCount === undefined) {
+          const minPumps = 1;
+          const maxPumps = 4;
+          pumpFailureCount = Math.min(maxPumps, Math.max(minPumps,
+            Math.round(minPumps + ((maxPumps - minPumps) * (difficulty - 1) / 9))
+          ));
+        }
         
-        console.log(`EventService: Triggering ${pumpFailureCount} pump failures with duration ${duration}ms`);
+        console.log(`EventService: Triggering ${pumpFailureCount} pump failures with duration ${duration}ms (difficulty ${difficulty})`);
         
         // Use the triggerMultiplePumpFailures method with normalized parameters
         success = this.resourceTaskRef.current.triggerMultiplePumpFailures({
@@ -264,10 +356,19 @@ class EventService {
         console.log(`EventService: Triggered ${pumpFailureCount} pump failure(s), success: ${success}`);
       } 
       else if (eventType === 'fuelLossChange') {
-        // Handle fuel loss change events
-        const fuelLossMultiplier = config.fuelLossMultiplier || this.eventConfigs.resource.defaultFuelLossMultiplier;
+        // If fuelLossMultiplier not specified, calculate based on difficulty (595-1395)
+        let fuelLossMultiplier = config.fuelLossMultiplier;
+        if (fuelLossMultiplier === undefined) {
+          const minLossRate = 595;
+          const maxLossRate = 1395;
+          const lossRate = minLossRate + ((maxLossRate - minLossRate) * (difficulty - 1) / 9);
+          
+          // Convert to multiplier format (assuming base rate is 500)
+          const baseFuelRate = 500;
+          fuelLossMultiplier = parseFloat((lossRate / baseFuelRate).toFixed(2));
+        }
         
-        console.log(`EventService: Triggering fuel loss change (${fuelLossMultiplier}x) with duration ${duration}ms`);
+        console.log(`EventService: Triggering fuel loss change (${fuelLossMultiplier}x) with duration ${duration}ms (difficulty ${difficulty})`);
         
         // Check if the ResourceManagementTask has a method for handling fuel loss changes
         if (typeof this.resourceTaskRef.current.setFuelLossRate === 'function') {
@@ -488,6 +589,526 @@ class EventService {
     // TODO: Implement resume for other tasks when they support it
     
     return allResumed;
+  }
+
+  // SCHEDULER METHODS
+  // =================
+
+  // Initialize the scheduler with settings and start state notifications
+  initializeScheduler(initialSettings) {
+    if (this.schedulerState.initialized) {
+      console.log('EventService: Scheduler already initialized');
+      return;
+    }
+
+    console.log('EventService: Initializing scheduler with settings:', initialSettings);
+    
+    // Update settings without triggering rescheduling yet
+    if (initialSettings) {
+      this.schedulerState.settings = {
+        ...this.schedulerState.settings,
+        ...initialSettings
+      };
+    }
+    
+    // Set up a regular interval to notify about state changes
+    // This replaces the need for many individual subscriptions
+    this.schedulerState.stateNotificationInterval = setInterval(() => {
+      this.notifySchedulerListeners();
+    }, 1000); // Update UI every second
+    
+    this.schedulerState.initialized = true;
+  }
+  
+  // Clean up the scheduler when it's no longer needed
+  shutdownScheduler() {
+    console.log('EventService: Shutting down scheduler');
+    
+    // Stop the scheduler if it's running
+    if (this.schedulerState.isActive) {
+      this.stopScheduler();
+    }
+    
+    // Clear the state notification interval
+    if (this.schedulerState.stateNotificationInterval) {
+      clearInterval(this.schedulerState.stateNotificationInterval);
+      this.schedulerState.stateNotificationInterval = null;
+    }
+    
+    // Clear all listeners
+    this.schedulerState.listeners = [];
+    
+    this.schedulerState.initialized = false;
+  }
+  
+  // Subscribe to scheduler changes
+  subscribeToScheduler(callback) {
+    if (typeof callback === 'function') {
+      // Check if this callback is already registered to avoid duplicates
+      if (!this.schedulerState.listeners.includes(callback)) {
+        console.log('EventService: Adding scheduler listener');
+        this.schedulerState.listeners.push(callback);
+        
+        // Initialize scheduler if not already done
+        if (!this.schedulerState.initialized) {
+          this.initializeScheduler();
+        }
+        
+        // Immediately send current state to new subscriber
+        try {
+          callback({
+            isActive: this.schedulerState.isActive,
+            nextEvents: { ...this.schedulerState.nextEvents }
+          });
+        } catch (error) {
+          console.error('Error in initial callback to new scheduler listener:', error);
+        }
+        return true;
+      } else {
+        console.warn('EventService: Attempted to add duplicate scheduler listener');
+        return false;
+      }
+    }
+    return false;
+  }
+
+  // Unsubscribe from scheduler changes
+  unsubscribeFromScheduler(callback) {
+    const index = this.schedulerState.listeners.indexOf(callback);
+    if (index !== -1) {
+      console.log('EventService: Removing scheduler listener');
+      this.schedulerState.listeners.splice(index, 1);
+      return true;
+    }
+    return false;
+  }
+
+  // Notify all listeners of scheduler state changes
+  notifySchedulerListeners() {
+    const state = {
+      isActive: this.schedulerState.isActive,
+      nextEvents: { ...this.schedulerState.nextEvents }
+    };
+    
+    this.schedulerState.listeners.forEach(callback => {
+      try {
+        callback(state);
+      } catch (error) {
+        console.error('Error in scheduler listener:', error);
+      }
+    });
+  }
+
+  // Update scheduler settings with debounce
+  updateSchedulerSettings(settings) {
+    // Ensure scheduler is initialized
+    if (!this.schedulerState.initialized) {
+      this.initializeScheduler(settings);
+      return;
+    }
+    
+    // Cancel any pending update
+    if (this.schedulerState.updateDebounceTimeout) {
+      clearTimeout(this.schedulerState.updateDebounceTimeout);
+      this.schedulerState.updateDebounceTimeout = null;
+    }
+    
+    // Check if this is a duplicate/frequent update
+    const now = Date.now();
+    if (now - this.schedulerState.lastSettingsUpdate < 1000) { // Increased to 1000ms
+      console.log('EventService: Debouncing rapid settings update');
+      
+      // Set a debounce timeout to apply the update
+      this.schedulerState.updateDebounceTimeout = setTimeout(() => {
+        this.applySchedulerSettings(settings);
+        this.schedulerState.updateDebounceTimeout = null;
+      }, 1000);
+      return;
+    }
+    
+    // Apply settings immediately if not debounced
+    this.applySchedulerSettings(settings);
+    this.schedulerState.lastSettingsUpdate = now;
+  }
+  
+  // Apply scheduler settings (internal method)
+  applySchedulerSettings(settings) {
+    console.log('EventService: Applying scheduler settings');
+    
+    // Store previous settings for comparison
+    const prevSettings = JSON.stringify(this.schedulerState.settings);
+    
+    // Update settings
+    this.schedulerState.settings = {
+      ...this.schedulerState.settings,
+      ...settings
+    };
+    
+    // Only reschedule if settings actually changed and scheduler is active
+    if (prevSettings !== JSON.stringify(this.schedulerState.settings) && this.schedulerState.isActive) {
+      console.log('EventService: Settings changed, rescheduling events');
+      this.rescheduleEvents();
+    } else {
+      // Still notify listeners of settings change
+      this.notifySchedulerListeners();
+    }
+  }
+
+  // Start the scheduler
+  startScheduler() {
+    console.log('EventService: Starting event scheduler');
+    
+    // Ensure scheduler is initialized
+    if (!this.schedulerState.initialized) {
+      this.initializeScheduler();
+    }
+    
+    // If already active, don't start again
+    if (this.schedulerState.isActive) {
+      console.warn('EventService: Scheduler is already active, ignoring start request');
+      return false;
+    }
+    
+    this.schedulerState.isActive = true;
+    
+    // Clear any old timeouts that might be lingering
+    this.clearAllTimeouts();
+    
+    // Schedule initial events for all enabled tasks
+    this.rescheduleEvents();
+    
+    this.notifySchedulerListeners();
+    return true;
+  }
+
+  // Stop the scheduler
+  stopScheduler() {
+    console.log('EventService: Stopping event scheduler');
+    this.schedulerState.isActive = false;
+    this.clearAllTimeouts();
+    
+    // Reset next events
+    this.schedulerState.nextEvents = {
+      comm: null,
+      monitoring: null,
+      tracking: null,
+      resource: null
+    };
+    
+    this.notifySchedulerListeners();
+    return true;
+  }
+
+  // Clear all timeouts
+  clearAllTimeouts() {
+    Object.values(this.schedulerState.timeouts).forEach(timeout => {
+      if (timeout) {
+        clearTimeout(timeout);
+      }
+    });
+    
+    // Reset the timeouts
+    this.schedulerState.timeouts = {
+      comm: null,
+      monitoring: null,
+      tracking: null,
+      resource: null
+    };
+  }
+
+  // Reschedule events (call when settings change)
+  rescheduleEvents() {
+    // First clear all existing timeouts to prevent overlapping events
+    this.clearAllTimeouts();
+    
+    const { settings } = this.schedulerState;
+    
+    if (settings.comm?.isEnabled) {
+      this.scheduleNextEvent('comm');
+    } else {
+      this.schedulerState.nextEvents.comm = null;
+    }
+    
+    if (settings.monitoring?.isEnabled) {
+      this.scheduleNextEvent('monitoring');
+    } else {
+      this.schedulerState.nextEvents.monitoring = null;
+    }
+    
+    if (settings.tracking?.isEnabled) {
+      this.scheduleNextEvent('tracking');
+    } else {
+      this.schedulerState.nextEvents.tracking = null;
+    }
+    
+    if (settings.resource?.isEnabled) {
+      this.scheduleNextEvent('resource');
+    } else {
+      this.schedulerState.nextEvents.resource = null;
+    }
+    
+    this.notifySchedulerListeners();
+  }
+
+  // Schedule the next event for a specific task type
+  scheduleNextEvent(taskType) {
+    // Only auto-schedule when scheduler is active
+    if (!this.schedulerState.isActive) return;
+    
+    // Get the relevant settings
+    const settings = this.schedulerState.settings[taskType];
+    
+    // Check if the task is enabled and has a valid EPM
+    if (!settings || !settings.isEnabled || settings.eventsPerMinute <= 0) {
+      this.schedulerState.nextEvents[taskType] = null;
+      return;
+    }
+    
+    // If a timeout is already set for this task, do not reset it
+    if (this.schedulerState.timeouts[taskType]) {
+      return;
+    }
+    
+    // Apply task-specific EPM limits
+    let effectiveEPM = settings.eventsPerMinute;
+    if (taskType === 'comm') {
+      // Limit communications to 0-6 EPM
+      effectiveEPM = Math.min(6, Math.max(0, effectiveEPM));
+    }
+    
+    // Calculate milliseconds between events based on EPM
+    const msPerEvent = (60 * 1000) / effectiveEPM;
+    
+    // Reduce randomness factor for more consistent timing
+    const randomFactor = taskType === 'comm' || taskType === 'resource' ? 0.15 : 0.3;
+    
+    // Calculate random time between (1-randomFactor) and (1+randomFactor) of the base interval
+    const randomizedMs = msPerEvent * (1 - randomFactor + Math.random() * 2 * randomFactor);
+    
+    // Calculate next event time
+    const now = Date.now();
+    const nextEventTime = now + randomizedMs;
+    
+    // Update next event time in state
+    this.schedulerState.nextEvents[taskType] = nextEventTime;
+    
+    // Schedule the event
+    console.log(`Scheduled ${taskType} event for ${new Date(nextEventTime).toLocaleTimeString()} (in ${Math.round(randomizedMs / 1000)}s), EPM: ${effectiveEPM.toFixed(1)}`);
+    
+    this.schedulerState.timeouts[taskType] = setTimeout(() => {
+      // Clear the timeout reference first
+      this.schedulerState.timeouts[taskType] = null;
+      
+      // Double-check that scheduler is still active when timeout fires
+      if (this.schedulerState.isActive) {
+        // Trigger the event
+        this.triggerScheduledEvent(taskType);
+      }
+    }, randomizedMs);
+  }
+
+  // Trigger an event for a specific task type based on the scheduler
+  triggerScheduledEvent(taskType) {
+    // Record the time this event was triggered
+    this.schedulerState.lastTriggered[taskType] = Date.now();
+    
+    let result = false;
+    
+    // Trigger the appropriate event based on task type
+    switch(taskType) {
+      case 'comm': {
+        // Get difficulty level (1-10)
+        const difficulty = this.schedulerState.settings.comm.difficulty || 5;
+        
+        // Calculate probability of own calls based on difficulty (difficulty 1 = 10%, difficulty 10 = 90%)
+        const ownCallProbability = difficulty / 10;
+        
+        // Determine call type based on probability
+        const isOwnCall = Math.random() < ownCallProbability;
+        const callType = isOwnCall ? 'own' : 'other';
+        
+        // Use seconds for responseWindow as the EventService will handle the conversion
+        const responseWindow = 10; // 10 seconds response window
+        
+        console.log(`Scheduler: Triggering comm event (${callType}) with ${responseWindow}s response window (difficulty ${difficulty}, own call probability: ${(ownCallProbability * 100).toFixed(0)}%)`);
+        
+        // Make sure we're passing the correct parameters
+        result = this.triggerCommEvent({ 
+          callType,
+          responseWindow // in seconds
+        });
+        
+        // Only schedule next event if auto-scheduler is active
+        if (this.schedulerState.isActive) {
+          // Add a small delay before scheduling the next event to prevent overlap
+          setTimeout(() => {
+            this.scheduleNextEvent(taskType);
+          }, 500);
+        }
+        
+        break;
+      }
+      
+      case 'monitoring': {
+        // Get difficulty level (1-10)
+        const difficulty = this.schedulerState.settings.monitoring.difficulty || 5;
+        
+        // Scale number of indicators based on difficulty (1-6)
+        // At difficulty 1 = 1 indicator, at difficulty 10 = 6 indicators
+        const minIndicators = 1;
+        const maxIndicators = 6;
+        const triggerCount = Math.min(maxIndicators, Math.max(minIndicators, 
+          Math.round(minIndicators + ((maxIndicators - minIndicators) * (difficulty - 1) / 9))
+        ));
+        
+        // Scale duration based on difficulty (difficulty 1 = 8s, difficulty 10 = 5s)
+        const maxDuration = 8; // seconds
+        const minDuration = 5; // seconds
+        const duration = maxDuration - ((maxDuration - minDuration) * (difficulty - 1) / 9);
+        
+        console.log(`Scheduler: Triggering monitoring event with ${triggerCount} indicators, ${duration.toFixed(1)}s duration (difficulty ${difficulty})`);
+        
+        result = this.triggerMonitoringEvent({
+          triggerCount,
+          duration: Math.round(duration * 1000) // Convert to ms
+        });
+        
+        break;
+      }
+      
+      case 'tracking': {
+        const difficulty = this.schedulerState.settings.tracking.difficulty || 5;
+        
+        // Scale duration based on difficulty (difficulty 1 = 6s, difficulty 10 = 12s)
+        const minDuration = 6; // seconds
+        const maxDuration = 12; // seconds
+        const duration = minDuration + ((maxDuration - minDuration) * (difficulty - 1) / 9);
+        
+        // Calculate drift force based on difficulty
+        // Scale linearly from 130% at difficulty 1 to 50% at difficulty 10
+        // This makes higher difficulty even easier to handle in terms of drift
+        const driftForceMultiplier = 1.3 - ((1.3 - 0.5) * (difficulty - 1) / 9);
+        
+        console.log(`Scheduler: Triggering tracking event with difficulty ${difficulty}, ${duration.toFixed(1)}s duration, drift force: ${(driftForceMultiplier * 100).toFixed(0)}%`);
+        
+        result = this.triggerTrackingEvent({
+          difficulty,
+          duration: Math.round(duration * 1000), // Convert to ms
+          driftForceMultiplier
+        });
+        
+        break;
+      }
+      
+      case 'resource': {
+        // Get difficulty level (1-10)
+        const difficulty = this.schedulerState.settings.resource.difficulty || 5;
+        
+        // Randomly decide between pump failure and fuel loss event
+        const eventType = Math.random() > 0.5 ? 'pumpFailure' : 'fuelLossChange';
+        
+        // Scale duration based on difficulty (difficulty 1 = 4s, difficulty 10 = 11s)
+        const minDuration = 4; // seconds
+        const maxDuration = 11; // seconds
+        const duration = minDuration + ((maxDuration - minDuration) * (difficulty - 1) / 9);
+        
+        const config = {
+          eventType,
+          duration: Math.round(duration * 1000) // Convert to ms
+        };
+        
+        // Add event-specific properties
+        if (eventType === 'pumpFailure') {
+          // Scale pump failures based on difficulty (1-4)
+          // At difficulty 1 = 1 pump, at difficulty 10 = 4 pumps
+          const minPumps = 1;
+          const maxPumps = 4;
+          const pumpCount = Math.min(maxPumps, Math.max(minPumps,
+            Math.round(minPumps + ((maxPumps - minPumps) * (difficulty - 1) / 9))
+          ));
+          
+          config.pumpFailureCount = pumpCount;
+        } else {
+          // Scale fuel loss rate based on difficulty (595-1395)
+          const minLossRate = 595;
+          const maxLossRate = 1395;
+          const lossRate = minLossRate + ((maxLossRate - minLossRate) * (difficulty - 1) / 9);
+          
+          // Convert to multiplier format (assuming base rate is 500)
+          const baseFuelRate = 500;
+          const fuelLossMultiplier = lossRate / baseFuelRate;
+          
+          config.fuelLossMultiplier = parseFloat(fuelLossMultiplier.toFixed(2));
+        }
+        
+        console.log(`Scheduler: Triggering resource event (${eventType}), duration: ${duration.toFixed(1)}s, difficulty: ${difficulty}`, config);
+        
+        result = this.triggerResourceEvent(config);
+        
+        break;
+      }
+      
+      default:
+        console.error(`Unknown task type: ${taskType}`);
+        return false;
+    }
+    
+    // Log the result
+    if (result) {
+      console.log(`Successfully triggered scheduled ${taskType} event`);
+    } else {
+      console.error(`Failed to trigger scheduled ${taskType} event`);
+    }
+    
+    // Schedule the next event for this task only if auto-scheduler is active
+    if (this.schedulerState.isActive && taskType !== 'comm') { // Comm handles its own rescheduling
+      this.scheduleNextEvent(taskType);
+    }
+    
+    // Notify listeners about the changes
+    this.notifySchedulerListeners();
+    
+    return result;
+  }
+
+  // Get current scheduler state
+  getSchedulerState() {
+    return {
+      isActive: this.schedulerState.isActive,
+      nextEvents: { ...this.schedulerState.nextEvents },
+      settings: { ...this.schedulerState.settings }
+    };
+  }
+
+  // Debug method to log current scheduler state
+  logSchedulerState() {
+    console.log('EventService: Current scheduler state:');
+    console.log(`  Active: ${this.schedulerState.isActive}`);
+    console.log(`  Listeners: ${this.schedulerState.listeners.length}`);
+    console.log('  Next Events:');
+    Object.entries(this.schedulerState.nextEvents).forEach(([type, time]) => {
+      if (time) {
+        console.log(`    ${type}: ${new Date(time).toLocaleTimeString()} (in ${Math.round((time - Date.now()) / 1000)}s)`);
+      } else {
+        console.log(`    ${type}: Not scheduled`);
+      }
+    });
+    console.log('  Settings:');
+    Object.entries(this.schedulerState.settings).forEach(([type, settings]) => {
+      console.log(`    ${type}: enabled=${settings.isEnabled}, epm=${settings.eventsPerMinute}, difficulty=${settings.difficulty}`);
+    });
+  }
+
+  // Set log level to control console output
+  setLogLevel(level) {
+    // Valid levels: 'debug', 'info', 'warn', 'error', 'none'
+    this.logLevel = level;
+    
+    // If level is error, clear console for better visibility
+    if (level === 'error') {
+      console.clear();
+      console.log('Log level set to ERROR only');
+    }
   }
 }
 
