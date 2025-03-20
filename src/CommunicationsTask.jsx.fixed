@@ -1,0 +1,12 @@
+import React, { useState, useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
+The regular expression pattern \\s*}\\);\\s*\r\n\r\n// Add Log is not valid.
+At line:1 char:1
++ (Get-Content src/CommunicationsTask.jsx -Raw) -replace '\\s*}\\);\\s* ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : InvalidOperation: (\\s*}\\);\\s*\r\n\r\n// Add Log:String) [], RuntimeExcept 
+   ion
+    + FullyQualifiedErrorId : InvalidRegularExpression
+ 
+  );
+});
+

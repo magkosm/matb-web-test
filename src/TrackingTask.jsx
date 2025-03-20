@@ -22,7 +22,8 @@ const TrackingTask = forwardRef(({
   onLogUpdate,
   onStatusUpdate,
   onMetricsUpdate,
-  isEnabled = true
+  isEnabled = true,
+  autoEvents = false
 }, ref) => {
   const [cursorPosition, setCursorPosition] = useState({ x: 0, y: 0 });
   const [targetPosition, setTargetPosition] = useState({ x: 0, y: 0 });
@@ -30,6 +31,9 @@ const TrackingTask = forwardRef(({
   const [isAuto, setIsAuto] = useState(true);
   const [trackingLog, setTrackingLog] = useState([]);
   const [automationFailure, setAutomationFailure] = useState(false);
+  const [currentEventDifficulty, setCurrentEventDifficulty] = useState(difficulty);
+  const [currentEventDuration, setCurrentEventDuration] = useState(0);
+  const [eventStartTime, setEventStartTime] = useState(null);
   const failureTimeoutRef = useRef(null);
   const logIntervalRef = useRef(null);
   
@@ -59,7 +63,7 @@ const TrackingTask = forwardRef(({
 
   // Schedule automation failures based on eventsPerMinute
   useEffect(() => {
-    if (!isEnabled) return;
+    if (!isEnabled || !autoEvents) return;
     
     const scheduleNextFailure = () => {
       if (failureTimeoutRef.current) {
@@ -74,7 +78,7 @@ const TrackingTask = forwardRef(({
       const randomDelay = baseDelay * (0.7 + Math.random() * 0.6);
 
       failureTimeoutRef.current = setTimeout(() => {
-        if (isAuto) {
+        if (isAuto && autoEvents) {
           setIsAuto(false);
           setAutomationFailure(true);
           // Schedule next failure after this one
@@ -92,14 +96,17 @@ const TrackingTask = forwardRef(({
         clearTimeout(failureTimeoutRef.current);
       }
     };
-  }, [isAuto, automationFailure, eventsPerMinute, isEnabled]);
+  }, [isAuto, automationFailure, eventsPerMinute, isEnabled, autoEvents]);
 
   // Auto-recovery after manual intervention
   useEffect(() => {
     let recoveryTimeout;
     
-    if (!isAuto && automationFailure) {
+    // Only apply auto-recovery when it's not a manually triggered event
+    // If we have an eventStartTime, that means it's a manually triggered event with a specific duration
+    if (!isAuto && automationFailure && !eventStartTime) {
       // Wait for 5 seconds of manual control before allowing auto recovery
+      // This only applies to randomly occurring automation failures, not manual events
       recoveryTimeout = setTimeout(() => {
         setAutomationFailure(false);
         setIsAuto(true);
@@ -111,32 +118,54 @@ const TrackingTask = forwardRef(({
         clearTimeout(recoveryTimeout);
       }
     };
-  }, [isAuto, automationFailure]);
+  }, [isAuto, automationFailure, eventStartTime]);
 
   // Physics effect
   useEffect(() => {
     if (!isEnabled) return;
     
     // Scale drift parameters based on difficulty (0-10)
-    // Reduced maximum multiplier from 2x to 1.5x for manual mode
-    const manualDriftMultiplier = 0.25 + (difficulty / 10) * 1.25; // Scales from 0.25x to 1.5x
-    const driftMultiplier = isAuto ? 1.0 : manualDriftMultiplier; // Auto mode always uses base multiplier
+    // Use event difficulty when in manual mode, otherwise use base difficulty
+    const difficultyToUse = !isAuto ? currentEventDifficulty : difficulty;
+    
+    // More dramatic effect of difficulty on manual mode
+    const manualDriftMultiplier = 0.3 + (difficultyToUse / 10) * 3.5; // Scales from 0.3x to 3.8x based on difficulty
+    const driftMultiplier = isAuto ? 1.0 : manualDriftMultiplier; 
+    
+    // console.log(`Tracking difficulty set to ${difficultyToUse} - drift multiplier: ${driftMultiplier.toFixed(2)}x (${isAuto ? 'AUTO' : 'MANUAL'} mode)`);
     
     const driftSpeed = 0.5 * driftMultiplier;
-    const autoCorrection = 0.4; // Auto correction no longer scales with difficulty
-    const joystickDeadzone = 0.1;
-    const maxDriftVelocity = 2 * driftMultiplier;
+    
+    // Increase auto-correction at lower difficulties, decrease at higher difficulties
+    const autoCorrection = isAuto 
+      ? 0.4 
+      : Math.max(0.05, 0.3 - (difficultyToUse / 40)); // Scales from 0.3 to 0.05
+      
+    const maxDriftVelocity = 2.0 * driftMultiplier;
+    
+    // Apply initial drift based on difficulty when entering manual mode
+    if (!isAuto && (driftXRef.current === 0 && driftYRef.current === 0)) {
+      const initialDrift = 0.2 * driftMultiplier;
+      driftXRef.current = (Math.random() - 0.5) * initialDrift * 3;
+      driftYRef.current = (Math.random() - 0.5) * initialDrift * 3;
+      // console.log(`Applied initial drift based on difficulty: ${driftXRef.current.toFixed(2)}, ${driftYRef.current.toFixed(2)}`);
+    }
 
     const interval = setInterval(() => {
       const now = Date.now();
       const dt = now - lastUpdateRef.current;
       lastUpdateRef.current = now;
 
-      // Add random acceleration to drift (scaled by multiplier only in manual mode)
-      driftXRef.current += (Math.random() - 0.5) * 0.4 * driftMultiplier;
-      driftYRef.current += (Math.random() - 0.5) * 0.4 * driftMultiplier;
+      // Make drift more responsive to difficulty
+      const difficultyToUse = !isAuto ? currentEventDifficulty : difficulty;
+      const randomFactor = 0.4 * driftMultiplier;
+      const difficultyScale = 1 + (difficultyToUse/15); // Scales from 1.07 to 1.67
 
-      // Limit maximum drift velocity
+      // Add random acceleration to drift
+      driftXRef.current += (Math.random() - 0.5) * randomFactor * difficultyScale;
+      driftYRef.current += (Math.random() - 0.5) * randomFactor * difficultyScale;
+
+      // Limit maximum drift velocity (scaled by difficulty in manual mode)
       driftXRef.current = Math.max(-maxDriftVelocity, Math.min(maxDriftVelocity, driftXRef.current));
       driftYRef.current = Math.max(-maxDriftVelocity, Math.min(maxDriftVelocity, driftYRef.current));
 
@@ -144,20 +173,36 @@ const TrackingTask = forwardRef(({
         let newX = prev.x + driftXRef.current * driftSpeed;
         let newY = prev.y + driftYRef.current * driftSpeed;
 
-        // Auto mode correction - now consistent regardless of difficulty
-        if (isAuto && !automationFailure) {
-          const correctionFactor = dt / 200 * autoCorrection;
-          newX -= newX * correctionFactor;
-          newY -= newY * correctionFactor;
+        // Auto mode correction - stronger in auto mode, weaker in manual
+        // Calculate stronger correction at low difficulties, weaker at high difficulties
+        const difficultyFactor = isAuto ? 1 : (1 - (difficultyToUse / 20)); // 0.5 to 1.0
+        
+        if (Math.abs(newX) > 25 || Math.abs(newY) > 25) {
+          // Apply stronger correction for low difficulties
+          driftXRef.current *= (1 - autoCorrection * difficultyFactor);
+          driftYRef.current *= (1 - autoCorrection * difficultyFactor);
+          
+          if (isAuto) {
+            // In auto mode, more aggressive correction
+            driftXRef.current -= (newX / 30);
+            driftYRef.current -= (newY / 30);
+          } else {
+            // In manual mode, apply very mild correction based on difficulty
+            // At low difficulties, provide more assistance
+            const assistLevel = Math.max(0, 0.15 - (difficultyToUse / 100));
+            driftXRef.current -= (newX / 100) * assistLevel;
+            driftYRef.current -= (newY / 100) * assistLevel;
+          }
         }
 
-        // Bounce off boundaries
+        // Bounce off boundaries with more energy based on difficulty
+        const bounceEnergy = 0.8 + (difficultyToUse / 10); // 0.8 to 1.8 based on difficulty 
         if (Math.abs(newX) > 150) {
-          driftXRef.current = -driftXRef.current * 0.8;
+          driftXRef.current = -driftXRef.current * bounceEnergy;
           newX = Math.sign(newX) * 150;
         }
         if (Math.abs(newY) > 150) {
-          driftYRef.current = -driftYRef.current * 0.8;
+          driftYRef.current = -driftYRef.current * bounceEnergy;
           newY = Math.sign(newY) * 150;
         }
 
@@ -400,6 +445,9 @@ const TrackingTask = forwardRef(({
     setIsAuto(INITIAL_STATE.isAuto);
     setTrackingLog(INITIAL_STATE.trackingLog);
     setAutomationFailure(INITIAL_STATE.automationFailure);
+    setCurrentEventDifficulty(difficulty);
+    setCurrentEventDuration(0);
+    setEventStartTime(null);
     
     // Reset all refs
     driftXRef.current = INITIAL_STATE.driftX;
@@ -479,8 +527,123 @@ const TrackingTask = forwardRef(({
   };
 
   useImperativeHandle(ref, () => ({
-    resetTask
-  }), [resetTask]);
+    resetTask,
+    getMetrics: () => ({
+      healthImpact,
+      systemLoad,
+      isWithinTarget,
+      isAutomatic: isAuto
+    }),
+    setDifficulty: (value) => {
+      console.log('TrackingTask: Setting difficulty to', value);
+      setCurrentEventDifficulty(value);
+    },
+    forceManualControl: (config) => {
+      try {
+        const { duration, difficulty } = config;
+        
+        // If already in manual mode, don't trigger again
+        if (!isAuto) {
+          // console.log('Tracking Task: Already in manual control mode');
+          return false;
+        }
+        
+        // Make sure we have valid duration (default to 30 seconds if not provided)
+        const eventDuration = duration || 30000;
+        
+        // console.log(`Tracking Task: Forcing manual control for ${eventDuration/1000}s with difficulty ${difficulty || 5}`);
+        
+        // Force into manual mode
+        setIsAuto(false);
+        setAutomationFailure(true);
+        
+        // Store current event parameters in state
+        setCurrentEventDifficulty(difficulty || 5);
+        setCurrentEventDuration(eventDuration);
+        setEventStartTime(Date.now());
+        
+        // Calculate end time for better tracking
+        const endTime = new Date(Date.now() + eventDuration);
+        // console.log(`Manual control will end at: ${endTime.toLocaleTimeString()}`);
+        
+        // Set difficulty level for tracking if provided (1-10 scale)
+        if (typeof difficulty === 'number') {
+          // Apply difficulty by adjusting the drift values - more intense than before
+          const difficultyFactor = (difficulty / 5.0) * 2; // Convert 1-10 scale to 0.4-4.0 factor
+          
+          // Create an initial push in a random direction
+          const angle = Math.random() * Math.PI * 2; // Random angle
+          const magnitude = 0.1 * difficultyFactor;
+          
+          driftXRef.current = Math.cos(angle) * magnitude;
+          driftYRef.current = Math.sin(angle) * magnitude;
+          
+          // console.log(`Applied initial drift vectors: ${driftXRef.current.toFixed(2)}, ${driftYRef.current.toFixed(2)}`);
+        }
+        
+        // Create and log an event
+        const eventData = {
+          time: Date.now(),
+          event: 'MANUAL_CONTROL_FORCED',
+          duration: eventDuration,
+          durationInSeconds: eventDuration / 1000,
+          difficulty: difficulty || 5,
+          isWithinTarget
+        };
+        
+        // Log the event to the tracking log
+        setTrackingLog(prev => [...prev, eventData]);
+        
+        // If onLogUpdate is provided, send the event to the parent component
+        if (onLogUpdate) {
+          onLogUpdate(eventData);
+        }
+        
+        // Set timer to revert to automatic mode
+        const timeoutId = setTimeout(() => {
+          // Return to auto mode
+          setIsAuto(true);
+          setAutomationFailure(false);
+          driftXRef.current = 0;
+          driftYRef.current = 0;
+          
+          // Log recovery event
+          const recoveryEvent = {
+            time: Date.now(),
+            event: 'AUTO_CONTROL_RESTORED',
+            eventDuration: eventDuration / 1000,
+            actualDuration: (Date.now() - eventStartTime) / 1000,
+            isWithinTarget
+          };
+          
+          // console.log(`Tracking Task: Auto control restored after ${recoveryEvent.actualDuration.toFixed(1)}s (target: ${recoveryEvent.eventDuration}s)`);
+          
+          // Clear event timing information
+          setCurrentEventDuration(0);
+          setEventStartTime(null);
+          
+          // Log the recovery event
+          setTrackingLog(prev => [...prev, recoveryEvent]);
+          
+          // If onLogUpdate is provided, send the event to the parent component
+          if (onLogUpdate) {
+            onLogUpdate(recoveryEvent);
+          }
+        }, eventDuration);
+        
+        // Save timeout ID to clear if needed
+        if (failureTimeoutRef.current) {
+          clearTimeout(failureTimeoutRef.current);
+        }
+        failureTimeoutRef.current = timeoutId;
+        
+        return true;
+      } catch (error) {
+        console.error('Error forcing manual control:', error);
+        return false;
+      }
+    }
+  }), [resetTask, healthImpact, systemLoad, isAuto, isWithinTarget, onMetricsUpdate]);
 
   // Add metrics calculation effect
   useEffect(() => {
@@ -491,31 +654,75 @@ const TrackingTask = forwardRef(({
 
     const calculateHealthImpact = () => {
       if (isAuto) return 0;
-      return isWithinTarget ? 0.5 : -0.5;
+      
+      // Scale impact by difficulty (higher difficulty = higher impact)
+      const difficultyMultiplier = currentEventDifficulty / 5;
+      
+      // Calculate time elapsed ratio if we have start time and duration
+      let timeRatio = 1.0;
+      let elapsedTime = 0;
+      let progress = 0;
+      
+      if (eventStartTime && currentEventDuration) {
+        elapsedTime = Date.now() - eventStartTime;
+        progress = Math.min(1, elapsedTime / currentEventDuration);
+        // Make impact stronger in the middle of the event
+        timeRatio = 1 - (Math.abs(progress - 0.5) * 0.5);
+      }
+      
+      // Base values: success = +0.5 to +1.5, failure = -0.5 to -3.0 
+      // Scale based on difficulty
+      const baseSuccessImpact = 0.5 + (currentEventDifficulty / 10);
+      const baseFailureImpact = -0.5 - (currentEventDifficulty / 5);
+      
+      // Apply time and difficulty scaling
+      const impact = isWithinTarget 
+        ? baseSuccessImpact * difficultyMultiplier * timeRatio
+        : baseFailureImpact * difficultyMultiplier * timeRatio;
+      
+      // console.log(`Health impact calculation: ${impact.toFixed(2)} (difficulty: ${currentEventDifficulty}, within target: ${isWithinTarget}, elapsed: ${(elapsedTime/1000).toFixed(1)}s/${(currentEventDuration/1000).toFixed(1)}s, progress: ${(progress*100).toFixed(1)}%)`);
+      
+      return impact;
     };
 
     const calculateSystemLoad = () => {
       if (isAuto) return 0;
-      return isWithinTarget ? 15 : 30;
+      
+      // Scale system load by difficulty (higher difficulty = higher load)
+      const difficultyMultiplier = currentEventDifficulty / 5;
+      
+      // Base values: on target = 15, off target = 30
+      const baseLoadOnTarget = 15 * difficultyMultiplier;
+      const baseLoadOffTarget = 30 * difficultyMultiplier;
+      
+      return isWithinTarget ? baseLoadOnTarget : baseLoadOffTarget;
     };
 
     const updateInterval = setInterval(() => {
       const healthImpact = calculateHealthImpact();
       const systemLoad = calculateSystemLoad();
       
+      // Store calculated values in state for imperative handle
+      setHealthImpact(healthImpact);
+      setSystemLoad(systemLoad);
+      
       onMetricsUpdate?.({
         healthImpact,
         systemLoad
       });
       
-      console.log('Tracking Task Metrics Update:', {
-        isAuto,
-        isWithinTarget,
-        healthImpact,
-        systemLoad,
-        timestamp: new Date().toISOString()
-      });
-      
+      // console.log('Tracking Task Metrics Update:', {
+      //   isAuto,
+      //   isWithinTarget,
+      //   healthImpact: healthImpact.toFixed(2),
+      //   systemLoad: systemLoad.toFixed(1),
+      //   difficulty: isAuto ? difficulty : currentEventDifficulty,
+      //   driftX: driftXRef.current.toFixed(2),
+      //   driftY: driftYRef.current.toFixed(2), 
+      //   eventProgress: eventStartTime ? 
+      //     ((Date.now() - eventStartTime) / currentEventDuration).toFixed(2) : 'N/A',
+      //   timestamp: new Date().toISOString()
+      // });
     }, 100);
 
     return () => clearInterval(updateInterval);
@@ -645,37 +852,41 @@ TrackingTask.Log = function TrackingLog({ trackingLog }) {
           <thead>
             <tr style={{ borderBottom: '1px solid #ccc' }}>
               <th style={{ padding: '0.5rem' }}>Time</th>
-              <th style={{ padding: '0.5rem' }}>Mode</th>
-              <th style={{ padding: '0.5rem' }}>Input</th>
+              <th style={{ padding: '0.5rem' }}>Event/Mode</th>
+              <th style={{ padding: '0.5rem' }}>Details</th>
               <th style={{ padding: '0.5rem' }}>Position</th>
-              <th style={{ padding: '0.5rem' }}>In Target</th>
+              <th style={{ padding: '0.5rem' }}>Status</th>
               <th style={{ padding: '0.5rem' }}>Error (px)</th>
             </tr>
           </thead>
           <tbody>
             {recentLogs.map((entry) => (
-              <tr key={entry.id} style={{ borderBottom: '1px solid #eee' }}>
+              <tr key={entry.id || entry.time} style={{ borderBottom: '1px solid #eee' }}>
                 <td style={{ padding: '0.5rem', textAlign: 'center' }}>
                   {new Date(entry.time).toLocaleTimeString()}
                 </td>
                 <td style={{ padding: '0.5rem', textAlign: 'center' }}>
-                  {entry.isAuto ? 'Auto' : 'Manual'}
+                  {entry.event ? entry.event : (entry.isAuto ? 'Auto' : 'Manual')}
                 </td>
                 <td style={{ padding: '0.5rem', textAlign: 'center' }}>
-                  {entry.inputMode}
+                  {entry.event ? 
+                    (entry.actualDuration ? `Duration: ${entry.actualDuration.toFixed(1)}s` : '') : 
+                    entry.inputMode}
                 </td>
                 <td style={{ padding: '0.5rem', textAlign: 'center' }}>
-                  ({Math.round(entry.position.x)}, {Math.round(entry.position.y)})
+                  {entry.position ? 
+                    `(${Math.round(entry.position.x)}, ${Math.round(entry.position.y)})` : 
+                    '---'}
                 </td>
                 <td style={{ 
                   padding: '0.5rem', 
                   textAlign: 'center',
                   color: entry.isWithinTarget ? 'green' : 'red'
                 }}>
-                  {entry.isWithinTarget ? '✓' : '✗'}
+                  {entry.isWithinTarget !== undefined ? (entry.isWithinTarget ? '✓' : '✗') : '---'}
                 </td>
                 <td style={{ padding: '0.5rem', textAlign: 'center' }}>
-                  {entry.rmsError.toFixed(1)}
+                  {entry.rmsError !== undefined ? entry.rmsError.toFixed(1) : '---'}
                 </td>
               </tr>
             ))}

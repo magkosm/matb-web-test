@@ -86,13 +86,13 @@ const SystemHealth = ({
       (trackingMetrics?.systemLoad || 0)
     ));
     
-    console.log('SystemHealth - Metrics Update:', {
-      resourceLoad: resourceMetrics?.systemLoad || 0,
-      commLoad: commMetrics?.systemLoad || 0,
-      monitoringLoad: monitoringMetrics?.systemLoad || 0,
-      newLoad,
-      currentLoad: systemLoad
-    });
+    // console.log('SystemHealth - Metrics Update:', {
+    //   resourceLoad: resourceMetrics?.systemLoad || 0,
+    //   commLoad: commMetrics?.systemLoad || 0,
+    //   monitoringLoad: monitoringMetrics?.systemLoad || 0,
+    //   newLoad,
+    //   currentLoad: systemLoad
+    // });
     
     setSystemLoad(newLoad);
   }, [resourceMetrics, commMetrics, monitoringMetrics, trackingMetrics]);
@@ -115,17 +115,17 @@ const SystemHealth = ({
       if (totalImpact !== 0) {
         const newHealth = Math.min(100, Math.max(0, healthRef.current + totalImpact));
         
-        console.log('SystemHealth - All Tasks Health Update:', {
-          deltaTime,
-          resourcePerSec: resourceMetrics?.healthImpact || 0,
-          resourceImpact,
-          commImpact,
-          monitoringImpact,
-          trackingImpact,
-          totalImpact,
-          oldHealth: healthRef.current,
-          newHealth
-        });
+        // console.log('SystemHealth - All Tasks Health Update:', {
+        //   deltaTime,
+        //   resourcePerSec: resourceMetrics?.healthImpact || 0,
+        //   resourceImpact,
+        //   commImpact,
+        //   monitoringImpact,
+        //   trackingImpact,
+        //   totalImpact,
+        //   oldHealth: healthRef.current,
+        //   newHealth
+        // });
         
         healthRef.current = newHealth;
         setCumulativeHealth(newHealth);
@@ -154,13 +154,13 @@ const SystemHealth = ({
           healthRef.current + impact.impact
         ));
         
-        console.log('SystemHealth processing impact:', {
-          impact: impact.impact,
-          oldHealth: healthRef.current,
-          newHealth: newHealth,
-          source: 'ResourceManagement',
-          timestamp: new Date().toISOString()
-        });
+        // console.log('SystemHealth processing impact:', {
+        //   impact: impact.impact,
+        //   oldHealth: healthRef.current,
+        //   newHealth: newHealth,
+        //   source: 'ResourceManagement',
+        //   timestamp: new Date().toISOString()
+        // });
         
         healthRef.current = newHealth;
         setCumulativeHealth(newHealth);

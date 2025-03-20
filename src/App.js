@@ -1,10 +1,13 @@
 // src/App.js
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import MonitoringTask from './MonitoringTask';
 import CommunicationsTask from './CommunicationsTask';
 import ResourceManagementTask from './ResourceManagementTask';
 import TrackingTask from './TrackingTask';
 import SystemHealth from './components/SystemHealth';
+import EventSidebar from './components/EventSidebar';
+import EnhancedSidebar from './components/EnhancedSidebar';
+import eventService from './services/EventService';
 import './App.css';
 
 function App() {
@@ -54,6 +57,19 @@ function App() {
   // Add state for tracking difficulty
   const [trackingDifficulty, setTrackingDifficulty] = useState(5);
 
+  // Add state for event sidebar
+  const [isEventSidebarOpen, setIsEventSidebarOpen] = useState(false);
+
+  // Add these state variables with the other state declarations at the top of the App component
+  const [monitoringAutoEvents, setMonitoringAutoEvents] = useState(false);
+  const [trackingAutoEvents, setTrackingAutoEvents] = useState(false);
+  const [commAutoEvents, setCommAutoEvents] = useState(false);
+  const [resourceAutoEvents, setResourceAutoEvents] = useState(false);
+
+  // Add state for task difficulties
+  const [commDifficulty, setCommDifficulty] = useState(5);
+  const [monitoringDifficulty, setMonitoringDifficulty] = useState(5);
+
   // Custom handler to append Tracking logs
   const handleTrackingLogUpdate = useCallback((newEntry) => {
     setTrackingEventLog(prevLog => [...prevLog, newEntry]);
@@ -99,10 +115,98 @@ function App() {
   // Add with other state declarations (around line 20-30)
   const [trackingMetrics, setTrackingMetrics] = useState(TrackingTask.getDefaultMetrics());
 
+  // Add a new state for task registration status
+  const [tasksRegistered, setTasksRegistered] = useState(false);
+
+  // Register task refs with the event service when they change
+  useEffect(() => {
+    // Don't try registering more than once if we've already succeeded
+    if (tasksRegistered) return;
+    
+    // Check if all refs have current values
+    const allRefsAvailable = 
+      commTaskRef?.current && 
+      monitoringTaskRef?.current && 
+      trackingTaskRef?.current && 
+      resourceTaskRef?.current;
+    
+    if (allRefsAvailable) {
+      console.log('All task refs are available, registering with EventService...');
+      
+      // Register the tasks
+      const registrationSuccess = eventService.registerTasks(
+        commTaskRef,
+        monitoringTaskRef,
+        trackingTaskRef,
+        resourceTaskRef
+      );
+      
+      // Update registration status
+      setTasksRegistered(registrationSuccess);
+      
+      if (registrationSuccess) {
+        console.log('All tasks successfully registered with event service');
+        
+        // Commenting out automatic audio test that was causing audio to play on startup
+        /*
+        // Test the communications task after a short delay to ensure it's fully initialized
+        setTimeout(() => {
+          try {
+            console.log('Testing communications task audio playback...');
+            
+            if (eventService.isTaskAvailable('comm')) {
+              // Check available methods
+              console.log('Available methods on commTaskRef.current:', Object.keys(commTaskRef.current).join(', '));
+              
+              // First, ensure any stale state is cleared
+              if (commTaskRef.current.clearActiveMessage) {
+                console.log('Clearing any active messages before test');
+                commTaskRef.current.clearActiveMessage();
+              }
+              
+              // Try the testAudio function first (most reliable)
+              if (commTaskRef.current.testAudio) {
+                console.log('Testing communications audio with testAudio function');
+                const testResult = commTaskRef.current.testAudio('own');
+                console.log('Test audio result:', testResult);
+              }
+            } else {
+              console.warn('Communications task registration completed but task is not available for testing');
+            }
+          } catch (error) {
+            console.error('Error testing communications task:', error);
+          }
+        }, 5000); // Increased delay for more reliable initialization
+        */
+      } else {
+        console.warn('Task registration was not successful, some features may not work properly');
+      }
+    } else {
+      // Log which refs are missing
+      console.log('Not all task refs are available yet:', {
+        commTask: !!commTaskRef?.current,
+        monitoringTask: !!monitoringTaskRef?.current,
+        trackingTask: !!trackingTaskRef?.current,
+        resourceTask: !!resourceTaskRef?.current
+      });
+    }
+  // Fix dependency array to prevent continuous re-execution
+  // Original: [commTaskRef?.current, monitoringTaskRef?.current, trackingTaskRef?.current, resourceTaskRef?.current]
+  }, [tasksRegistered, commTaskRef, monitoringTaskRef, trackingTaskRef, resourceTaskRef]);
+
   return (
     <div className="app-container" style={{ height: '100vh', overflow: 'hidden' }}>
-      {/* MAIN CONTENT */}
-      <div className={`main-content ${isSidebarOpen ? 'sidebar-open' : ''}`}>
+      <div className="main-container">
+        <div className={`main-content ${isSidebarOpen ? 'sidebar-open' : ''} ${isEventSidebarOpen ? 'event-sidebar-open' : ''}`}>
+          <div style={{ 
+            display: 'flex', 
+            flexDirection: 'column',
+            height: '100%',
+            position: 'relative'
+          }}>
+            {/* Rest of the main content (tasks) */}
+            <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
+              <div style={{ flex: 1, overflow: 'auto', padding: '1rem' }}>
         <div style={{ 
           display: 'grid',
           gridTemplateColumns: 'repeat(6, 1fr)',
@@ -129,6 +233,7 @@ function App() {
                 onLogUpdate={setMonitoringEventLog}
                 onMetricsUpdate={setMonitoringMetrics}
                 isEnabled={isMonitoringTaskEnabled}
+                        autoEvents={monitoringAutoEvents}
               />
             ) : (
               <div style={{
@@ -165,6 +270,7 @@ function App() {
               }}
               onMetricsUpdate={setTrackingMetrics}
               isEnabled={isTrackingTaskEnabled}
+                      autoEvents={trackingAutoEvents}
             />
           </div>
 
@@ -207,6 +313,7 @@ function App() {
                 showLog={showCommLog}
                 onLogUpdate={setCommEventLog}
                 onMetricsUpdate={setCommMetrics}
+                        autoEvents={commAutoEvents}
               />
             ) : (
               <div style={{
@@ -237,13 +344,15 @@ function App() {
               onLogUpdate={setResourceEventLog}
               onMetricsUpdate={handleResourceMetricsUpdate}
               isEnabled={isResourceTaskEnabled}
+                      autoEvents={resourceAutoEvents}
             />
           </div>
         </div>
       </div>
 
-      {/* SIDEBAR */}
-      <div className={`sidebar ${isSidebarOpen ? 'open' : ''}`}>
+              {/* Existing Settings Sidebar */}
+              {isSidebarOpen && (
+                <div className="sidebar">
         <div className="sidebar-content">
           {/* Settings Section */}
           <div className="settings-section">
@@ -287,6 +396,16 @@ function App() {
                       &nbsp;Show Log
                     </label>
                   </div>
+                            <div style={{ marginBottom: '0.5rem' }}>
+                              <label>
+                                <input
+                                  type="checkbox"
+                                  checked={monitoringAutoEvents}
+                                  onChange={() => setMonitoringAutoEvents(!monitoringAutoEvents)}
+                                />
+                                &nbsp;Auto Events (Default Off)
+                              </label>
+                            </div>
                   <div style={{ marginBottom: '1rem' }}>
                     <button
                       onClick={() => monitoringTaskRef.current?.resetTask()}
@@ -344,6 +463,16 @@ function App() {
                       &nbsp;Show Log
                     </label>
                   </div>
+                            <div style={{ marginBottom: '0.5rem' }}>
+                              <label>
+                                <input
+                                  type="checkbox"
+                                  checked={commAutoEvents}
+                                  onChange={() => setCommAutoEvents(!commAutoEvents)}
+                                />
+                                &nbsp;Auto Events (Default Off)
+                              </label>
+                            </div>
                   <div style={{ marginBottom: '1rem' }}>
                     <button
                       onClick={() => commTaskRef.current?.resetTask()}
@@ -415,10 +544,20 @@ function App() {
                       &nbsp;Show Log
                     </label>
                   </div>
+                            <div style={{ marginBottom: '0.5rem' }}>
+                              <label>
+                                <input
+                                  type="checkbox"
+                                  checked={trackingAutoEvents}
+                                  onChange={() => setTrackingAutoEvents(!trackingAutoEvents)}
+                                />
+                                &nbsp;Auto Events (Default Off)
+                              </label>
+                            </div>
                   <div style={{ marginBottom: '1rem' }}>
                     <button
                       onClick={() => {
-                        console.log('Resetting tracking task...');
+                                  // console.log('Resetting tracking task...');
                         if (trackingTaskRef.current) {
                           trackingTaskRef.current.resetTask();
                         } else {
@@ -493,6 +632,16 @@ function App() {
                       &nbsp;Show Log
                     </label>
                   </div>
+                            <div style={{ marginBottom: '0.5rem' }}>
+                              <label>
+                                <input
+                                  type="checkbox"
+                                  checked={resourceAutoEvents}
+                                  onChange={() => setResourceAutoEvents(!resourceAutoEvents)}
+                                />
+                                &nbsp;Auto Events (Default Off)
+                              </label>
+                            </div>
                   <div style={{ marginBottom: '1rem' }}>
                     <button
                       onClick={() => resourceTaskRef.current?.resetTask()}
@@ -542,14 +691,136 @@ function App() {
           </div>
         </div>
       </div>
+              )}
 
-      {/* Toggle Button */}
+              {/* New Event Controls Sidebar */}
+              {isEventSidebarOpen && (
+                <div className="event-sidebar" style={{
+                  position: 'fixed',
+                  top: '10vh',
+                  right: '0',
+                  height: '90vh',
+                  width: '30vw',
+                  zIndex: 900,
+                  transition: 'transform 0.3s ease-in-out',
+                  boxShadow: '-2px 0 5px rgba(0, 0, 0, 0.1)',
+                  overflowY: 'auto'
+                }}>
+                  <EnhancedSidebar
+                    // Task settings
+                    commSettings={{
+                      eventsPerMinute: commEPM,
+                      showLog: showCommLog,
+                      isEnabled: isCommTaskEnabled,
+                      difficulty: commDifficulty
+                    }}
+                    monitoringSettings={{
+                      eventsPerMinute: monitoringEPM,
+                      showLog: showMonitoringLog,
+                      isEnabled: isMonitoringTaskEnabled,
+                      difficulty: monitoringDifficulty
+                    }}
+                    trackingSettings={{
+                      eventsPerMinute: trackingEPM,
+                      difficulty: trackingDifficulty,
+                      showLog: showTrackingLog,
+                      isEnabled: isTrackingTaskEnabled
+                    }}
+                    resourceSettings={{
+                      eventsPerMinute: resourceEPM,
+                      difficulty: resourceDifficulty,
+                      showLog: showResourceLog,
+                      isEnabled: isResourceTaskEnabled
+                    }}
+                    onSchedulingChange={(change) => {
+                      console.log('Scheduling change received:', change);
+                      const { task, type, value } = change;
+                      
+                      // Update the appropriate state based on the task and type
+                      switch (task) {
+                        case 'comm':
+                          if (type === 'epm') setCommEPM(value);
+                          if (type === 'difficulty') {
+                            setCommDifficulty(value);
+                            if (commTaskRef.current) {
+                              commTaskRef.current.setDifficulty(value);
+                            }
+                          }
+                          break;
+                        case 'monitoring':
+                          if (type === 'epm') setMonitoringEPM(value);
+                          if (type === 'difficulty') {
+                            setMonitoringDifficulty(value);
+                            if (monitoringTaskRef.current) {
+                              monitoringTaskRef.current.setDifficulty(value);
+                            }
+                          }
+                          break;
+                        case 'tracking':
+                          if (type === 'epm') setTrackingEPM(value);
+                          if (type === 'difficulty') {
+                            setTrackingDifficulty(value);
+                            if (trackingTaskRef.current) {
+                              trackingTaskRef.current.setDifficulty(value);
+                            }
+                          }
+                          break;
+                        case 'resource':
+                          if (type === 'epm') setResourceEPM(value);
+                          if (type === 'difficulty') {
+                            setResourceDifficulty(value);
+                            if (resourceTaskRef.current) {
+                              resourceTaskRef.current.setDifficulty(value);
+                            }
+                          }
+                          break;
+                        default:
+                          break;
+                      }
+                    }}
+                    // Logs
+                    monitoringLog={monitoringEventLog}
+                    commLog={commEventLog}
+                    trackingLog={trackingEventLog}
+                    resourceLog={resourceEventLog}
+                  />
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Toggle Button - if needed outside the header */}
       <button
         className="toggle-button"
         onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+        style={{ display: 'none' }} // Hide this if using the header buttons
       >
         {isSidebarOpen ? 'Close Settings' : 'Open Settings'}
       </button>
+
+      {/* Add Event Controls button next to the sidebar toggle */}
+      <div style={{ 
+        position: 'fixed', 
+        top: '65px', 
+        right: '20px', 
+        zIndex: 1000 
+      }}>
+        <button
+          onClick={() => setIsEventSidebarOpen(!isEventSidebarOpen)}
+          style={{
+            padding: '8px 12px',
+            background: isEventSidebarOpen ? '#555' : '#28a745',
+            color: 'white',
+            border: 'none',
+            borderRadius: '4px',
+            cursor: 'pointer'
+          }}
+        >
+          {isEventSidebarOpen ? 'Hide Event Controls' : 'Show Event Controls'}
+        </button>
+      </div>
     </div>
   );
 }

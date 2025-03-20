@@ -124,7 +124,8 @@ function ResourceManagementTaskComponent({
   showLog = true, 
   onLogUpdate,
   onMetricsUpdate,
-  isEnabled = true
+  isEnabled = true,
+  autoEvents = false
 }, ref) {
   const containerRef = useRef(null);
   const [tanks, setTanks] = useState(INITIAL_STATE.tanks);
@@ -138,6 +139,10 @@ function ResourceManagementTaskComponent({
   const [lastLogTime, setLastLogTime] = useState(Date.now());
   const lastMetricsStringRef = useRef('');
   const [repairingPumps, setRepairingPumps] = useState(() => new Set());
+  const [healthImpact, setHealthImpact] = useState(0);
+  const [systemLoad, setSystemLoad] = useState(0);
+  const [currentDifficulty, setCurrentDifficulty] = useState(difficulty);
+  const pumpTimeoutsRef = useRef({});
 
   // Calculate and store positions of tanks and pumps
   useEffect(() => {
@@ -221,41 +226,72 @@ function ResourceManagementTaskComponent({
     };
   }, [handleKeyPress]);
 
-  // Modify the failure handling system
+  // Schedule pump failures based on EPM
   useEffect(() => {
-    if (!isEnabled) return;
+    if (!isEnabled || !autoEvents) return; // Skip if autoEvents is false
 
     const failureInterval = setInterval(() => {
       const workingPumps = Object.keys(pumps).filter(id => 
         !failures.has(id) && 
-        !repairingPumps.has(id) &&  // Add this check
+        !repairingPumps.has(id) &&
         pumps[id].state !== 'failure'
       );
       
       if (workingPumps.length === 0) return;
 
-      const baseFailureChance = 0.005;
+      const baseFailureChance = 0.01; // Base failure chance
       const epmMultiplier = eventsPerMinute / 2;
-      const totalChance = Math.min(baseFailureChance * epmMultiplier, 0.05);
-
-      workingPumps.forEach(pumpId => {
-        if (Math.random() < totalChance && !repairingPumps.has(pumpId)) {
-          console.log(`Pump ${pumpId} failing... (EPM: ${eventsPerMinute})`);
-          
-          // Use a single atomic update
-          setRepairingPumps(prev => {
-            if (prev.has(pumpId)) return prev; // Prevent duplicate repairs
-            const next = new Set(prev);
-            next.add(pumpId);
-            
-            // Update failures and pump state
-            setFailures(current => new Set([...current, pumpId]));
-            setPumps(current => ({
-              ...current,
-              [pumpId]: { ...current[pumpId], state: 'failure' }
-            }));
-            
-            // Schedule repair
+      const totalChance = Math.min(baseFailureChance * epmMultiplier, 0.1); // Cap at 10%
+      
+      // Determine if any pump should fail this interval using a single random check
+      if (Math.random() < totalChance * workingPumps.length) {
+        // We'll fail 1 to 2 pumps based on EPM
+        const maxPumpsToFail = Math.min(
+          Math.ceil(eventsPerMinute / 3),  // Higher EPM means more failures at once
+          workingPumps.length,              // Can't fail more than available
+          2                                 // Cap at 2 pumps per interval
+        );
+        
+        // At least 1 pump will fail if we got here
+        const numPumpsToFail = Math.max(1, Math.floor(Math.random() * maxPumpsToFail + 1));
+        
+        // Properly shuffle the array using Fisher-Yates algorithm
+        const shuffledPumps = [...workingPumps];
+        for (let i = shuffledPumps.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [shuffledPumps[i], shuffledPumps[j]] = [shuffledPumps[j], shuffledPumps[i]];
+        }
+        
+        // Select a random subset of pumps to fail
+        const pumpsThatWillFail = shuffledPumps.slice(0, numPumpsToFail);
+        
+        // console.log(`${pumpsThatWillFail.length} pumps failing automatically (randomly selected): ${pumpsThatWillFail.join(', ')}`);
+        
+        // Create new state objects for batch updates
+        const newFailures = new Set([...failures, ...pumpsThatWillFail]);
+        const newRepairing = new Set([...repairingPumps, ...pumpsThatWillFail]);
+        const newPumps = { ...pumps };
+        
+        // Update all pumps that will fail
+        pumpsThatWillFail.forEach(pumpId => {
+          newPumps[pumpId] = { ...newPumps[pumpId], state: 'failure' };
+        });
+        
+        // Apply all updates at once
+        setFailures(newFailures);
+        setRepairingPumps(newRepairing);
+        setPumps(newPumps);
+        
+        // Log failures
+        pumpsThatWillFail.forEach(pumpId => {
+          logSnapshot({
+            event: 'PUMP_FAILURE',
+            pumpId: pumpId
+          });
+        });
+        
+        // Schedule repairs for each pump
+        pumpsThatWillFail.forEach(pumpId => {
             const repairTime = Math.max(5000, 15000 - (eventsPerMinute * 1000));
             setTimeout(() => {
               setRepairingPumps(curr => {
@@ -272,38 +308,42 @@ function ResourceManagementTaskComponent({
                 ...curr,
                 [pumpId]: { ...curr[pumpId], state: 'off' }
               }));
-              console.log(`Pump ${pumpId} repaired`);
-            }, repairTime);
             
-            return next;
+            // Log the repair event
+            logSnapshot({
+              event: 'PUMP_REPAIRED',
+              pumpId: pumpId
           });
-        }
+            
+            // console.log(`Pump ${pumpId} repaired automatically after ${repairTime/1000}s`);
+          }, repairTime);
       });
+      }
     }, 1000);
 
     return () => clearInterval(failureInterval);
-  }, [isEnabled, eventsPerMinute, pumps]);
+  }, [failures, pumps, repairingPumps, eventsPerMinute, isEnabled, autoEvents]);
 
   // Add debug logging for loss rate
   useEffect(() => {
-    console.log('Loss Rate:', {
-      difficulty,
-      lossMultiplier,
-      tankALoss: tanks.a.lossPerMinute * lossMultiplier,
-      tankBLoss: tanks.b.lossPerMinute * lossMultiplier
-    });
+    // console.log('Loss Rate:', {
+    //   difficulty,
+    //   lossMultiplier,
+    //   tankALoss: tanks.a.lossPerMinute * lossMultiplier,
+    //   tankBLoss: tanks.b.lossPerMinute * lossMultiplier
+    // });
   }, [difficulty, lossMultiplier]);
 
   // Modify togglePump to be more robust
   const togglePump = (pumpId) => {
-    console.log(`Attempting to toggle pump ${pumpId}`, {
-      currentState: pumps[pumpId]?.state,
-      isFailed: failures.has(pumpId)
-    });
+    // console.log(`Attempting to toggle pump ${pumpId}`, {
+    //   currentState: pumps[pumpId]?.state,
+    //   isFailed: failures.has(pumpId)
+    // });
     
     // Check both the failures Set and the pump's state
     if (failures.has(pumpId) || pumps[pumpId]?.state === 'failure') {
-      console.log(`Cannot toggle pump ${pumpId} - failed`);
+      // console.log(`Cannot toggle pump ${pumpId} - failed`);
       return;
     }
     
@@ -312,7 +352,7 @@ function ResourceManagementTaskComponent({
       if (!pump) return prev;
       
       const newState = pump.state === 'on' ? 'off' : 'on';
-      console.log(`Toggling pump ${pumpId} from ${pump.state} to ${newState}`);
+      // console.log(`Toggling pump ${pumpId} from ${pump.state} to ${newState}`);
       
       return {
         ...prev,
@@ -507,7 +547,258 @@ function ResourceManagementTaskComponent({
 
   // Expose resetTask to ref
   useImperativeHandle(ref, () => ({
-    resetTask
+    resetTask,
+    triggerPumpFailure: (config) => {
+      try {
+        const { pumpId, duration } = config;
+        
+        // Validate pump ID
+        if (!pumpId || !pumps[pumpId]) {
+          // console.error('Invalid pump ID specified');
+          return false;
+        }
+        
+        // Check if pump is already failed or being repaired
+        if (failures.has(pumpId) || repairingPumps.has(pumpId) || pumps[pumpId].state === 'failure') {
+          // console.log(`Pump ${pumpId} is already failed or being repaired`);
+          return false;
+        }
+        
+        // console.log(`Manually triggering failure for pump ${pumpId}`);
+        
+        // Add pump to failures set
+        setFailures(prev => new Set([...prev, pumpId]));
+        
+        // Update pump state
+        setPumps(prev => ({
+          ...prev,
+          [pumpId]: { ...prev[pumpId], state: 'failure' }
+        }));
+        
+        // Track that it's in repair process
+        setRepairingPumps(prev => {
+          const next = new Set(prev);
+          next.add(pumpId);
+          return next;
+        });
+        
+        // Log the pump failure event
+        logSnapshot({
+          event: 'PUMP_FAILURE',
+          pumpId: pumpId
+        });
+        
+        // Schedule repair
+        const repairTime = duration || Math.max(5000, 10000);
+        
+        // Set up timeout to repair pump
+        const timeoutId = setTimeout(() => {
+          // Remove from failures and repairing sets
+          setFailures(prev => {
+            const next = new Set(prev);
+            next.delete(pumpId);
+            return next;
+          });
+          
+          setRepairingPumps(prev => {
+            const next = new Set(prev);
+            next.delete(pumpId);
+            return next;
+          });
+          
+          // Update pump state
+          setPumps(prev => ({
+            ...prev,
+            [pumpId]: { ...prev[pumpId], state: 'off' }
+          }));
+          
+          // Log the repair event
+          logSnapshot({
+            event: 'PUMP_REPAIRED',
+            pumpId: pumpId
+          });
+        }, repairTime);
+        
+        // Store timeout ID for cleanup
+        pumpTimeoutsRef.current[pumpId] = timeoutId;
+        
+        return true;
+      } catch (error) {
+        console.error('Error triggering pump failure:', error);
+        return false;
+      }
+    },
+    setDifficulty: (value) => {
+      console.log('ResourceManagementTask: Setting difficulty to', value);
+      // Update difficulty state
+      setCurrentDifficulty(value);
+      
+      // Adjust failure rates and fuel loss based on difficulty
+      const baseFailureRate = 0.1; // 10% base chance per check
+      const baseFuelLoss = 0.5; // Base fuel loss rate
+      
+      // Scale failure rate and fuel loss with difficulty
+      const failureRate = baseFailureRate * (1 + (value - 5) * 0.2); // 0.06 at diff 1, 0.2 at diff 10
+      const fuelLoss = baseFuelLoss * (1 + (value - 5) * 0.3); // 0.2 at diff 1, 1.0 at diff 10
+      
+      // Update the rates
+      setLossMultiplier(fuelLoss);
+      
+      // Log the change
+      logSnapshot({
+        event: 'DIFFICULTY_CHANGED',
+        newDifficulty: value,
+        failureRate: failureRate,
+        fuelLossRate: fuelLoss
+      });
+    },
+    triggerMultiplePumpFailures: (config) => {
+      try {
+        const { count, duration } = config;
+        
+        // console.log(`ResourceManagementTask: triggerMultiplePumpFailures called with config:`, config);
+        
+        // Validate count (1-8)
+        const pumpCount = Math.min(8, Math.max(1, count || 1));
+        
+        // Get all available working pumps
+        const availablePumps = Object.keys(pumps).filter(id => 
+          !failures.has(id) && 
+          !repairingPumps.has(id) &&
+          pumps[id].state !== 'failure'
+        );
+        
+        // console.log(`Available pumps for failure: ${availablePumps.length}`, availablePumps);
+        
+        if (availablePumps.length === 0) {
+          // console.log('No available pumps to fail');
+          return false;
+        }
+        
+        // Properly shuffle the array using Fisher-Yates algorithm
+        const shuffledPumps = [...availablePumps];
+        for (let i = shuffledPumps.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [shuffledPumps[i], shuffledPumps[j]] = [shuffledPumps[j], shuffledPumps[i]];
+        }
+        
+        // Take only as many as requested or available
+        const pumpsThatWillFail = shuffledPumps.slice(0, Math.min(pumpCount, availablePumps.length));
+        
+        // console.log(`Will fail ${pumpsThatWillFail.length} pumps out of ${pumpCount} requested: ${pumpsThatWillFail.join(', ')}`);
+        
+        // Create new failure and repairing sets by adding all failing pumps at once
+        const newFailures = new Set([...failures, ...pumpsThatWillFail]);
+        const newRepairing = new Set([...repairingPumps, ...pumpsThatWillFail]);
+        
+        // Create new pumps object with all failures applied
+        const newPumps = { ...pumps };
+        pumpsThatWillFail.forEach(pumpId => {
+          newPumps[pumpId] = { ...newPumps[pumpId], state: 'failure' };
+        });
+        
+        // console.log(`Current failures: ${Array.from(failures).join(', ')}`);
+        // console.log(`New failures: ${Array.from(newFailures).join(', ')}`);
+        
+        // Apply all changes at once
+        setFailures(newFailures);
+        setRepairingPumps(newRepairing);
+        setPumps(newPumps);
+        
+        // console.log(`State updates applied for ${pumpsThatWillFail.length} pump failures`);
+        
+        // Log the pump failure event
+        logSnapshot({
+          event: 'MULTIPLE_PUMP_FAILURE',
+          pumpIds: pumpsThatWillFail.join(','),
+          count: pumpsThatWillFail.length
+        });
+        
+        // Schedule repair for all failed pumps
+        const repairTime = duration || Math.max(5000, 10000);
+        setTimeout(() => {
+          // Create new states for all updates
+          const repairedPumps = { ...pumps };
+          
+          // Set all failed pumps to off state
+          pumpsThatWillFail.forEach(pumpId => {
+            repairedPumps[pumpId] = { ...repairedPumps[pumpId], state: 'off' };
+          });
+          
+          // Apply all updates at once
+          setRepairingPumps(curr => {
+            const updated = new Set(curr);
+            pumpsThatWillFail.forEach(pumpId => updated.delete(pumpId));
+            return updated;
+          });
+          
+          setFailures(curr => {
+            const updated = new Set(curr);
+            pumpsThatWillFail.forEach(pumpId => updated.delete(pumpId));
+            return updated;
+          });
+          
+          setPumps(repairedPumps);
+          
+          // Log the repair event
+          logSnapshot({
+            event: 'MULTIPLE_PUMP_REPAIRED',
+            pumpIds: pumpsThatWillFail.join(','),
+            count: pumpsThatWillFail.length
+          });
+          
+          // console.log(`All ${pumpsThatWillFail.length} pumps repaired after ${repairTime/1000}s`);
+        }, repairTime);
+        
+        return true;
+      } catch (error) {
+        // console.error('Error triggering multiple pump failures:', error);
+        return false;
+      }
+    },
+    setFuelLossRate: (multiplier, duration) => {
+      try {
+        // Validate multiplier (0.1 to 5.0)
+        const validMultiplier = Math.min(5.0, Math.max(0.1, multiplier || 1.0));
+        
+        // console.log(`ResourceManagementTask: Setting fuel loss rate to ${validMultiplier}x for ${duration/1000}s`);
+        
+        // Store the current loss multiplier to restore later
+        const previousMultiplier = lossMultiplier;
+        
+        // Apply the new loss multiplier
+        setLossMultiplier(validMultiplier);
+        
+        // Log the fuel loss change event
+        logSnapshot({
+          event: 'FUEL_LOSS_CHANGE',
+          multiplier: validMultiplier,
+          duration: duration/1000
+        });
+        
+        // Schedule restoration of original multiplier
+        const restoreTime = duration || 30000; // Default to 30 seconds
+        setTimeout(() => {
+          // console.log(`ResourceManagementTask: Restoring fuel loss rate to ${previousMultiplier}x after ${restoreTime/1000}s`);
+          setLossMultiplier(previousMultiplier);
+          
+          // Log the restoration event
+          logSnapshot({
+            event: 'FUEL_LOSS_RESTORED',
+            multiplier: previousMultiplier
+          });
+        }, restoreTime);
+        
+        return true;
+      } catch (error) {
+        // console.error('Error setting fuel loss rate:', error);
+        return false;
+      }
+    },
+    getMetrics: () => ({
+      healthImpact,
+      systemLoad
+    })
   }));
 
   // Calculate health impact based on tank states and failures
@@ -530,13 +821,13 @@ function ResourceManagementTaskComponent({
     impactPerSecond += getImpactPerSecond(diffA);
     impactPerSecond += getImpactPerSecond(diffB);
     
-    console.log('Health Impact Per Second:', {
-      tankADiff: diffA,
-      tankBDiff: diffB,
-      tankAImpactPerSec: getImpactPerSecond(diffA),
-      tankBImpactPerSec: getImpactPerSecond(diffB),
-      totalImpactPerSec: impactPerSecond
-    });
+    // console.log('Health Impact Per Second:', {
+    //   tankADiff: diffA,
+    //   tankBDiff: diffB,
+    //   tankAImpactPerSec: getImpactPerSecond(diffA),
+    //   tankBImpactPerSec: getImpactPerSecond(diffB),
+    //   totalImpactPerSec: impactPerSecond
+    // });
     
     return impactPerSecond;  // Return per-second rate
   }, [tanks.a.level, tanks.b.level]);
@@ -585,12 +876,12 @@ function ResourceManagementTaskComponent({
     if (tankAState === 'CRITICAL' || tankAState === 'WARNING') load += 5;
     if (tankBState === 'CRITICAL' || tankBState === 'WARNING') load += 5;
     
-    console.log('Load Calculation:', {
-      failedPumpLoad,
-      tankALoad: (tankAState === 'CRITICAL' || tankAState === 'WARNING') ? 5 : 0,
-      tankBLoad: (tankBState === 'CRITICAL' || tankBState === 'WARNING') ? 5 : 0,
-      totalLoad: Math.min(100, Math.max(0, load))
-    });
+    // console.log('Load Calculation:', {
+    //   failedPumpLoad,
+    //   tankALoad: (tankAState === 'CRITICAL' || tankAState === 'WARNING') ? 5 : 0,
+    //   tankBLoad: (tankBState === 'CRITICAL' || tankBState === 'WARNING') ? 5 : 0,
+    //   totalLoad: Math.min(100, Math.max(0, load))
+    // });
     
     return Math.min(100, Math.max(0, load));
   }, [failures.size, tanks.a.level, tanks.b.level]);
@@ -618,19 +909,47 @@ function ResourceManagementTaskComponent({
         systemLoad
       });
       
-      console.log('Resource Management Metrics Update:', {
-        healthImpact,
-        systemLoad,
-        activePumps: Object.values(pumps).filter(p => p.state === 'on' && !failures.has(p.id)).length,
-        failedPumps: failures.size,
-        tankAState: getTankState(tanks.a.level),
-        tankBState: getTankState(tanks.b.level)
-      });
+      // console.log('Resource Management Metrics Update:', {
+      //   healthImpact,
+      //   systemLoad,
+      //   activePumps: Object.values(pumps).filter(p => p.state === 'on' && !failures.has(p.id)).length,
+      //   failedPumps: failures.size,
+      //   tankAState: getTankState(tanks.a.level),
+      //   tankBState: getTankState(tanks.b.level)
+      // });
       
     }, 100);
 
     return () => clearInterval(updateInterval);
   }, [isEnabled, calculateResourceLoad, calculateHealthImpact]);
+
+  // Add the logSnapshot function before the useImperativeHandle hook
+  const logSnapshot = (eventData) => {
+    // Create a snapshot of the current state
+    const snapshot = {
+      time: Date.now(),
+      tankA: tanks.a.level,
+      tankB: tanks.b.level,
+      tankC: tanks.c.level,
+      tankD: tanks.d.level,
+      tankE: tanks.e.level,
+      tankF: tanks.f.level,
+      activePumps: Object.entries(pumps)
+        .filter(([id, pump]) => pump.state === 'on' && !failures.has(id))
+        .map(([id]) => id)
+        .join(','),
+      failedPumps: Array.from(failures).join(','),
+      ...eventData
+    };
+    
+    // Add snapshot to log
+    setResourceLog(prev => [...prev, snapshot]);
+    
+    // Send to parent component if callback provided
+    if (onLogUpdate) {
+      onLogUpdate(snapshot);
+    }
+  };
 
   // Return placeholder when task is disabled
   if (!isEnabled) {

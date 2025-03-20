@@ -18,6 +18,7 @@ function generateEventId(label) {
  *  - setEventsPerMinute (function): setter for EPM
  *  - showLog (boolean): whether to show/hide the log
  *  - setShowLog (function): setter for toggling the log
+ *  - autoEvents (boolean): whether events should occur automatically (defaults to false)
  */
 function MonitoringTask({
   eventsPerMinute,
@@ -28,6 +29,7 @@ function MonitoringTask({
   isEnabled = true,
   onMetricsUpdate,
   onOptionsUpdate,
+  autoEvents = false,
 }, ref) {
   // ---------------------
   // 1) STATE & REFS
@@ -42,6 +44,9 @@ function MonitoringTask({
     misses: 0,
     falseAlarms: 0
   });
+
+  // Add difficulty state
+  const [difficulty, setDifficultyState] = useState(5);
 
   // Items: F1, F2 (buttons), F3–F6 (gauges)
   // For gauges: track level (0..10) + eventSide ('low'|'high'|null)
@@ -94,82 +99,389 @@ function MonitoringTask({
     isEnabledRef.current = isEnabled;
   }, [isEnabled]);
 
+  // ---------------------
+  // 3) EVENT MANAGEMENT
+  // ---------------------
+
   /**
    * Trigger a new monitoring event
    * @param {string} [specificLabel] - Optional specific indicator to trigger
+   * @param {number} [customDuration] - Optional custom duration for the event
    * @returns {boolean} - Whether event was successfully triggered
    */
-  const triggerEvent = useCallback((specificLabel = null) => {
+  const triggerEvent = (specificLabel, customDuration) => {
     if (!isEnabledRef.current) return false;
 
-    setItems((prev) => {
-      const newItems = [...prev];
-      let idx;
-
-      if (specificLabel) {
-        idx = newItems.findIndex(item => item.label === specificLabel);
-        if (idx === -1 || newItems[idx].eventActive) return prev; // Invalid label or already active
-      } else {
-        // Find available indicators
-        const availableIndices = newItems
-          .map((item, i) => !item.eventActive ? i : -1)
-          .filter(i => i !== -1);
-        
-        if (availableIndices.length === 0) return prev; // All indicators active
-        idx = availableIndices[Math.floor(Math.random() * availableIndices.length)];
-      }
-
-      const item = newItems[idx];
-      item.eventActive = true;
-
-      // Handle gauge-specific logic
-      if (/F[3-6]/.test(item.label)) {
-        if (item.level === 5) {
-          item.eventSide = Math.random() < 0.5 ? 'high' : 'low';
-          item.level = item.eventSide === 'high' ? 8 : 2;
-        } else if (item.level > 5) {
-          item.eventSide = 'high';
-          if (item.level < 8) item.level = 8;
-        } else {
-          item.eventSide = 'low';
-          if (item.level > 2) item.level = 2;
-        }
-      }
-
-      // Create new event record
-      const eventId = generateEventId(item.label);
-      const newEvent = {
+    // Find the specified item or pick a random one if not specified
+    let label = specificLabel;
+    if (!label) {
+      // Original random selection logic
+      const availableIndices = items
+        .map((item, index) => ({ item, index }))
+        .filter(({ item }) => !item.eventActive)
+        .map(({ index }) => index);
+      
+      if (availableIndices.length === 0) return false;
+      
+      const randomIndex = Math.floor(Math.random() * availableIndices.length);
+      const itemIndex = availableIndices[randomIndex];
+      label = items[itemIndex].label;
+    }
+    
+    // Find the item
+    const itemIndex = items.findIndex(item => item.label === label);
+    if (itemIndex === -1 || items[itemIndex].eventActive) return false;
+    
+    // Calculate duration - use custom if provided, otherwise default random
+    const baseDuration = 15000; // 15 seconds by default
+    const randomFactor = 0.5 + Math.random(); // Random multiplier between 0.5 and 1.5
+    let duration = customDuration || Math.floor(baseDuration * randomFactor);
+    
+    // Generate event ID
+    const eventId = generateEventId(label);
+    
+    // Update item state
+    const updatedItems = [...items];
+    
+    // For F1 and F2 (buttons)
+    if (label === 'F1' || label === 'F2') {
+      updatedItems[itemIndex] = {
+        ...updatedItems[itemIndex],
+        eventActive: true
+      };
+    }
+    // For F3-F6 (gauges)
+    else {
+      const eventSide = Math.random() > 0.5 ? 'high' : 'low';
+      const targetLevel = eventSide === 'high' ? 10 : 0;
+      
+      updatedItems[itemIndex] = {
+        ...updatedItems[itemIndex],
+        eventActive: true,
+        eventSide,
+        targetLevel
+      };
+    }
+    
+    setItems(updatedItems);
+    
+    // Add to active events
+    const newActiveEvent = {
         id: eventId,
-        label: item.label,
+      label,
         timestamp: Date.now(),
         responded: false,
         responseTime: null,
-        type: null
+        type: null,
+        hasCustomTimeout: duration !== undefined
       };
 
-      setActiveEvents(prev => [...prev, newEvent]);
+    setActiveEvents(prev => [...prev, newActiveEvent]);
+    
+    // Update metrics
       setTaskMetrics(prev => ({
         ...prev,
         activeEvents: prev.activeEvents + 1,
         totalEvents: prev.totalEvents + 1
       }));
 
-      return newItems;
-    });
+    // Schedule event to end
+    const timeoutId = setTimeout(() => {
+      // Find the event in the current activeEvents state
+      setActiveEvents(prev => {
+        const updatedEvents = [];
+        let wasFinalized = false;
+        
+        for (const evt of prev) {
+          if (evt.id === eventId && evt.type === null) {
+            // Update the event status
+            evt.responded = false;
+            evt.responseTime = null;
+            evt.type = 'MISS';
+            
+            // Log it
+            setEventLog(prevLog => [...prevLog, evt]);
+            wasFinalized = true;
+            
+            // Update metrics
+            setTaskMetrics(prev => ({ 
+              ...prev, 
+              misses: prev.misses + 1,
+              activeEvents: prev.activeEvents - 1 
+            }));
+            setHealthImpact(-5); // Negative impact for miss
+            
+            // Deactivate the indicator
+            setItems(items => 
+              items.map(item => 
+                item.label === evt.label 
+                  ? item.label.startsWith('F') && parseInt(item.label[1]) > 2
+                    ? { ...item, eventActive: false, eventSide: null, level: 5 }
+                    : { ...item, eventActive: false }
+                  : item
+              )
+            );
+          } else {
+            updatedEvents.push(evt);
+          }
+        }
+        
+        return updatedEvents;
+      });
+    }, duration);
+    
+    // Store timeout ID
+    eventTimeoutRef.current = timeoutId;
 
     return true;
-  }, []);
+  };
+
+  /**
+   * Handle user response to an event
+   * @param {string} label - Label of the indicator (e.g., "F1")
+   * @returns {boolean} - Whether response was successful
+   */
+  const handleResponse = (label) => {
+    if (!isEnabledRef.current) return false;
+    
+    // Find the item
+    const itemIndex = items.findIndex(item => item.label === label);
+    if (itemIndex === -1) return false;
+    
+    const item = items[itemIndex];
+    
+    // Check if there's an active event for this item
+    if (!item.eventActive) {
+      // False alarm!
+      setTaskMetrics(prev => ({
+        ...prev,
+        falseAlarms: prev.falseAlarms + 1
+      }));
+      setHealthImpact(-2); // Smaller negative impact for false alarm
+      
+      // Add to event log
+      const falseAlarmEvent = {
+        id: generateEventId(label),
+        label,
+        timestamp: Date.now(),
+        responded: true,
+        responseTime: 0,
+        type: 'FA'
+      };
+      setEventLog(prev => [...prev, falseAlarmEvent]);
+      
+      return false;
+    }
+    
+    // Find the corresponding active event
+    setActiveEvents(prev => {
+      const updatedEvents = [];
+      let wasResponded = false;
+      
+      for (const evt of prev) {
+        if (evt.label === label && evt.type === null) {
+          // Update the event
+          evt.responded = true;
+          evt.responseTime = Date.now() - evt.timestamp;
+          evt.type = 'HIT';
+          
+          // Add to log
+          setEventLog(prevLog => [...prevLog, evt]);
+          wasResponded = true;
+          
+          // Update metrics
+          setTaskMetrics(prevMetrics => ({
+            ...prevMetrics,
+            hits: prevMetrics.hits + 1,
+            activeEvents: prevMetrics.activeEvents - 1
+          }));
+          setHealthImpact(5); // Positive impact for hit
+        } else {
+          updatedEvents.push(evt);
+        }
+      }
+      
+      return updatedEvents;
+    });
+    
+    // Reset the item's state
+    const updatedItems = [...items];
+    if (label.startsWith('F') && parseInt(label[1]) > 2) {
+      // For gauges (F3-F6), reset to center
+      updatedItems[itemIndex] = {
+        ...updatedItems[itemIndex],
+        eventActive: false,
+        eventSide: null,
+        level: 5
+      };
+    } else {
+      // For buttons, just turn off the event
+      updatedItems[itemIndex] = {
+        ...updatedItems[itemIndex],
+        eventActive: false
+      };
+    }
+    setItems(updatedItems);
+    
+    return true;
+  };
 
   // Expose methods via ref
   useImperativeHandle(ref, () => ({
     resetTask,
     triggerEvent,
-    getMetrics: () => taskMetrics
+    getMetrics: () => taskMetrics,
+    triggerMultipleEvents: (config) => {
+      try {
+        const { triggerCount, duration } = config;
+        
+        // console.log(`Attempting to trigger ${triggerCount} monitoring events with duration ${duration}ms`);
+        
+        // Validate trigger count (1-6)
+        // Higher difficulty means more simultaneous events can be triggered
+        const maxEvents = Math.min(6, Math.floor(3 + (difficulty * 0.3))); // 3 at diff 1, up to 6 at diff 10
+        const count = Math.min(maxEvents, Math.max(1, triggerCount || 1));
+        
+        // Get all available indicators (not currently active)
+        const availableIndicators = items
+          .filter(item => !item.eventActive)
+          .map(item => item.label);
+        
+        if (availableIndicators.length === 0) {
+          // console.log('No available indicators to trigger');
+          return false;
+        }
+        
+        // Shuffle the array of labels
+        const shuffledLabels = [...availableIndicators].sort(() => Math.random() - 0.5);
+        
+        // Take the first 'count' items, but no more than are available
+        const selectedLabels = shuffledLabels.slice(0, Math.min(count, availableIndicators.length));
+        
+        // console.log(`Selected indicators to trigger: ${selectedLabels.join(', ')}`);
+        
+        // Create a new items array for batch update
+        const newItems = [...items];
+        const newActiveEvents = [];
+        let triggeredCount = 0;
+        
+        selectedLabels.forEach(label => {
+          const itemIndex = newItems.findIndex(item => item.label === label);
+          if (itemIndex === -1) return;
+          
+          const item = newItems[itemIndex];
+          
+          // For gauges (F3-F6), randomly choose high or low event
+          if (label.startsWith('F') && parseInt(label[1]) > 2) {
+            const eventSide = Math.random() < 0.5 ? 'low' : 'high';
+            const targetLevel = eventSide === 'low' ? 0 : 10;
+            
+            // Higher difficulty means more extreme deviations
+            const deviation = 5 + (difficulty * 0.3); // 5.3 at diff 1, 8 at diff 10
+            
+            newItems[itemIndex] = {
+              ...item,
+              eventActive: true,
+              eventSide,
+              level: targetLevel,
+              deviation
+            };
+          } else {
+            // For buttons (F1-F2), just activate the event
+            newItems[itemIndex] = {
+              ...item,
+              eventActive: true
+            };
+          }
+          
+          // Create event object
+          const eventId = generateEventId(label);
+          const event = {
+            id: eventId,
+            label,
+            timestamp: Date.now(),
+            responded: false,
+            responseTime: null,
+            type: null
+          };
+          
+          newActiveEvents.push(event);
+          
+          // Set up timeout to finalize event if not responded to
+          setTimeout(() => {
+            // Find the event in the current activeEvents state
+            setActiveEvents(prev => {
+              const updatedEvents = [];
+              let wasFinalized = false;
+              
+              for (const evt of prev) {
+                if (evt.id === eventId && evt.type === null) {
+                  // Update the event status
+                  evt.responded = false;
+                  evt.responseTime = null;
+                  evt.type = 'MISS';
+                  
+                  // Log it
+                  setEventLog(prevLog => [...prevLog, evt]);
+                  wasFinalized = true;
+                  
+                  // Update metrics
+                  setTaskMetrics(prev => ({ 
+                    ...prev, 
+                    misses: prev.misses + 1,
+                    activeEvents: prev.activeEvents - 1 
+                  }));
+                  setHealthImpact(-5); // Negative impact for miss
+                  
+                  // Deactivate the indicator
+                  setItems(items => 
+                    items.map(item => 
+                      item.label === evt.label 
+                        ? item.label.startsWith('F') && parseInt(item.label[1]) > 2
+                          ? { ...item, eventActive: false, eventSide: null, level: 5 }
+                          : { ...item, eventActive: false }
+                        : item
+                    )
+                  );
+                } else {
+                  updatedEvents.push(evt);
+                }
+              }
+              
+              return updatedEvents;
+            });
+          }, duration);
+          
+          triggeredCount++;
+        });
+        
+        // Apply all updates at once
+        if (triggeredCount > 0) {
+          setItems(newItems);
+          setActiveEvents(prev => [...prev, ...newActiveEvents]);
+          setTaskMetrics(prev => ({
+            ...prev,
+            activeEvents: prev.activeEvents + triggeredCount,
+            totalEvents: prev.totalEvents + triggeredCount
+          }));
+        }
+        
+        // console.log(`Successfully triggered ${triggeredCount} monitoring events`);
+        return triggeredCount > 0;
+      } catch (error) {
+        console.error('Error triggering multiple events:', error);
+        return false;
+      }
+    },
+    setDifficulty: (value) => {
+      console.log('MonitoringTask: Setting difficulty to', value);
+      setDifficultyState(value);
+    }
   }));
 
   // Schedule events based on EPM
   useEffect(() => {
-    if (!isEnabled) {
+    if (!isEnabled || !autoEvents) {
       if (eventTimeoutRef.current) {
         clearTimeout(eventTimeoutRef.current);
         eventTimeoutRef.current = null;
@@ -183,7 +495,7 @@ function MonitoringTask({
       const waitMs = baseIntervalMs * jitter;
 
       eventTimeoutRef.current = setTimeout(() => {
-        if (isEnabledRef.current) {
+        if (isEnabledRef.current && autoEvents) {
           triggerEvent();
         scheduleNextEvent();
         }
@@ -198,7 +510,7 @@ function MonitoringTask({
     return () => {
       if (eventTimeoutRef.current) clearTimeout(eventTimeoutRef.current);
     };
-  }, [eventsPerMinute, isEnabled, triggerEvent]);
+  }, [eventsPerMinute, isEnabled, autoEvents, triggerEvent]);
 
   // Update metrics periodically
   useEffect(() => {
@@ -314,17 +626,38 @@ function MonitoringTask({
           if (/F[3-6]/.test(item.label)) {
             const { level, eventActive, eventSide } = item;
             if (eventActive && eventSide) {
-              // Lock to side range
-              let newLevel = level + Math.floor(Math.random() * 3 - 1); // ±1
+              // Lock to side range with stronger bias toward the target state
+              let newLevel = level;
+              const randomFactor = Math.random();
+              
               if (eventSide === 'low') {
-                // [0..2]
-                if (newLevel < 0) newLevel = 0;
-                if (newLevel > 2) newLevel = 2;
+                // Target range is [0..2]
+                if (randomFactor < 0.6) {
+                  // 60% chance to move toward target (down)
+                  newLevel = Math.max(0, level - Math.floor(randomFactor * 3));
+                } else if (randomFactor < 0.8) {
+                  // 20% chance to move up (but stay in range)
+                  newLevel = Math.min(2, level + 1);
+                }
+                // 20% chance to stay the same
+                
+                // Ensure we stay in the event range
+                newLevel = Math.min(2, Math.max(0, newLevel));
               } else {
-                // 'high' => [8..10]
-                if (newLevel < 8) newLevel = 8;
-                if (newLevel > 10) newLevel = 10;
+                // Target range is [8..10]
+                if (randomFactor < 0.6) {
+                  // 60% chance to move toward target (up)
+                  newLevel = Math.min(10, level + Math.floor(randomFactor * 3));
+                } else if (randomFactor < 0.8) {
+                  // 20% chance to move down (but stay in range)
+                  newLevel = Math.max(8, level - 1);
+                }
+                // 20% chance to stay the same
+                
+                // Ensure we stay in the event range
+                newLevel = Math.max(8, Math.min(10, newLevel));
               }
+              
               return { ...item, level: newLevel };
             } else if (eventActive) {
               // fallback 0..10 if eventSide is null
@@ -346,7 +679,7 @@ function MonitoringTask({
         })
       );
 
-      // 3b) Timeout check => MISS if >5s
+      // 3b) Timeout check
       const now = Date.now();
       setActiveEvents((prevA) => {
         const stillActive = [];
@@ -354,8 +687,11 @@ function MonitoringTask({
 
         for (const evt of prevA) {
           if (evt.type === null) {
+            // Only check for expiration if this event doesn't have a custom timeout already set
+            // Events with custom durations are handled by their own timeouts
+            if (!evt.hasCustomTimeout) {
             const age = now - evt.timestamp;
-            if (age >= 5000) {
+              if (age >= 5000) { // Default duration of 5 seconds
               // MISS - Set health impact
               evt.type = 'MISS';
               evt.responded = false;
@@ -367,11 +703,19 @@ function MonitoringTask({
               // Turn off item's eventActive
               setItems((prevItems) =>
                 prevItems.map((it) =>
-                  it.label === evt.label ? { ...it, eventActive: false } : it
+                    it.label === evt.label ? 
+                      it.label.startsWith('F') && parseInt(it.label[1]) > 2 ?
+                        { ...it, eventActive: false, eventSide: null, level: 5 } :
+                        { ...it, eventActive: false } 
+                      : it
                 )
               );
               completed.push(evt);
             } else {
+                stillActive.push(evt);
+              }
+            } else {
+              // Event has custom timeout, keep it active
               stillActive.push(evt);
             }
           } else {
@@ -390,7 +734,7 @@ function MonitoringTask({
 
         return stillActive; // keep active ones
       });
-    }, 1000);
+    }, 250); // Increased animation rate from 1000ms to 250ms for more visual feedback
 
     return () => {
       if (mainLoopRef.current) clearInterval(mainLoopRef.current);
@@ -404,88 +748,21 @@ function MonitoringTask({
   const handleKeyDown = (e) => {
     if (e.repeat) return; // skip repeats
 
+    // Only look for F1-F6 keys
     const codeToLabel = {
-      112: 'F1',
-      113: 'F2',
-      114: 'F3',
-      115: 'F4',
-      116: 'F5',
-      117: 'F6',
+      112: 'F1', // F1 key
+      113: 'F2', // F2 key
+      114: 'F3', // F3 key
+      115: 'F4', // F4 key
+      116: 'F5', // F5 key
+      117: 'F6', // F6 key
     };
+    
     const label = codeToLabel[e.keyCode];
     if (label) {
-      e.preventDefault();
+      e.preventDefault(); // Prevent default behavior for function keys
       handleResponse(label);
     }
-  };
-
-  const handleResponse = (label) => {
-    const now = Date.now();
-
-    // 4a) double-press check
-    if (lastPressTimes[label] && now - lastPressTimes[label] < 250) {
-      return;
-    }
-    setLastPressTimes((prev) => ({ ...prev, [label]: now }));
-
-    // 4b) see if label has an active event => HIT or FA
-    setActiveEvents((prevA) => {
-      let foundActiveEvent = null;
-      const updated = prevA.map((evt) => {
-        if (evt.label === label && evt.type === null) {
-          foundActiveEvent = evt;
-          
-          // Set health impact for HIT
-          setHealthImpact(2);
-
-          return {
-            ...evt,
-            responded: true,
-            responseTime: now - evt.timestamp,
-            type: 'HIT',
-          };
-        }
-        return evt;
-      });
-
-      if (!foundActiveEvent) {
-        // Set health impact for FA
-        setHealthImpact(-1);
-        
-        // FA
-        const faId = generateEventId(label);
-        const faEvt = {
-          id: faId,
-          label,
-          timestamp: now,
-          responded: true,
-          responseTime: 0,
-          type: 'FA',
-        };
-
-        // Avoid duplicate FAs if within 500ms
-        setEventLog((prevLog) => {
-          const logIds = new Set(prevLog.map((log) => log.id));
-          const lastFA = [...prevLog].reverse().find(
-            (log) => log.label === label && log.type === 'FA'
-          );
-          if (!lastFA || now - lastFA.timestamp >= 100) {
-            if (!logIds.has(faId)) {
-              return [...prevLog, faEvt];
-            }
-          }
-          return prevLog;
-        });
-      } else {
-        // Turn off the item's event
-        setItems((prevItems) =>
-          prevItems.map((it) =>
-            it.label === label ? { ...it, eventActive: false } : it
-          )
-        );
-      }
-      return updated;
-    });
   };
 
   // Attach global keydown
