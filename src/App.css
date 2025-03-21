@@ -4,20 +4,25 @@
 }
 
 .main-content.sidebar-open {
-  margin-right: 0;
-  width: 100%;
+  margin-right: 800px;
+  margin-left: 0;
+  width: calc(100% - 800px);
+  transition: margin-right 0.3s ease, width 0.3s ease;
 }
 
 .sidebar {
   position: fixed;
-  top: 0;
-  right: -400px;
-  width: 400px;
-  height: 100vh;
-  background: white;
+  top: 50px;
+  right: 0;
+  width: 800px;
+  height: calc(100vh - 50px);
+  background-color: #f0f0f0;
   border-left: 1px solid #ccc;
-  transition: right 0.3s ease;
+  overflow-y: auto;
   z-index: 1000;
+  transition: transform 0.3s ease-in-out;
+  padding: 20px;
+  box-shadow: -2px 0 5px rgba(0, 0, 0, 0.1);
 }
 
 .sidebar.open {
@@ -26,21 +31,26 @@
 }
 
 .sidebar-content {
-  padding: 1rem;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  overflow-y: auto;
+  padding-bottom: 50px;
 }
 
 .settings-section {
-  margin-bottom: 2rem;
+  margin-bottom: 30px;
 }
 
 .logs-section {
-  flex: 1;
-  overflow-y: auto;
-  padding-bottom: 1rem;
+  margin-top: 20px;
+}
+
+.main-content.event-sidebar-open {
+  margin-right: 800px; /* Updated to match sidebar width */
+  width: calc(100% - 800px);
+  transition: margin-right 0.3s ease, width 0.3s ease;
+}
+
+.main-content {
+  transition: margin-left 0.3s ease, margin-right 0.3s ease, width 0.3s ease;
+  width: 100%;
 }
 
 .toggle-button {
@@ -170,17 +180,6 @@
 
 .event-toggle.active {
   background-color: #555;
-}
-
-/* Adjust main content when event sidebar is open */
-.main-content.event-sidebar-open {
-  margin-right: 800px; /* Increased from 600px */
-}
-
-/* Make sure both sidebars can be open simultaneously */
-.main-content.sidebar-open.event-sidebar-open {
-  margin-left: 250px;
-  margin-right: 800px; /* Increased from 600px */
 }
 
 /* Updated Sidebar Styling */

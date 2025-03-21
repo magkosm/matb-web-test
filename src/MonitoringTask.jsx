@@ -109,7 +109,7 @@ function MonitoringTask({
    * @param {number} [customDuration] - Optional custom duration for the event
    * @returns {boolean} - Whether event was successfully triggered
    */
-  const triggerEvent = (specificLabel, customDuration) => {
+  const triggerEvent = useCallback((specificLabel, customDuration) => {
     if (!isEnabledRef.current) return false;
 
     // Find the specified item or pick a random one if not specified
@@ -234,15 +234,18 @@ function MonitoringTask({
     eventTimeoutRef.current = timeoutId;
 
     return true;
-  };
+  }, [items, setItems, setActiveEvents, setTaskMetrics, setEventLog, setHealthImpact]);
 
   /**
    * Handle user response to an event
    * @param {string} label - Label of the indicator (e.g., "F1")
    * @returns {boolean} - Whether response was successful
    */
-  const handleResponse = (label) => {
+  const handleResponse = useCallback((label) => {
     if (!isEnabledRef.current) return false;
+    
+    // Debug which label is being processed
+    console.log('Processing response for:', label);
     
     // Find the item
     const itemIndex = items.findIndex(item => item.label === label);
@@ -324,7 +327,7 @@ function MonitoringTask({
     setItems(updatedItems);
     
     return true;
-  };
+  }, [items, setItems, setActiveEvents, setEventLog, setTaskMetrics, setHealthImpact]);
 
   // Expose methods via ref
   useImperativeHandle(ref, () => ({
@@ -497,7 +500,7 @@ function MonitoringTask({
       eventTimeoutRef.current = setTimeout(() => {
         if (isEnabledRef.current && autoEvents) {
           triggerEvent();
-        scheduleNextEvent();
+          scheduleNextEvent();
         }
       }, waitMs);
     };
@@ -510,7 +513,7 @@ function MonitoringTask({
     return () => {
       if (eventTimeoutRef.current) clearTimeout(eventTimeoutRef.current);
     };
-  }, [eventsPerMinute, isEnabled, autoEvents, triggerEvent]);
+  }, [eventsPerMinute, isEnabled, autoEvents, triggerEvent, onOptionsUpdate]);
 
   // Update metrics periodically
   useEffect(() => {
@@ -745,31 +748,25 @@ function MonitoringTask({
   // 4) RESPONDING (Keyboard & Click)
   // ---------------------
 
-  const handleKeyDown = (e) => {
+  const handleKeyDown = useCallback((e) => {
     if (e.repeat) return; // skip repeats
 
-    // Only look for F1-F6 keys
-    const codeToLabel = {
-      112: 'F1', // F1 key
-      113: 'F2', // F2 key
-      114: 'F3', // F3 key
-      115: 'F4', // F4 key
-      116: 'F5', // F5 key
-      117: 'F6', // F6 key
-    };
+    // Debug what key is being pressed
+    console.log('Key pressed:', e.key);
     
-    const label = codeToLabel[e.keyCode];
-    if (label) {
-      e.preventDefault(); // Prevent default behavior for function keys
-      handleResponse(label);
+    // Handle function keys F1-F6
+    if (e.key && /^F[1-6]$/.test(e.key)) {
+      e.preventDefault(); // Prevent default browser behavior
+      console.log('Function key detected:', e.key);
+      handleResponse(e.key);
     }
-  };
+  }, [handleResponse]);
 
   // Attach global keydown
   useEffect(() => {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
+  }, [handleKeyDown]);
 
   // Update the eventLog state and notify parent
   useEffect(() => {

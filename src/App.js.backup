@@ -27,51 +27,91 @@ function App() {
   // Monitoring Task controls
   const [monitoringEPM, setMonitoringEPM] = useState(3);
   const [showMonitoringLog, setShowMonitoringLog] = useState(false);
-  const [monitoringDifficulty, setMonitoringDifficulty] = useState(5);
-  const [isMonitoringTaskEnabled, setIsMonitoringTaskEnabled] = useState(true);
-  const [monitoringAutoEvents, setMonitoringAutoEvents] = useState(false);
-  const [monitoringEventLog, setMonitoringEventLog] = useState([]);
 
   // Communications Task controls
   const [commEPM, setCommEPM] = useState(2);
   const [showCommLog, setShowCommLog] = useState(false);
-  const [commDifficulty, setCommDifficulty] = useState(5);
   const [isCommTaskEnabled, setIsCommTaskEnabled] = useState(true);
-  const [commAutoEvents, setCommAutoEvents] = useState(false);
+
+  // Sidebar control for All Logs
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [monitoringEventLog, setMonitoringEventLog] = useState([]);
   const [commEventLog, setCommEventLog] = useState([]);
-  const [commMetrics, setCommMetrics] = useState({ healthImpact: 0, systemLoad: 0 });
 
   // Resource Management controls
   const [resourceEPM, setResourceEPM] = useState(2);
   const [resourceDifficulty, setResourceDifficulty] = useState(5);
   const [showResourceLog, setShowResourceLog] = useState(false);
-  const [isResourceTaskEnabled, setIsResourceTaskEnabled] = useState(true);
-  const [resourceAutoEvents, setResourceAutoEvents] = useState(false);
   const [resourceEventLog, setResourceEventLog] = useState([]);
-  const [resourceMetrics, setResourceMetrics] = useState(
-    ResourceManagementTask.getDefaultMetrics ? 
-    ResourceManagementTask.getDefaultMetrics() : 
-    { healthImpact: 0, systemLoad: 0 }
-  );
 
   // Tracking Task controls
   const [trackingEPM, setTrackingEPM] = useState(2);
-  const [trackingDifficulty, setTrackingDifficulty] = useState(5);
   const [showTrackingLog, setShowTrackingLog] = useState(false);
-  const [isTrackingTaskEnabled, setIsTrackingTaskEnabled] = useState(true);
-  const [trackingAutoEvents, setTrackingAutoEvents] = useState(false);
   const [trackingEventLog, setTrackingEventLog] = useState([]);
+
+  // Add tracking state if not already present
   const [isTrackingManual, setIsTrackingManual] = useState(false);
   const [isInBox, setIsInBox] = useState(false);
-  const [trackingMetrics, setTrackingMetrics] = useState(
-    TrackingTask.getDefaultMetrics ? 
-    TrackingTask.getDefaultMetrics() : 
-    { healthImpact: 0, systemLoad: 0 }
-  );
 
-  // Sidebar control
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  // Add state for Resource Management task
+  const [isResourceTaskEnabled, setIsResourceTaskEnabled] = useState(true);
+
+  // Add new state for monitoring task enabled/disabled
+  const [isMonitoringTaskEnabled, setIsMonitoringTaskEnabled] = useState(true);
+
+  // Add new state for tracking task enabled/disabled
+  const [isTrackingTaskEnabled, setIsTrackingTaskEnabled] = useState(true);
+
+  // Add state for tracking difficulty
+  const [trackingDifficulty, setTrackingDifficulty] = useState(5);
+
+  // Add state for event sidebar
   const [isEventSidebarOpen, setIsEventSidebarOpen] = useState(false);
+
+  // Add these state variables with the other state declarations at the top of the App component
+  const [monitoringAutoEvents, setMonitoringAutoEvents] = useState(false);
+  const [trackingAutoEvents, setTrackingAutoEvents] = useState(false);
+  const [commAutoEvents, setCommAutoEvents] = useState(false);
+  const [resourceAutoEvents, setResourceAutoEvents] = useState(false);
+
+  // Add state for task difficulties
+  const [commDifficulty, setCommDifficulty] = useState(5);
+  const [monitoringDifficulty, setMonitoringDifficulty] = useState(5);
+
+  // Health ref to track system health for scoring
+  const systemHealthRef = useRef(100);
+
+  // Custom handler to append Tracking logs
+  const handleTrackingLogUpdate = useCallback((newEntry) => {
+    setTrackingEventLog(prevLog => [...prevLog, newEntry]);
+  }, []);
+
+  // In the Communications Task render section:
+  const [commMetrics, setCommMetrics] = useState({ healthImpact: 0, systemLoad: 0 });
+
+  // Add refs at the top of App component
+  const commTaskRef = useRef(null);
+  const resourceTaskRef = useRef(null);
+
+  // Add ref for monitoring task
+  const monitoringTaskRef = useRef(null);
+
+  // Add ref for tracking task
+  const trackingTaskRef = useRef(null);
+
+  // Add ref for SystemHealth component
+  const systemHealthComponentRef = useRef(null);
+
+  // -------------------------
+  // 2) LAYOUT (MAIN + SIDEBAR)
+  // -------------------------
+
+  const [resourceMetrics, setResourceMetrics] = useState(ResourceManagementTask.getDefaultMetrics());
+
+  // Add console log to verify metrics updates
+  const handleResourceMetricsUpdate = (metrics) => {
+    setResourceMetrics(metrics);
+  };
 
   // Add state for monitoring metrics
   const [monitoringMetrics, setMonitoringMetrics] = useState({
@@ -79,26 +119,11 @@ function App() {
     systemLoad: 0
   });
 
-  // Refs
-  const commTaskRef = useRef(null);
-  const monitoringTaskRef = useRef(null);
-  const trackingTaskRef = useRef(null);
-  const resourceTaskRef = useRef(null);
-  const systemHealthRef = useRef(null);
-  const systemHealthValueRef = useRef(100);
+  // Add with other state declarations (around line 20-30)
+  const [trackingMetrics, setTrackingMetrics] = useState(TrackingTask.getDefaultMetrics());
 
-  // Task registration status
+  // Add a new state for task registration status
   const [tasksRegistered, setTasksRegistered] = useState(false);
-
-  // Custom handler to append Tracking logs
-  const handleTrackingLogUpdate = useCallback((newEntry) => {
-    setTrackingEventLog(prevLog => [...prevLog, newEntry]);
-  }, []);
-
-  // Handle resource metrics update
-  const handleResourceMetricsUpdate = useCallback((metrics) => {
-    setResourceMetrics(metrics);
-  }, []);
 
   // Register task refs with the event service when they change
   useEffect(() => {
@@ -191,42 +216,6 @@ function App() {
     
     // Reset game mode state
     setGameResults(null);
-
-    // Reset task components explicitly
-    // Use setTimeout to ensure this runs after state updates
-    setTimeout(() => {
-      // Reset Resource Management task (tanks)
-      if (resourceTaskRef.current && typeof resourceTaskRef.current.resetTask === 'function') {
-        resourceTaskRef.current.resetTask();
-      }
-      
-      // Reset Communications task
-      if (commTaskRef.current) {
-        if (typeof commTaskRef.current.resetTask === 'function') {
-          commTaskRef.current.resetTask();
-        } else if (typeof commTaskRef.current.reset === 'function') {
-          commTaskRef.current.reset();
-        } else if (typeof commTaskRef.current.clearActiveMessage === 'function') {
-          commTaskRef.current.clearActiveMessage();
-        }
-      }
-      
-      // Reset Monitoring task
-      if (monitoringTaskRef.current && typeof monitoringTaskRef.current.resetTask === 'function') {
-        monitoringTaskRef.current.resetTask();
-      }
-      
-      // Reset Tracking task
-      if (trackingTaskRef.current && typeof trackingTaskRef.current.resetTask === 'function') {
-        trackingTaskRef.current.resetTask();
-      }
-
-      // Make sure system health is reset too
-      if (systemHealthRef.current && typeof systemHealthRef.current.resetHealth === 'function') {
-        systemHealthRef.current.resetHealth();
-      }
-      systemHealthValueRef.current = 100;
-    }, 100);
   }, []);
 
   // Function to handle starting the game from the main menu
@@ -246,19 +235,6 @@ function App() {
     
     // Reset the task registration status so it will register again
     setTasksRegistered(false);
-
-    // Reset all tanks explicitly for Normal Mode
-    if (mode === 'normal') {
-      // Use a small timeout to ensure components are mounted
-      setTimeout(() => {
-        if (resourceTaskRef.current && typeof resourceTaskRef.current.resetTask === 'function') {
-          console.log('Resetting all tanks for Normal Mode');
-          resourceTaskRef.current.resetTask();
-        } else {
-          console.warn('Resource task not available for reset');
-        }
-      }, 100);
-    }
   }, [resetAllTasksToDefault]);
 
   // Function to handle exiting to the main menu
@@ -313,7 +289,7 @@ function App() {
     return (
       <MainMenu 
         onStartGame={startGame} 
-        onExitApp={handleExitApp} 
+        onExitApp={handleExitApp}
         gameResults={gameResults}
       />
     );
@@ -323,16 +299,68 @@ function App() {
     <div className="app-container" style={{ height: '100vh', overflow: 'hidden' }}>
       <div className="main-container">
         {/* Only show sidebar in testing mode */}
+        {currentGameMode === 'testing' && (
+          <EnhancedSidebar 
+            isSidebarOpen={isSidebarOpen}
+            setIsSidebarOpen={setIsSidebarOpen}
+            monitoringSettings={{
+              eventsPerMinute: monitoringEPM,
+              setEventsPerMinute: setMonitoringEPM,
+              difficulty: monitoringDifficulty,
+              setDifficulty: setMonitoringDifficulty,
+              isEnabled: isMonitoringTaskEnabled,
+              setIsEnabled: setIsMonitoringTaskEnabled,
+              autoEvents: monitoringAutoEvents,
+              setAutoEvents: setMonitoringAutoEvents
+            }}
+            commSettings={{
+              eventsPerMinute: commEPM,
+              setEventsPerMinute: setCommEPM,
+              difficulty: commDifficulty,
+              setDifficulty: setCommDifficulty,
+              isEnabled: isCommTaskEnabled,
+              setIsEnabled: setIsCommTaskEnabled,
+              autoEvents: commAutoEvents,
+              setAutoEvents: setCommAutoEvents
+            }}
+            trackingSettings={{
+              eventsPerMinute: trackingEPM,
+              setEventsPerMinute: setTrackingEPM,
+              difficulty: trackingDifficulty,
+              setDifficulty: setTrackingDifficulty,
+              isEnabled: isTrackingTaskEnabled,
+              setIsEnabled: setIsTrackingTaskEnabled,
+              autoEvents: trackingAutoEvents,
+              setAutoEvents: setTrackingAutoEvents
+            }}
+            resourceSettings={{
+              eventsPerMinute: resourceEPM,
+              setEventsPerMinute: setResourceEPM,
+              difficulty: resourceDifficulty,
+              setDifficulty: setResourceDifficulty,
+              isEnabled: isResourceTaskEnabled,
+              setIsEnabled: setIsResourceTaskEnabled,
+              autoEvents: resourceAutoEvents,
+              setAutoEvents: setResourceAutoEvents
+            }}
+            exitToMenu={exitToMainMenu}
+            eventService={eventService}
+            isEventSidebarOpen={isEventSidebarOpen}
+            setIsEventSidebarOpen={setIsEventSidebarOpen}
+          />
+        )}
+
+        {/* Normal Mode Game HUD */}
         {currentGameMode === 'normal' && (
           <NormalModeGame
             duration={gameDuration}
             onGameEnd={handleGameEnd}
             eventService={eventService}
-            healthRef={systemHealthValueRef}
+            healthRef={systemHealthRef}
           />
         )}
 
-        <div className={`main-content ${isEventSidebarOpen && currentGameMode === 'testing' ? 'sidebar-open' : ''}`}>
+        <div className={`main-content ${isSidebarOpen && currentGameMode === 'testing' ? 'sidebar-open' : ''} ${isEventSidebarOpen && currentGameMode === 'testing' ? 'event-sidebar-open' : ''}`}>
           <div style={{ 
             display: 'flex', 
             flexDirection: 'column',
@@ -368,7 +396,7 @@ function App() {
                 onLogUpdate={setMonitoringEventLog}
                 onMetricsUpdate={setMonitoringMetrics}
                 isEnabled={isMonitoringTaskEnabled}
-                        autoEvents={monitoringAutoEvents}
+                autoEvents={monitoringAutoEvents}
               />
             ) : (
               <div style={{
@@ -405,7 +433,7 @@ function App() {
               }}
               onMetricsUpdate={setTrackingMetrics}
               isEnabled={isTrackingTaskEnabled}
-                      autoEvents={trackingAutoEvents}
+              autoEvents={trackingAutoEvents}
             />
           </div>
 
@@ -419,7 +447,7 @@ function App() {
             flexDirection: 'column'
           }}>
             <SystemHealth
-                      ref={systemHealthRef}
+              ref={systemHealthComponentRef}
               monitoringLogs={monitoringEventLog}
               resourceLogs={resourceEventLog}
               commLogs={commEventLog}
@@ -430,7 +458,7 @@ function App() {
               resourceMetrics={resourceMetrics}
               monitoringMetrics={monitoringMetrics}
               trackingMetrics={trackingMetrics}
-                      healthRef={systemHealthValueRef}
+              healthRef={systemHealthRef}
             />
           </div>
 
@@ -450,7 +478,7 @@ function App() {
                 showLog={showCommLog}
                 onLogUpdate={setCommEventLog}
                 onMetricsUpdate={setCommMetrics}
-                        autoEvents={commAutoEvents}
+                autoEvents={commAutoEvents}
               />
             ) : (
               <div style={{
@@ -481,139 +509,13 @@ function App() {
               onLogUpdate={setResourceEventLog}
               onMetricsUpdate={handleResourceMetricsUpdate}
               isEnabled={isResourceTaskEnabled}
-                      autoEvents={resourceAutoEvents}
+              autoEvents={resourceAutoEvents}
             />
-                  </div>
-                </div>
+          </div>
+        </div>
               </div>
           </div>
         </div>
-      </div>
-
-        {/* Testing/Normal Mode Control Buttons */}
-        {currentGameMode === 'testing' && (
-      <div style={{ 
-        position: 'fixed', 
-            top: '10px', 
-        right: '20px', 
-        zIndex: 1000 
-      }}>
-        <div style={{ display: 'flex', gap: '10px' }}>
-          <button
-            onClick={exitToMainMenu}
-            style={{
-              padding: '8px 12px',
-              background: '#dc3545',
-              color: 'white',
-              border: 'none',
-              borderRadius: '4px',
-              cursor: 'pointer'
-            }}
-          >
-            Main Menu (Ctrl+Q)
-          </button>
-        <button
-          onClick={() => setIsEventSidebarOpen(!isEventSidebarOpen)}
-          style={{
-            padding: '8px 12px',
-            background: isEventSidebarOpen ? '#555' : '#28a745',
-            color: 'white',
-            border: 'none',
-            borderRadius: '4px',
-            cursor: 'pointer'
-          }}
-        >
-                {isEventSidebarOpen ? 'Hide Controls' : 'Show Controls'}
-        </button>
-        </div>
-          </div>
-        )}
-
-        {/* Settings Sidebar for Testing Mode */}
-        {currentGameMode === 'testing' && isEventSidebarOpen && (
-          <div className="sidebar">
-            <EnhancedSidebar
-              // Task settings
-              commSettings={{
-                eventsPerMinute: commEPM,
-                difficulty: commDifficulty,
-                isEnabled: isCommTaskEnabled,
-                autoEvents: commAutoEvents
-              }}
-              monitoringSettings={{
-                eventsPerMinute: monitoringEPM,
-                difficulty: monitoringDifficulty,
-                isEnabled: isMonitoringTaskEnabled,
-                autoEvents: monitoringAutoEvents
-              }}
-              trackingSettings={{
-                eventsPerMinute: trackingEPM,
-                difficulty: trackingDifficulty,
-                isEnabled: isTrackingTaskEnabled,
-                autoEvents: trackingAutoEvents
-              }}
-              resourceSettings={{
-                eventsPerMinute: resourceEPM,
-                difficulty: resourceDifficulty,
-                isEnabled: isResourceTaskEnabled,
-                autoEvents: resourceAutoEvents
-              }}
-              // Logs for each task
-              monitoringLog={monitoringEventLog}
-              commLog={commEventLog}
-              trackingLog={trackingEventLog}
-              resourceLog={resourceEventLog}
-              // Callback functions
-              onCommConfigChange={(type, value) => {
-                if (type === 'epm') setCommEPM(value);
-                if (type === 'difficulty') setCommDifficulty(value);
-                if (type === 'autoEvents') setCommAutoEvents(value);
-                if (type === 'isEnabled') setIsCommTaskEnabled(value);
-              }}
-              onMonitoringConfigChange={(type, value) => {
-                if (type === 'epm') setMonitoringEPM(value);
-                if (type === 'difficulty') setMonitoringDifficulty(value);
-                if (type === 'autoEvents') setMonitoringAutoEvents(value);
-                if (type === 'isEnabled') setIsMonitoringTaskEnabled(value);
-              }}
-              onTrackingConfigChange={(type, value) => {
-                if (type === 'epm') setTrackingEPM(value);
-                if (type === 'difficulty') setTrackingDifficulty(value);
-                if (type === 'autoEvents') setTrackingAutoEvents(value);
-                if (type === 'isEnabled') setIsTrackingTaskEnabled(value);
-              }}
-              onResourceConfigChange={(type, value) => {
-                if (type === 'epm') setResourceEPM(value);
-                if (type === 'difficulty') setResourceDifficulty(value);
-                if (type === 'autoEvents') setResourceAutoEvents(value);
-                if (type === 'isEnabled') setIsResourceTaskEnabled(value);
-              }}
-              onSchedulingChange={(change) => {
-                const { task, type, value } = change;
-                switch (task) {
-                  case 'comm':
-                    if (type === 'epm') setCommEPM(value);
-                    if (type === 'difficulty') setCommDifficulty(value);
-                    break;
-                  case 'monitoring':
-                    if (type === 'epm') setMonitoringEPM(value);
-                    if (type === 'difficulty') setMonitoringDifficulty(value);
-                    break;
-                  case 'tracking':
-                    if (type === 'epm') setTrackingEPM(value);
-                    if (type === 'difficulty') setTrackingDifficulty(value);
-                    break;
-                  case 'resource':
-                    if (type === 'epm') setResourceEPM(value);
-                    if (type === 'difficulty') setResourceDifficulty(value);
-                    break;
-                  default:
-                    break;
-                }
-              }}
-            />
-          </div>
-        )}
       </div>
     </div>
   );

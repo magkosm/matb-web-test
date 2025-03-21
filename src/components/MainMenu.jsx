@@ -1,6 +1,16 @@
-import React from 'react';
+import React, { useState } from 'react';
 
 const MainMenu = ({ onStartGame, onExitApp }) => {
+  const [selectedMode, setSelectedMode] = useState('testing');
+  const [gameDuration, setGameDuration] = useState(5); // Default 5 minutes
+
+  const handleStartGame = () => {
+    onStartGame({
+      mode: selectedMode,
+      duration: gameDuration * 60 * 1000 // Convert minutes to milliseconds
+    });
+  };
+
   return (
     <div 
       style={{
@@ -31,8 +41,67 @@ const MainMenu = ({ onStartGame, onExitApp }) => {
         </p>
         
         <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+          <div style={{ 
+            display: 'flex', 
+            flexDirection: 'column', 
+            alignItems: 'flex-start', 
+            backgroundColor: 'rgba(0,0,0,0.3)', 
+            padding: '15px', 
+            borderRadius: '5px',
+            marginBottom: '15px'
+          }}>
+            <h3 style={{ marginTop: 0, marginBottom: '10px', alignSelf: 'center' }}>Game Mode</h3>
+            
+            <label style={{ marginBottom: '10px', display: 'flex', alignItems: 'center' }}>
+              <input 
+                type="radio" 
+                name="gameMode" 
+                value="testing" 
+                checked={selectedMode === 'testing'} 
+                onChange={() => setSelectedMode('testing')}
+                style={{ marginRight: '10px' }}
+              />
+              Testing Mode
+            </label>
+            
+            <label style={{ display: 'flex', alignItems: 'center' }}>
+              <input 
+                type="radio" 
+                name="gameMode" 
+                value="normal" 
+                checked={selectedMode === 'normal'} 
+                onChange={() => setSelectedMode('normal')}
+                style={{ marginRight: '10px' }}
+              />
+              Normal Mode
+            </label>
+            
+            {selectedMode === 'normal' && (
+              <div style={{ marginTop: '15px', width: '100%' }}>
+                <label style={{ display: 'block', marginBottom: '5px' }}>
+                  Game Duration (minutes):
+                </label>
+                <input 
+                  type="number" 
+                  min="1" 
+                  max="60" 
+                  value={gameDuration} 
+                  onChange={(e) => setGameDuration(Math.max(1, Math.min(60, parseInt(e.target.value) || 1)))}
+                  style={{
+                    width: '100%',
+                    padding: '8px',
+                    backgroundColor: 'rgba(255,255,255,0.1)',
+                    border: '1px solid rgba(255,255,255,0.3)',
+                    borderRadius: '4px',
+                    color: 'white'
+                  }}
+                />
+              </div>
+            )}
+          </div>
+          
           <button 
-            onClick={onStartGame}
+            onClick={handleStartGame}
             style={{
               padding: '15px 30px',
               fontSize: '18px',
