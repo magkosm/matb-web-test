@@ -120,7 +120,7 @@ function App() {
     
     // Skip registration if we're in the main menu
     if (showMainMenu) return;
-
+    
     // Check if all refs have current values
     const allRefsAvailable = 
       commTaskRef?.current && 
@@ -308,281 +308,281 @@ function App() {
             {/* Rest of the main content (tasks) */}
             <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
               <div style={{ flex: 1, overflow: 'auto', padding: '1rem' }}>
-                <div style={{ 
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(6, 1fr)',
-                  gridTemplateRows: '1fr 1fr',
-                  gap: '1rem',
-                  height: '100vh',
-                  padding: '5%',
-                  boxSizing: 'border-box'
-                }}>
-                  {/* Top Left - System Monitoring */}
-                  <div style={{ 
-                    gridColumn: '1 / span 2',
-                    gridRow: '1',
-                    border: '1px solid #ccc',
-                    overflow: 'hidden',
-                    display: 'flex',
-                    flexDirection: 'column'
-                  }}>
-                    {isMonitoringTaskEnabled ? (
-                      <MonitoringTask
-                        ref={monitoringTaskRef}
-                        eventsPerMinute={monitoringEPM}
-                        showLog={showMonitoringLog}
-                        onLogUpdate={setMonitoringEventLog}
-                        onMetricsUpdate={setMonitoringMetrics}
-                        isEnabled={isMonitoringTaskEnabled}
+        <div style={{ 
+          display: 'grid',
+          gridTemplateColumns: 'repeat(6, 1fr)',
+          gridTemplateRows: '1fr 1fr',
+          gap: '1rem',
+          height: '100vh',
+          padding: '5%',
+          boxSizing: 'border-box'
+        }}>
+          {/* Top Left - System Monitoring */}
+          <div style={{ 
+            gridColumn: '1 / span 2',
+            gridRow: '1',
+            border: '1px solid #ccc',
+            overflow: 'hidden',
+            display: 'flex',
+            flexDirection: 'column'
+          }}>
+            {isMonitoringTaskEnabled ? (
+              <MonitoringTask
+                ref={monitoringTaskRef}
+                eventsPerMinute={monitoringEPM}
+                showLog={showMonitoringLog}
+                onLogUpdate={setMonitoringEventLog}
+                onMetricsUpdate={setMonitoringMetrics}
+                isEnabled={isMonitoringTaskEnabled}
                         autoEvents={monitoringAutoEvents}
-                      />
-                    ) : (
-                      <div style={{
-                        height: '100%',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        background: '#f5f5f5',
-                        color: '#666'
-                      }}>
-                        System Monitoring Task Disabled
-                      </div>
-                    )}
-                  </div>
+              />
+            ) : (
+              <div style={{
+                height: '100%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                background: '#f5f5f5',
+                color: '#666'
+              }}>
+                System Monitoring Task Disabled
+              </div>
+            )}
+          </div>
 
-                  {/* Top Middle - Tracking Task */}
-                  <div style={{ 
-                    gridColumn: '3 / span 3',
-                    gridRow: '1',
-                    border: '1px solid #ccc',
-                    overflow: 'hidden',
-                    display: 'flex',
-                    flexDirection: 'column'
-                  }}>
-                    <TrackingTask
-                      ref={trackingTaskRef}
-                      eventsPerMinute={trackingEPM}
-                      difficulty={trackingDifficulty}
-                      showLog={showTrackingLog}
-                      onLogUpdate={handleTrackingLogUpdate}
-                      onStatusUpdate={({ isManual, isInBox }) => {
-                        setIsTrackingManual(isManual);
-                        setIsInBox(isInBox);
-                      }}
-                      onMetricsUpdate={setTrackingMetrics}
-                      isEnabled={isTrackingTaskEnabled}
+          {/* Top Middle - Tracking Task */}
+          <div style={{ 
+            gridColumn: '3 / span 3',
+            gridRow: '1',
+            border: '1px solid #ccc',
+            overflow: 'hidden',
+            display: 'flex',
+            flexDirection: 'column'
+          }}>
+            <TrackingTask
+              ref={trackingTaskRef}
+              eventsPerMinute={trackingEPM}
+              difficulty={trackingDifficulty}
+              showLog={showTrackingLog}
+              onLogUpdate={handleTrackingLogUpdate}
+              onStatusUpdate={({ isManual, isInBox }) => {
+                setIsTrackingManual(isManual);
+                setIsInBox(isInBox);
+              }}
+              onMetricsUpdate={setTrackingMetrics}
+              isEnabled={isTrackingTaskEnabled}
                       autoEvents={trackingAutoEvents}
-                    />
-                  </div>
+            />
+          </div>
 
-                  {/* Top Right - System Health */}
-                  <div style={{ 
-                    gridColumn: '6',
-                    gridRow: '1',
-                    border: '1px solid #ccc',
-                    overflow: 'hidden',
-                    display: 'flex',
-                    flexDirection: 'column'
-                  }}>
-                    <SystemHealth
-                      monitoringLogs={monitoringEventLog}
-                      resourceLogs={resourceEventLog}
-                      commLogs={commEventLog}
-                      trackingLogs={trackingEventLog}
-                      isTrackingManual={isTrackingManual}
-                      isInBox={isInBox}
-                      commMetrics={commMetrics}
-                      resourceMetrics={resourceMetrics}
-                      monitoringMetrics={monitoringMetrics}
-                      trackingMetrics={trackingMetrics}
-                    />
-                  </div>
+          {/* Top Right - System Health */}
+          <div style={{ 
+            gridColumn: '6',
+            gridRow: '1',
+            border: '1px solid #ccc',
+            overflow: 'hidden',
+            display: 'flex',
+            flexDirection: 'column'
+          }}>
+            <SystemHealth
+              monitoringLogs={monitoringEventLog}
+              resourceLogs={resourceEventLog}
+              commLogs={commEventLog}
+              trackingLogs={trackingEventLog}
+              isTrackingManual={isTrackingManual}
+              isInBox={isInBox}
+              commMetrics={commMetrics}
+              resourceMetrics={resourceMetrics}
+              monitoringMetrics={monitoringMetrics}
+              trackingMetrics={trackingMetrics}
+            />
+          </div>
 
-                  {/* Bottom Left - Communications Task */}
-                  <div style={{ 
-                    gridColumn: '1 / span 2',
-                    gridRow: '2',
-                    border: '1px solid #ccc',
-                    overflow: 'hidden',
-                    display: 'flex',
-                    flexDirection: 'column'
-                  }}>
-                    {isCommTaskEnabled ? (
-                      <CommunicationsTask
-                        ref={commTaskRef}
-                        eventsPerMinute={commEPM}
-                        showLog={showCommLog}
-                        onLogUpdate={setCommEventLog}
-                        onMetricsUpdate={setCommMetrics}
+          {/* Bottom Left - Communications Task */}
+          <div style={{ 
+            gridColumn: '1 / span 2',
+            gridRow: '2',
+            border: '1px solid #ccc',
+            overflow: 'hidden',
+            display: 'flex',
+            flexDirection: 'column'
+          }}>
+            {isCommTaskEnabled ? (
+              <CommunicationsTask
+                ref={commTaskRef}
+                eventsPerMinute={commEPM}
+                showLog={showCommLog}
+                onLogUpdate={setCommEventLog}
+                onMetricsUpdate={setCommMetrics}
                         autoEvents={commAutoEvents}
-                      />
-                    ) : (
-                      <div style={{
-                        height: '100%',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        background: '#f5f5f5',
-                        color: '#666'
-                      }}>
-                        Communications Task Disabled
-                      </div>
-                    )}
-                  </div>
+              />
+            ) : (
+              <div style={{
+                height: '100%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                background: '#f5f5f5',
+                color: '#666'
+              }}>
+                Communications Task Disabled
+              </div>
+            )}
+          </div>
 
-                  {/* Resource Management */}
-                  <div style={{ 
-                    gridColumn: '3 / span 4',
-                    gridRow: '2',
-                    border: '1px solid #ccc',
-                    overflow: 'hidden'
-                  }}>
-                    <ResourceManagementTask
-                      ref={resourceTaskRef}
-                      eventsPerMinute={resourceEPM}
-                      difficulty={resourceDifficulty}
-                      showLog={showResourceLog}
-                      onLogUpdate={setResourceEventLog}
-                      onMetricsUpdate={handleResourceMetricsUpdate}
-                      isEnabled={isResourceTaskEnabled}
+          {/* Resource Management */}
+          <div style={{ 
+            gridColumn: '3 / span 4',
+            gridRow: '2',
+            border: '1px solid #ccc',
+            overflow: 'hidden'
+          }}>
+            <ResourceManagementTask
+              ref={resourceTaskRef}
+              eventsPerMinute={resourceEPM}
+              difficulty={resourceDifficulty}
+              showLog={showResourceLog}
+              onLogUpdate={setResourceEventLog}
+              onMetricsUpdate={handleResourceMetricsUpdate}
+              isEnabled={isResourceTaskEnabled}
                       autoEvents={resourceAutoEvents}
-                    />
+            />
                   </div>
                 </div>
               </div>
-            </div>
           </div>
         </div>
+      </div>
 
-        {/* Existing Settings Sidebar */}
-        {isSidebarOpen && (
-          <div className="sidebar">
-            <div className="sidebar-content">
-              {/* Settings Section */}
-              <div className="settings-section">
-                <h2 style={{ marginTop: 0 }}>Settings</h2>
-                
-                {/* Monitoring Settings */}
-                <div style={{ marginBottom: '1.5rem' }}>
-                  <h3 style={{ fontSize: '1rem', marginBottom: '0.5rem' }}>Monitoring Task</h3>
+              {/* Existing Settings Sidebar */}
+              {isSidebarOpen && (
+                <div className="sidebar">
+        <div className="sidebar-content">
+          {/* Settings Section */}
+          <div className="settings-section">
+            <h2 style={{ marginTop: 0 }}>Settings</h2>
+            
+            {/* Monitoring Settings */}
+            <div style={{ marginBottom: '1.5rem' }}>
+              <h3 style={{ fontSize: '1rem', marginBottom: '0.5rem' }}>Monitoring Task</h3>
+              <div style={{ marginBottom: '0.5rem' }}>
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={isMonitoringTaskEnabled}
+                    onChange={() => setIsMonitoringTaskEnabled(!isMonitoringTaskEnabled)}
+                  />
+                  &nbsp;Task Enabled
+                </label>
+              </div>
+              {isMonitoringTaskEnabled && (
+                <>
+                  <div style={{ marginBottom: '0.5rem' }}>
+                    <label>
+                      Events/Minute:&nbsp;
+                      <input
+                        type="number"
+                        min={1}
+                        max={20}
+                        value={monitoringEPM}
+                        onChange={(e) => setMonitoringEPM(+e.target.value)}
+                        style={{ width: '60px' }}
+                      />
+                    </label>
+                  </div>
                   <div style={{ marginBottom: '0.5rem' }}>
                     <label>
                       <input
                         type="checkbox"
-                        checked={isMonitoringTaskEnabled}
-                        onChange={() => setIsMonitoringTaskEnabled(!isMonitoringTaskEnabled)}
+                        checked={showMonitoringLog}
+                        onChange={() => setShowMonitoringLog(!showMonitoringLog)}
                       />
-                      &nbsp;Task Enabled
+                      &nbsp;Show Log
                     </label>
                   </div>
-                  {isMonitoringTaskEnabled && (
-                    <>
-                      <div style={{ marginBottom: '0.5rem' }}>
-                        <label>
-                          Events/Minute:&nbsp;
-                          <input
-                            type="number"
-                            min={1}
-                            max={20}
-                            value={monitoringEPM}
-                            onChange={(e) => setMonitoringEPM(+e.target.value)}
-                            style={{ width: '60px' }}
-                          />
-                        </label>
-                      </div>
-                      <div style={{ marginBottom: '0.5rem' }}>
-                        <label>
-                          <input
-                            type="checkbox"
-                            checked={showMonitoringLog}
-                            onChange={() => setShowMonitoringLog(!showMonitoringLog)}
-                          />
-                          &nbsp;Show Log
-                        </label>
-                      </div>
-                      <div style={{ marginBottom: '0.5rem' }}>
-                        <label>
-                          <input
-                            type="checkbox"
-                            checked={monitoringAutoEvents}
-                            onChange={() => setMonitoringAutoEvents(!monitoringAutoEvents)}
-                          />
-                          &nbsp;Auto Events (Default Off)
-                        </label>
-                      </div>
-                      <div style={{ marginBottom: '1rem' }}>
-                        <button
+                            <div style={{ marginBottom: '0.5rem' }}>
+                              <label>
+                                <input
+                                  type="checkbox"
+                                  checked={monitoringAutoEvents}
+                                  onChange={() => setMonitoringAutoEvents(!monitoringAutoEvents)}
+                                />
+                                &nbsp;Auto Events (Default Off)
+                              </label>
+                            </div>
+                  <div style={{ marginBottom: '1rem' }}>
+                    <button
                           onClick={() => {
                             if (monitoringTaskRef.current && typeof monitoringTaskRef.current.resetTask === 'function') {
                               monitoringTaskRef.current.resetTask();
                             }
                           }}
-                          style={{
-                            padding: '0.25rem 0.5rem',
-                            background: '#dc3545',
-                            color: 'white',
-                            border: 'none',
-                            borderRadius: '4px',
-                            cursor: 'pointer'
-                          }}
-                        >
-                          Reset Task
-                        </button>
-                      </div>
-                    </>
-                  )}
-                </div>
+                      style={{
+                        padding: '0.25rem 0.5rem',
+                        background: '#dc3545',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '4px',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      Reset Task
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
 
-                {/* Communications Settings */}
-                <div>
-                  <h3 style={{ fontSize: '1rem', marginBottom: '0.5rem' }}>Communications Task</h3>
+            {/* Communications Settings */}
+            <div>
+              <h3 style={{ fontSize: '1rem', marginBottom: '0.5rem' }}>Communications Task</h3>
+              <div style={{ marginBottom: '0.5rem' }}>
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={isCommTaskEnabled}
+                    onChange={() => setIsCommTaskEnabled(!isCommTaskEnabled)}
+                  />
+                  &nbsp;Task Enabled
+                </label>
+              </div>
+              {isCommTaskEnabled && (
+                <>
+                  <div style={{ marginBottom: '0.5rem' }}>
+                    <label>
+                      Events/Minute:&nbsp;
+                      <input
+                        type="number"
+                        min={1}
+                        max={20}
+                        value={commEPM}
+                        onChange={(e) => setCommEPM(+e.target.value)}
+                        style={{ width: '60px' }}
+                      />
+                    </label>
+                  </div>
                   <div style={{ marginBottom: '0.5rem' }}>
                     <label>
                       <input
                         type="checkbox"
-                        checked={isCommTaskEnabled}
-                        onChange={() => setIsCommTaskEnabled(!isCommTaskEnabled)}
+                        checked={showCommLog}
+                        onChange={() => setShowCommLog(!showCommLog)}
                       />
-                      &nbsp;Task Enabled
+                      &nbsp;Show Log
                     </label>
                   </div>
-                  {isCommTaskEnabled && (
-                    <>
-                      <div style={{ marginBottom: '0.5rem' }}>
-                        <label>
-                          Events/Minute:&nbsp;
-                          <input
-                            type="number"
-                            min={1}
-                            max={20}
-                            value={commEPM}
-                            onChange={(e) => setCommEPM(+e.target.value)}
-                            style={{ width: '60px' }}
-                          />
-                        </label>
-                      </div>
-                      <div style={{ marginBottom: '0.5rem' }}>
-                        <label>
-                          <input
-                            type="checkbox"
-                            checked={showCommLog}
-                            onChange={() => setShowCommLog(!showCommLog)}
-                          />
-                          &nbsp;Show Log
-                        </label>
-                      </div>
-                      <div style={{ marginBottom: '0.5rem' }}>
-                        <label>
-                          <input
-                            type="checkbox"
-                            checked={commAutoEvents}
-                            onChange={() => setCommAutoEvents(!commAutoEvents)}
-                          />
-                          &nbsp;Auto Events (Default Off)
-                        </label>
-                      </div>
-                      <div style={{ marginBottom: '1rem' }}>
-                        <button
+                            <div style={{ marginBottom: '0.5rem' }}>
+                              <label>
+                                <input
+                                  type="checkbox"
+                                  checked={commAutoEvents}
+                                  onChange={() => setCommAutoEvents(!commAutoEvents)}
+                                />
+                                &nbsp;Auto Events (Default Off)
+                              </label>
+                            </div>
+                  <div style={{ marginBottom: '1rem' }}>
+                    <button
                           onClick={() => {
                             if (commTaskRef.current) {
                               if (typeof commTaskRef.current.resetTask === 'function') {
@@ -594,319 +594,319 @@ function App() {
                               }
                             }
                           }}
-                          style={{
-                            padding: '0.25rem 0.5rem',
-                            background: '#dc3545',
-                            color: 'white',
-                            border: 'none',
-                            borderRadius: '4px',
-                            cursor: 'pointer'
-                          }}
-                        >
-                          Reset Task
-                        </button>
-                      </div>
-                    </>
-                  )}
-                </div>
+                      style={{
+                        padding: '0.25rem 0.5rem',
+                        background: '#dc3545',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '4px',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      Reset Task
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
 
-                {/* Tracking Settings */}
-                <div style={{ marginBottom: '1.5rem' }}>
-                  <h3 style={{ fontSize: '1rem', marginBottom: '0.5rem' }}>Tracking Task</h3>
+            {/* Tracking Settings */}
+            <div style={{ marginBottom: '1.5rem' }}>
+              <h3 style={{ fontSize: '1rem', marginBottom: '0.5rem' }}>Tracking Task</h3>
+              <div style={{ marginBottom: '0.5rem' }}>
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={isTrackingTaskEnabled}
+                    onChange={() => setIsTrackingTaskEnabled(!isTrackingTaskEnabled)}
+                  />
+                  &nbsp;Task Enabled
+                </label>
+              </div>
+              {isTrackingTaskEnabled && (
+                <>
+                  <div style={{ marginBottom: '0.5rem' }}>
+                    <label>
+                      Events/Minute:&nbsp;
+                      <input
+                        type="number"
+                        min={1}
+                        max={20}
+                        value={trackingEPM}
+                        onChange={(e) => setTrackingEPM(+e.target.value)}
+                        style={{ width: '60px' }}
+                      />
+                    </label>
+                  </div>
+                  <div style={{ marginBottom: '0.5rem' }}>
+                    <label>
+                      Difficulty:&nbsp;
+                      <input
+                        type="range"
+                        min="0"
+                        max="10"
+                        value={trackingDifficulty}
+                        onChange={(e) => setTrackingDifficulty(Number(e.target.value))}
+                        style={{ width: '100px' }}
+                      />
+                      &nbsp;{trackingDifficulty}
+                    </label>
+                  </div>
                   <div style={{ marginBottom: '0.5rem' }}>
                     <label>
                       <input
                         type="checkbox"
-                        checked={isTrackingTaskEnabled}
-                        onChange={() => setIsTrackingTaskEnabled(!isTrackingTaskEnabled)}
+                        checked={showTrackingLog}
+                        onChange={() => setShowTrackingLog(!showTrackingLog)}
                       />
-                      &nbsp;Task Enabled
+                      &nbsp;Show Log
                     </label>
                   </div>
-                  {isTrackingTaskEnabled && (
-                    <>
-                      <div style={{ marginBottom: '0.5rem' }}>
-                        <label>
-                          Events/Minute:&nbsp;
-                          <input
-                            type="number"
-                            min={1}
-                            max={20}
-                            value={trackingEPM}
-                            onChange={(e) => setTrackingEPM(+e.target.value)}
-                            style={{ width: '60px' }}
-                          />
-                        </label>
-                      </div>
-                      <div style={{ marginBottom: '0.5rem' }}>
-                        <label>
-                          Difficulty:&nbsp;
-                          <input
-                            type="range"
-                            min="0"
-                            max="10"
-                            value={trackingDifficulty}
-                            onChange={(e) => setTrackingDifficulty(Number(e.target.value))}
-                            style={{ width: '100px' }}
-                          />
-                          &nbsp;{trackingDifficulty}
-                        </label>
-                      </div>
-                      <div style={{ marginBottom: '0.5rem' }}>
-                        <label>
-                          <input
-                            type="checkbox"
-                            checked={showTrackingLog}
-                            onChange={() => setShowTrackingLog(!showTrackingLog)}
-                          />
-                          &nbsp;Show Log
-                        </label>
-                      </div>
-                      <div style={{ marginBottom: '0.5rem' }}>
-                        <label>
-                          <input
-                            type="checkbox"
-                            checked={trackingAutoEvents}
-                            onChange={() => setTrackingAutoEvents(!trackingAutoEvents)}
-                          />
-                          &nbsp;Auto Events (Default Off)
-                        </label>
-                      </div>
-                      <div style={{ marginBottom: '1rem' }}>
-                        <button
-                          onClick={() => {
+                            <div style={{ marginBottom: '0.5rem' }}>
+                              <label>
+                                <input
+                                  type="checkbox"
+                                  checked={trackingAutoEvents}
+                                  onChange={() => setTrackingAutoEvents(!trackingAutoEvents)}
+                                />
+                                &nbsp;Auto Events (Default Off)
+                              </label>
+                            </div>
+                  <div style={{ marginBottom: '1rem' }}>
+                    <button
+                      onClick={() => {
                             if (trackingTaskRef.current && typeof trackingTaskRef.current.resetTask === 'function') {
-                              trackingTaskRef.current.resetTask();
-                            } else {
+                          trackingTaskRef.current.resetTask();
+                        } else {
                               console.warn('Tracking task reset function not available');
-                            }
-                          }}
-                          style={{
-                            padding: '0.25rem 0.5rem',
-                            background: '#dc3545',
-                            color: 'white',
-                            border: 'none',
-                            borderRadius: '4px',
-                            cursor: 'pointer'
-                          }}
-                        >
-                          Reset Task
-                        </button>
-                      </div>
-                    </>
-                  )}
-                </div>
+                        }
+                      }}
+                      style={{
+                        padding: '0.25rem 0.5rem',
+                        background: '#dc3545',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '4px',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      Reset Task
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
 
-                {/* Resource Management Settings */}
-                <div>
-                  <h3 style={{ fontSize: '1rem', marginBottom: '0.5rem' }}>Resource Management</h3>
+            {/* Resource Management Settings */}
+            <div>
+              <h3 style={{ fontSize: '1rem', marginBottom: '0.5rem' }}>Resource Management</h3>
+              <div style={{ marginBottom: '0.5rem' }}>
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={isResourceTaskEnabled}
+                    onChange={() => setIsResourceTaskEnabled(!isResourceTaskEnabled)}
+                  />
+                  &nbsp;Task Enabled
+                </label>
+              </div>
+              {isResourceTaskEnabled && (
+                <>
+                  <div style={{ marginBottom: '0.5rem' }}>
+                    <label>
+                      Events/Minute:&nbsp;
+                      <input
+                        type="number"
+                        min={1}
+                        max={20}
+                        value={resourceEPM}
+                        onChange={(e) => setResourceEPM(+e.target.value)}
+                        style={{ width: '60px' }}
+                      />
+                    </label>
+                  </div>
+                  <div style={{ marginBottom: '0.5rem' }}>
+                    <label>
+                      Difficulty:&nbsp;
+                      <input
+                        type="range"
+                        min={0}
+                        max={10}
+                        value={resourceDifficulty}
+                        onChange={(e) => setResourceDifficulty(+e.target.value)}
+                        style={{ width: '100px' }}
+                      />
+                      &nbsp;{resourceDifficulty}
+                    </label>
+                  </div>
                   <div style={{ marginBottom: '0.5rem' }}>
                     <label>
                       <input
                         type="checkbox"
-                        checked={isResourceTaskEnabled}
-                        onChange={() => setIsResourceTaskEnabled(!isResourceTaskEnabled)}
+                        checked={showResourceLog}
+                        onChange={() => setShowResourceLog(!showResourceLog)}
                       />
-                      &nbsp;Task Enabled
+                      &nbsp;Show Log
                     </label>
                   </div>
-                  {isResourceTaskEnabled && (
-                    <>
-                      <div style={{ marginBottom: '0.5rem' }}>
-                        <label>
-                          Events/Minute:&nbsp;
-                          <input
-                            type="number"
-                            min={1}
-                            max={20}
-                            value={resourceEPM}
-                            onChange={(e) => setResourceEPM(+e.target.value)}
-                            style={{ width: '60px' }}
-                          />
-                        </label>
-                      </div>
-                      <div style={{ marginBottom: '0.5rem' }}>
-                        <label>
-                          Difficulty:&nbsp;
-                          <input
-                            type="range"
-                            min={0}
-                            max={10}
-                            value={resourceDifficulty}
-                            onChange={(e) => setResourceDifficulty(+e.target.value)}
-                            style={{ width: '100px' }}
-                          />
-                          &nbsp;{resourceDifficulty}
-                        </label>
-                      </div>
-                      <div style={{ marginBottom: '0.5rem' }}>
-                        <label>
-                          <input
-                            type="checkbox"
-                            checked={showResourceLog}
-                            onChange={() => setShowResourceLog(!showResourceLog)}
-                          />
-                          &nbsp;Show Log
-                        </label>
-                      </div>
-                      <div style={{ marginBottom: '0.5rem' }}>
-                        <label>
-                          <input
-                            type="checkbox"
-                            checked={resourceAutoEvents}
-                            onChange={() => setResourceAutoEvents(!resourceAutoEvents)}
-                          />
-                          &nbsp;Auto Events (Default Off)
-                        </label>
-                      </div>
-                      <div style={{ marginBottom: '1rem' }}>
-                        <button
+                            <div style={{ marginBottom: '0.5rem' }}>
+                              <label>
+                                <input
+                                  type="checkbox"
+                                  checked={resourceAutoEvents}
+                                  onChange={() => setResourceAutoEvents(!resourceAutoEvents)}
+                                />
+                                &nbsp;Auto Events (Default Off)
+                              </label>
+                            </div>
+                  <div style={{ marginBottom: '1rem' }}>
+                    <button
                           onClick={() => {
                             if (resourceTaskRef.current && typeof resourceTaskRef.current.resetTask === 'function') {
                               resourceTaskRef.current.resetTask();
                             }
                           }}
-                          style={{
-                            padding: '0.25rem 0.5rem',
-                            background: '#dc3545',
-                            color: 'white',
-                            border: 'none',
-                            borderRadius: '4px',
-                            cursor: 'pointer'
-                          }}
-                        >
-                          Reset Task
-                        </button>
-                      </div>
-                    </>
-                  )}
-                </div>
-              </div>
-
-              {/* Logs Section */}
-              <div className="logs-section">
-                {showMonitoringLog && (
-                  <div>
-                    <h3>Monitoring Log</h3>
-                    <MonitoringTask.Log eventLog={monitoringEventLog} />
+                      style={{
+                        padding: '0.25rem 0.5rem',
+                        background: '#dc3545',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '4px',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      Reset Task
+                    </button>
                   </div>
-                )}
-                {showCommLog && (
-                  <div>
-                    <h3>Communications Log</h3>
-                    <CommunicationsTask.Log commLog={commEventLog} />
-                  </div>
-                )}
-                {showTrackingLog && (
-                  <div className="log-section">
-                    <h3>Tracking Log</h3>
-                    <TrackingTask.Log trackingLog={trackingEventLog} />
-                  </div>
-                )}
-                {showResourceLog && (
-                  <div className="log-section">
-                    <h3>Resource Management Log</h3>
-                    <ResourceManagementTask.Log resourceLog={resourceEventLog} />
-                  </div>
-                )}
-              </div>
+                </>
+              )}
             </div>
           </div>
-        )}
 
-        {/* New Event Controls Sidebar */}
-        {isEventSidebarOpen && (
-          <div className="event-sidebar" style={{
-            position: 'fixed',
-            top: '10vh',
-            right: '0',
-            height: '90vh',
-            width: '30vw',
-            zIndex: 900,
-            transition: 'transform 0.3s ease-in-out',
-            boxShadow: '-2px 0 5px rgba(0, 0, 0, 0.1)',
-            overflowY: 'auto'
-          }}>
-            <EnhancedSidebar
-              // Task settings
-              commSettings={{
-                eventsPerMinute: commEPM,
-                showLog: showCommLog,
-                isEnabled: isCommTaskEnabled,
-                difficulty: commDifficulty
-              }}
-              monitoringSettings={{
-                eventsPerMinute: monitoringEPM,
-                showLog: showMonitoringLog,
-                isEnabled: isMonitoringTaskEnabled,
-                difficulty: monitoringDifficulty
-              }}
-              trackingSettings={{
-                eventsPerMinute: trackingEPM,
-                difficulty: trackingDifficulty,
-                showLog: showTrackingLog,
-                isEnabled: isTrackingTaskEnabled
-              }}
-              resourceSettings={{
-                eventsPerMinute: resourceEPM,
-                difficulty: resourceDifficulty,
-                showLog: showResourceLog,
-                isEnabled: isResourceTaskEnabled
-              }}
-              onSchedulingChange={(change) => {
-                console.log('Scheduling change received:', change);
-                const { task, type, value } = change;
-                
-                // Update the appropriate state based on the task and type
-                switch (task) {
-                  case 'comm':
-                    if (type === 'epm') setCommEPM(value);
-                    if (type === 'difficulty') {
-                      setCommDifficulty(value);
-                      if (commTaskRef.current) {
-                        commTaskRef.current.setDifficulty(value);
-                      }
-                    }
-                    break;
-                  case 'monitoring':
-                    if (type === 'epm') setMonitoringEPM(value);
-                    if (type === 'difficulty') {
-                      setMonitoringDifficulty(value);
-                      if (monitoringTaskRef.current) {
-                        monitoringTaskRef.current.setDifficulty(value);
-                      }
-                    }
-                    break;
-                  case 'tracking':
-                    if (type === 'epm') setTrackingEPM(value);
-                    if (type === 'difficulty') {
-                      setTrackingDifficulty(value);
-                      if (trackingTaskRef.current) {
-                        trackingTaskRef.current.setDifficulty(value);
-                      }
-                    }
-                    break;
-                  case 'resource':
-                    if (type === 'epm') setResourceEPM(value);
-                    if (type === 'difficulty') {
-                      setResourceDifficulty(value);
-                      if (resourceTaskRef.current) {
-                        resourceTaskRef.current.setDifficulty(value);
-                      }
-                    }
-                    break;
-                  default:
-                    break;
-                }
-              }}
-              // Logs
-              monitoringLog={monitoringEventLog}
-              commLog={commEventLog}
-              trackingLog={trackingEventLog}
-              resourceLog={resourceEventLog}
-            />
+          {/* Logs Section */}
+          <div className="logs-section">
+            {showMonitoringLog && (
+              <div>
+                <h3>Monitoring Log</h3>
+                <MonitoringTask.Log eventLog={monitoringEventLog} />
+              </div>
+            )}
+            {showCommLog && (
+              <div>
+                <h3>Communications Log</h3>
+                <CommunicationsTask.Log commLog={commEventLog} />
+              </div>
+            )}
+            {showTrackingLog && (
+              <div className="log-section">
+                <h3>Tracking Log</h3>
+                <TrackingTask.Log trackingLog={trackingEventLog} />
+              </div>
+            )}
+            {showResourceLog && (
+              <div className="log-section">
+                <h3>Resource Management Log</h3>
+                <ResourceManagementTask.Log resourceLog={resourceEventLog} />
+              </div>
+            )}
           </div>
-        )}
+        </div>
+      </div>
+              )}
+
+              {/* New Event Controls Sidebar */}
+              {isEventSidebarOpen && (
+                <div className="event-sidebar" style={{
+                  position: 'fixed',
+                  top: '10vh',
+                  right: '0',
+                  height: '90vh',
+                  width: '30vw',
+                  zIndex: 900,
+                  transition: 'transform 0.3s ease-in-out',
+                  boxShadow: '-2px 0 5px rgba(0, 0, 0, 0.1)',
+                  overflowY: 'auto'
+                }}>
+                  <EnhancedSidebar
+                    // Task settings
+                    commSettings={{
+                      eventsPerMinute: commEPM,
+                      showLog: showCommLog,
+                      isEnabled: isCommTaskEnabled,
+                      difficulty: commDifficulty
+                    }}
+                    monitoringSettings={{
+                      eventsPerMinute: monitoringEPM,
+                      showLog: showMonitoringLog,
+                      isEnabled: isMonitoringTaskEnabled,
+                      difficulty: monitoringDifficulty
+                    }}
+                    trackingSettings={{
+                      eventsPerMinute: trackingEPM,
+                      difficulty: trackingDifficulty,
+                      showLog: showTrackingLog,
+                      isEnabled: isTrackingTaskEnabled
+                    }}
+                    resourceSettings={{
+                      eventsPerMinute: resourceEPM,
+                      difficulty: resourceDifficulty,
+                      showLog: showResourceLog,
+                      isEnabled: isResourceTaskEnabled
+                    }}
+                    onSchedulingChange={(change) => {
+                      console.log('Scheduling change received:', change);
+                      const { task, type, value } = change;
+                      
+                      // Update the appropriate state based on the task and type
+                      switch (task) {
+                        case 'comm':
+                          if (type === 'epm') setCommEPM(value);
+                          if (type === 'difficulty') {
+                            setCommDifficulty(value);
+                            if (commTaskRef.current) {
+                              commTaskRef.current.setDifficulty(value);
+                            }
+                          }
+                          break;
+                        case 'monitoring':
+                          if (type === 'epm') setMonitoringEPM(value);
+                          if (type === 'difficulty') {
+                            setMonitoringDifficulty(value);
+                            if (monitoringTaskRef.current) {
+                              monitoringTaskRef.current.setDifficulty(value);
+                            }
+                          }
+                          break;
+                        case 'tracking':
+                          if (type === 'epm') setTrackingEPM(value);
+                          if (type === 'difficulty') {
+                            setTrackingDifficulty(value);
+                            if (trackingTaskRef.current) {
+                              trackingTaskRef.current.setDifficulty(value);
+                            }
+                          }
+                          break;
+                        case 'resource':
+                          if (type === 'epm') setResourceEPM(value);
+                          if (type === 'difficulty') {
+                            setResourceDifficulty(value);
+                            if (resourceTaskRef.current) {
+                              resourceTaskRef.current.setDifficulty(value);
+                            }
+                          }
+                          break;
+                        default:
+                          break;
+                      }
+                    }}
+                    // Logs
+                    monitoringLog={monitoringEventLog}
+                    commLog={commEventLog}
+                    trackingLog={trackingEventLog}
+                    resourceLog={resourceEventLog}
+                  />
+                </div>
+              )}
       </div>
 
       {/* Toggle Button - if needed outside the header */}
@@ -939,19 +939,19 @@ function App() {
           >
             Main Menu (Ctrl+Q)
           </button>
-          <button
-            onClick={() => setIsEventSidebarOpen(!isEventSidebarOpen)}
-            style={{
-              padding: '8px 12px',
-              background: isEventSidebarOpen ? '#555' : '#28a745',
-              color: 'white',
-              border: 'none',
-              borderRadius: '4px',
-              cursor: 'pointer'
-            }}
-          >
-            {isEventSidebarOpen ? 'Hide Event Controls' : 'Show Event Controls'}
-          </button>
+        <button
+          onClick={() => setIsEventSidebarOpen(!isEventSidebarOpen)}
+          style={{
+            padding: '8px 12px',
+            background: isEventSidebarOpen ? '#555' : '#28a745',
+            color: 'white',
+            border: 'none',
+            borderRadius: '4px',
+            cursor: 'pointer'
+          }}
+        >
+          {isEventSidebarOpen ? 'Hide Event Controls' : 'Show Event Controls'}
+        </button>
         </div>
       </div>
     </div>
