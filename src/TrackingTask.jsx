@@ -31,6 +31,7 @@ const TrackingTask = forwardRef(({
   isEnabled = true,
   autoEvents = false,
   isMobile
+  isMobile
 }, ref) => {
   const [cursorPosition, setCursorPosition] = useState({ x: 0, y: 0 });
   const [targetPosition, setTargetPosition] = useState({ x: 0, y: 0 });
@@ -878,6 +879,18 @@ const TrackingTask = forwardRef(({
           }}>
             {isAuto ? 'AUTO' : 'MANUAL'}
           </div>
+          <select 
+            value={inputMode}
+            onChange={(e) => setInputMode(e.target.value)}
+            style={{
+              padding: '5px',
+              borderRadius: '4px'
+            }}
+          >
+            <option value="keyboard">Keyboard</option>
+            <option value="touch">Touch</option>
+            <option value="joystick">Joystick</option>
+          </select>
           <select 
             value={inputMode}
             onChange={(e) => setInputMode(e.target.value)}
