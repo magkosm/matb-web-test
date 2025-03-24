@@ -29,7 +29,7 @@ const getInitialInputMode = () => {
 const INITIAL_STATE = {
   cursorPosition: { x: 0, y: 0 },
   targetPosition: { x: 0, y: 0 },
-  inputMode: getInitialInputMode(), // Set default based on saved preference or device
+  inputMode: 'keyboard', // Always default to keyboard instead of device detection
   isAuto: true,
   automationFailure: false,
   trackingLog: [],
@@ -70,7 +70,7 @@ const TrackingTask = forwardRef(({
     return detectedMode;
   }, [defaultInputMode]);
   
-  const [inputMode, setInputMode] = useState(initialInputMode);
+  const [inputMode, setInputMode] = useState('keyboard'); // Default to keyboard regardless of device
   const [isAuto, setIsAuto] = useState(true);
   const [trackingLog, setTrackingLog] = useState([]);
   const [automationFailure, setAutomationFailure] = useState(false);
@@ -542,13 +542,9 @@ const TrackingTask = forwardRef(({
   }, [isAuto, inputMode]);
 
   const resetTask = useCallback(() => {
-    // Save the current input mode to avoid losing user's preference
-    const currentInputMode = inputMode;
-    
     // Reset all state to initial values
     setCursorPosition(INITIAL_STATE.cursorPosition);
-    // Use the current input mode instead of fetching it again to preserve user choice
-    setInputMode(currentInputMode);
+    setInputMode('keyboard'); // Always reset to keyboard
     setIsAuto(INITIAL_STATE.isAuto);
     setTrackingLog(INITIAL_STATE.trackingLog);
     setAutomationFailure(INITIAL_STATE.automationFailure);
@@ -598,7 +594,7 @@ const TrackingTask = forwardRef(({
         rmsError: 0,
         isWithinTarget: true,
         isAuto: true,
-        inputMode: currentInputMode,
+        inputMode: 'keyboard',
         position: { x: 0, y: 0 }
       });
     });
@@ -608,8 +604,8 @@ const TrackingTask = forwardRef(({
     setSystemLoad(0);
     onMetricsUpdate?.({ healthImpact: 0, systemLoad: 0 });
     
-    console.log(`TrackingTask: Reset complete, preserved input mode: ${currentInputMode}`);
-  }, [onStatusUpdate, onLogUpdate, onMetricsUpdate, difficulty, inputMode]);
+    console.log(`TrackingTask: Reset complete, preserved input mode: keyboard`);
+  }, [onStatusUpdate, onLogUpdate, onMetricsUpdate, difficulty]);
 
   const startAutomation = () => {
     if (moveIntervalRef.current) {
