@@ -8,8 +8,18 @@ import SystemHealth from './components/SystemHealth';
 import EnhancedSidebar from './components/EnhancedSidebar';
 import MainMenu from './components/MainMenu';
 import NormalModeGame from './components/NormalModeGame';
+import InfiniteModeGame from './components/InfiniteModeGame';
+import CustomModeGame from './components/CustomModeGame';
 import eventService from './services/EventService';
+import BackgroundSelector from './components/BackgroundSelector';
+import BackgroundService from './services/BackgroundService';
 import './App.css';
+
+// Helper function to detect mobile devices
+const isMobileDevice = () => {
+  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || 
+         (navigator.maxTouchPoints && navigator.maxTouchPoints > 1);
+};
 
 function App() {
   // -------------------------
@@ -79,6 +89,9 @@ function App() {
     systemLoad: 0
   });
 
+  // Inside the App component, add a state for showing the background selector
+  const [showBackgroundSelector, setShowBackgroundSelector] = useState(false);
+
   // Refs
   const commTaskRef = useRef(null);
   const monitoringTaskRef = useRef(null);
@@ -89,6 +102,12 @@ function App() {
 
   // Task registration status
   const [tasksRegistered, setTasksRegistered] = useState(false);
+
+  // Mobile detection state
+  const [isMobile, setIsMobile] = useState(isMobileDevice());
+
+  // Add state for custom game configuration
+  const [customGameConfig, setCustomGameConfig] = useState(null);
 
   // Custom handler to append Tracking logs
   const handleTrackingLogUpdate = useCallback((newEntry) => {
@@ -232,7 +251,7 @@ function App() {
   // Function to handle starting the game from the main menu
   const startGame = useCallback((options) => {
     // Get mode and duration from options
-    const { mode, duration } = options;
+    const { mode, duration, taskConfig } = options;
     
     // Reset all tasks to their default states
     resetAllTasksToDefault();
@@ -241,6 +260,17 @@ function App() {
     setCurrentGameMode(mode);
     if (duration) setGameDuration(duration);
     
+    // For custom mode, store task configuration
+    if (mode === 'custom' && taskConfig) {
+      setCustomGameConfig(taskConfig);
+      
+      // Set task enabled states based on custom configuration
+      setIsCommTaskEnabled(taskConfig.comm.isActive);
+      setIsMonitoringTaskEnabled(taskConfig.monitoring.isActive);
+      setIsTrackingTaskEnabled(taskConfig.tracking.isActive);
+      setIsResourceTaskEnabled(taskConfig.resource.isActive);
+    }
+    
     // Hide the main menu
     setShowMainMenu(false);
     
@@ -248,11 +278,11 @@ function App() {
     setTasksRegistered(false);
 
     // Reset all tanks explicitly for Normal Mode
-    if (mode === 'normal') {
+    if (mode === 'normal' || mode === 'custom') {
       // Use a small timeout to ensure components are mounted
       setTimeout(() => {
         if (resourceTaskRef.current && typeof resourceTaskRef.current.resetTask === 'function') {
-          console.log('Resetting all tanks for Normal Mode');
+          console.log('Resetting all tanks for game mode');
           resourceTaskRef.current.resetTask();
         } else {
           console.warn('Resource task not available for reset');
@@ -276,11 +306,23 @@ function App() {
     setTasksRegistered(false);
   }, []);
 
-  // Handle Normal Mode game end
+  // Handle game end (both Normal Mode and Infinite Mode)
   const handleGameEnd = useCallback((results) => {
-    setGameResults(results);
+    // Preserve the gameMode in the results if it was provided
+    const gameMode = results.gameMode || currentGameMode;
+    
+    // Create a standardized result object with the mode included
+    const standardizedResults = {
+      ...results,
+      gameMode
+    };
+    
+    // Update the game results state with the standardized object
+    setGameResults(standardizedResults);
+    
+    // Return to the main menu
     exitToMainMenu();
-  }, [exitToMainMenu]);
+  }, [exitToMainMenu, currentGameMode]);
 
   // Add keyboard shortcut (Ctrl+Q) to exit to main menu
   useEffect(() => {
@@ -308,6 +350,24 @@ function App() {
     }
   };
 
+  // Add a useEffect to apply the background on component mount
+  useEffect(() => {
+    const currentBackground = BackgroundService.getCurrentBackground();
+    const style = BackgroundService.getBackgroundStyle(currentBackground);
+    document.body.style.backgroundImage = style.backgroundImage || 'none';
+    document.body.style.backgroundColor = style.backgroundColor || '';
+    document.body.style.backgroundSize = style.backgroundSize || '';
+    document.body.style.backgroundPosition = style.backgroundPosition || '';
+    document.body.style.backgroundRepeat = style.backgroundRepeat || '';
+  }, []);
+
+  // Add an effect to log when running on mobile
+  useEffect(() => {
+    if (isMobile) {
+      console.log('MATB-II is running on a mobile device - configuring for touch input');
+    }
+  }, [isMobile]);
+
   // If the main menu should be shown, render it instead of the main app
   if (showMainMenu) {
     return (
@@ -322,10 +382,28 @@ function App() {
   return (
     <div className="app-container" style={{ height: '100vh', overflow: 'hidden' }}>
       <div className="main-container">
-        {/* Only show sidebar in testing mode */}
+        {/* Only show game controls in game modes */}
         {currentGameMode === 'normal' && (
           <NormalModeGame
             duration={gameDuration}
+            onGameEnd={handleGameEnd}
+            eventService={eventService}
+            healthRef={systemHealthValueRef}
+          />
+        )}
+        
+        {currentGameMode === 'infinite' && (
+          <InfiniteModeGame
+            onGameEnd={handleGameEnd}
+            eventService={eventService}
+            healthRef={systemHealthValueRef}
+          />
+        )}
+        
+        {currentGameMode === 'custom' && customGameConfig && (
+          <CustomModeGame
+            duration={gameDuration}
+            taskConfig={customGameConfig}
             onGameEnd={handleGameEnd}
             eventService={eventService}
             healthRef={systemHealthValueRef}
@@ -358,7 +436,8 @@ function App() {
             border: '1px solid #ccc',
             overflow: 'hidden',
             display: 'flex',
-            flexDirection: 'column'
+            flexDirection: 'column',
+            backgroundColor: 'white'
           }}>
             {isMonitoringTaskEnabled ? (
               <MonitoringTask
@@ -368,7 +447,7 @@ function App() {
                 onLogUpdate={setMonitoringEventLog}
                 onMetricsUpdate={setMonitoringMetrics}
                 isEnabled={isMonitoringTaskEnabled}
-                        autoEvents={monitoringAutoEvents}
+                autoEvents={monitoringAutoEvents}
               />
             ) : (
               <div style={{
@@ -376,10 +455,23 @@ function App() {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                background: '#f5f5f5',
-                color: '#666'
+                background: '#e0e0e0',
+                color: '#888',
+                flexDirection: 'column'
               }}>
-                System Monitoring Task Disabled
+                <div style={{ 
+                  backgroundColor: '#d0d0d0', 
+                  color: '#686868',
+                  width: '100%',
+                  padding: '0.5rem',
+                  textAlign: 'center',
+                  fontWeight: 'bold'
+                }}>
+                  SYSTEM MONITORING
+                </div>
+                <div style={{ padding: '20px', textAlign: 'center' }}>
+                  System Monitoring Task Inactive
+                </div>
               </div>
             )}
           </div>
@@ -391,22 +483,50 @@ function App() {
             border: '1px solid #ccc',
             overflow: 'hidden',
             display: 'flex',
-            flexDirection: 'column'
+            flexDirection: 'column',
+            backgroundColor: 'white'
           }}>
-            <TrackingTask
-              ref={trackingTaskRef}
-              eventsPerMinute={trackingEPM}
-              difficulty={trackingDifficulty}
-              showLog={showTrackingLog}
-              onLogUpdate={handleTrackingLogUpdate}
-              onStatusUpdate={({ isManual, isInBox }) => {
-                setIsTrackingManual(isManual);
-                setIsInBox(isInBox);
-              }}
-              onMetricsUpdate={setTrackingMetrics}
-              isEnabled={isTrackingTaskEnabled}
-                      autoEvents={trackingAutoEvents}
-            />
+            {isTrackingTaskEnabled ? (
+              <TrackingTask
+                ref={trackingTaskRef}
+                eventsPerMinute={trackingEPM}
+                difficulty={trackingDifficulty}
+                showLog={showTrackingLog}
+                onLogUpdate={handleTrackingLogUpdate}
+                onStatusUpdate={({ isManual, isInBox }) => {
+                  setIsTrackingManual(isManual);
+                  setIsInBox(isInBox);
+                }}
+                onMetricsUpdate={setTrackingMetrics}
+                isEnabled={isTrackingTaskEnabled}
+                autoEvents={trackingAutoEvents}
+                isMobile={isMobile}
+              />
+            ) : (
+              <div style={{
+                height: '100%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                background: '#e0e0e0',
+                color: '#888',
+                flexDirection: 'column'
+              }}>
+                <div style={{ 
+                  backgroundColor: '#d0d0d0', 
+                  color: '#686868',
+                  width: '100%',
+                  padding: '0.5rem',
+                  textAlign: 'center',
+                  fontWeight: 'bold'
+                }}>
+                  TRACKING
+                </div>
+                <div style={{ padding: '20px', textAlign: 'center' }}>
+                  Tracking Task Inactive
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Top Right - System Health */}
@@ -416,10 +536,11 @@ function App() {
             border: '1px solid #ccc',
             overflow: 'hidden',
             display: 'flex',
-            flexDirection: 'column'
+            flexDirection: 'column',
+            backgroundColor: 'white'
           }}>
             <SystemHealth
-                      ref={systemHealthRef}
+              ref={systemHealthRef}
               monitoringLogs={monitoringEventLog}
               resourceLogs={resourceEventLog}
               commLogs={commEventLog}
@@ -430,7 +551,11 @@ function App() {
               resourceMetrics={resourceMetrics}
               monitoringMetrics={monitoringMetrics}
               trackingMetrics={trackingMetrics}
-                      healthRef={systemHealthValueRef}
+              isMonitoringActive={isMonitoringTaskEnabled}
+              isCommActive={isCommTaskEnabled}
+              isResourceActive={isResourceTaskEnabled}
+              isTrackingActive={isTrackingTaskEnabled}
+              healthRef={systemHealthValueRef}
             />
           </div>
 
@@ -441,7 +566,8 @@ function App() {
             border: '1px solid #ccc',
             overflow: 'hidden',
             display: 'flex',
-            flexDirection: 'column'
+            flexDirection: 'column',
+            backgroundColor: 'white'
           }}>
             {isCommTaskEnabled ? (
               <CommunicationsTask
@@ -450,7 +576,7 @@ function App() {
                 showLog={showCommLog}
                 onLogUpdate={setCommEventLog}
                 onMetricsUpdate={setCommMetrics}
-                        autoEvents={commAutoEvents}
+                autoEvents={commAutoEvents}
               />
             ) : (
               <div style={{
@@ -458,10 +584,23 @@ function App() {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                background: '#f5f5f5',
-                color: '#666'
+                background: '#e0e0e0',
+                color: '#888',
+                flexDirection: 'column'
               }}>
-                Communications Task Disabled
+                <div style={{ 
+                  backgroundColor: '#d0d0d0', 
+                  color: '#686868',
+                  width: '100%',
+                  padding: '0.5rem',
+                  textAlign: 'center',
+                  fontWeight: 'bold'
+                }}>
+                  COMMUNICATIONS
+                </div>
+                <div style={{ padding: '20px', textAlign: 'center' }}>
+                  Communications Task Inactive
+                </div>
               </div>
             )}
           </div>
@@ -471,24 +610,51 @@ function App() {
             gridColumn: '3 / span 4',
             gridRow: '2',
             border: '1px solid #ccc',
-            overflow: 'hidden'
+            overflow: 'hidden',
+            backgroundColor: 'white'
           }}>
-            <ResourceManagementTask
-              ref={resourceTaskRef}
-              eventsPerMinute={resourceEPM}
-              difficulty={resourceDifficulty}
-              showLog={showResourceLog}
-              onLogUpdate={setResourceEventLog}
-              onMetricsUpdate={handleResourceMetricsUpdate}
-              isEnabled={isResourceTaskEnabled}
-                      autoEvents={resourceAutoEvents}
-            />
-                  </div>
+            {isResourceTaskEnabled ? (
+              <ResourceManagementTask
+                ref={resourceTaskRef}
+                eventsPerMinute={resourceEPM}
+                difficulty={resourceDifficulty}
+                showLog={showResourceLog}
+                onLogUpdate={setResourceEventLog}
+                onMetricsUpdate={handleResourceMetricsUpdate}
+                isEnabled={isResourceTaskEnabled}
+                autoEvents={resourceAutoEvents}
+              />
+            ) : (
+              <div style={{
+                height: '100%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                background: '#e0e0e0',
+                color: '#888',
+                flexDirection: 'column'
+              }}>
+                <div style={{ 
+                  backgroundColor: '#d0d0d0', 
+                  color: '#686868',
+                  width: '100%',
+                  padding: '0.5rem',
+                  textAlign: 'center',
+                  fontWeight: 'bold'
+                }}>
+                  RESOURCE MANAGEMENT
+                </div>
+                <div style={{ padding: '20px', textAlign: 'center' }}>
+                  Resource Management Task Inactive
                 </div>
               </div>
+            )}
           </div>
         </div>
-      </div>
+              </div>
+            </div>
+          </div>
+        </div>
 
         {/* Testing/Normal Mode Control Buttons */}
         {currentGameMode === 'testing' && (
@@ -512,21 +678,44 @@ function App() {
           >
             Main Menu (Ctrl+Q)
           </button>
-        <button
-          onClick={() => setIsEventSidebarOpen(!isEventSidebarOpen)}
-          style={{
-            padding: '8px 12px',
-            background: isEventSidebarOpen ? '#555' : '#28a745',
-            color: 'white',
-            border: 'none',
-            borderRadius: '4px',
-            cursor: 'pointer'
-          }}
-        >
-                {isEventSidebarOpen ? 'Hide Controls' : 'Show Controls'}
-        </button>
+          <button
+            onClick={() => setShowBackgroundSelector(!showBackgroundSelector)}
+            style={{
+              padding: '8px 12px',
+              background: '#28a745',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: 'pointer'
+            }}
+          >
+            Background
+          </button>
+          <button
+            onClick={() => setIsEventSidebarOpen(!isEventSidebarOpen)}
+            style={{
+              padding: '8px 12px',
+              background: isEventSidebarOpen ? '#555' : '#28a745',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: 'pointer'
+            }}
+          >
+            {isEventSidebarOpen ? 'Hide Controls' : 'Show Controls'}
+          </button>
         </div>
+        {showBackgroundSelector && (
+          <div style={{ 
+            position: 'absolute', 
+            top: '50px', 
+            right: '0', 
+            zIndex: 1500 
+          }}>
+            <BackgroundSelector small={true} />
           </div>
+        )}
+      </div>
         )}
 
         {/* Settings Sidebar for Testing Mode */}
@@ -612,6 +801,41 @@ function App() {
                 }
               }}
             />
+          </div>
+        )}
+
+        {/* Add a small background selector button to normal and infinite modes */}
+        {(currentGameMode === 'normal' || currentGameMode === 'infinite') && (
+          <div style={{ 
+            position: 'fixed', 
+            top: '10px', 
+            right: '110px', 
+            zIndex: 1000 
+          }}>
+            <button
+              onClick={() => setShowBackgroundSelector(!showBackgroundSelector)}
+              style={{
+                padding: '8px 12px',
+                background: '#28a745',
+                color: 'white',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                fontSize: '12px'
+              }}
+            >
+              BG
+            </button>
+            {showBackgroundSelector && (
+              <div style={{ 
+                position: 'absolute', 
+                top: '40px', 
+                right: '0', 
+                zIndex: 1500 
+              }}>
+                <BackgroundSelector small={true} />
+              </div>
+            )}
           </div>
         )}
       </div>

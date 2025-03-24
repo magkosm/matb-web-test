@@ -5,6 +5,10 @@ const SystemHealth = forwardRef(({
   commMetrics,
   resourceMetrics,
   trackingMetrics,
+  isMonitoringActive = true,
+  isCommActive = true,
+  isResourceActive = true,
+  isTrackingActive = true,
   healthRef
 }, ref) => {
   const [cumulativeHealth, setCumulativeHealth] = useState(100);
@@ -15,6 +19,12 @@ const SystemHealth = forwardRef(({
   const metricsRef = useRef({ monitoringMetrics, commMetrics, resourceMetrics, trackingMetrics });
   const lastImpactTime = useRef(Date.now());
   const pendingImpacts = useRef([]);
+  const taskActiveStatusRef = useRef({
+    monitoring: isMonitoringActive,
+    comm: isCommActive,
+    resource: isResourceActive,
+    tracking: isTrackingActive
+  });
 
   // Make the health ref available to parent components
   useImperativeHandle(ref, () => ({
@@ -29,6 +39,16 @@ const SystemHealth = forwardRef(({
   useEffect(() => {
     metricsRef.current = { monitoringMetrics, commMetrics, resourceMetrics, trackingMetrics };
   }, [monitoringMetrics, commMetrics, resourceMetrics, trackingMetrics]);
+
+  // Update active status ref when props change
+  useEffect(() => {
+    taskActiveStatusRef.current = {
+      monitoring: isMonitoringActive,
+      comm: isCommActive,
+      resource: isResourceActive,
+      tracking: isTrackingActive
+    };
+  }, [isMonitoringActive, isCommActive, isResourceActive, isTrackingActive]);
 
   // Reset function
   const resetHealth = () => {
@@ -89,58 +109,45 @@ const SystemHealth = forwardRef(({
     };
   }, []);
 
-  // Add this effect to handle metrics updates
+  // Add this effect to handle metrics updates - updated to consider active status
   useEffect(() => {
     metricsRef.current = { monitoringMetrics, commMetrics, resourceMetrics, trackingMetrics };
     
-    // Calculate new load immediately when any metrics change
+    // Calculate new load immediately when any metrics change, only include active tasks
     const newLoad = Math.min(100, Math.max(0,
-      (resourceMetrics?.systemLoad || 0) + 
-      (commMetrics?.systemLoad || 0) +
-      (monitoringMetrics?.systemLoad || 0) +
-      (trackingMetrics?.systemLoad || 0)
+      (taskActiveStatusRef.current.resource ? (resourceMetrics?.systemLoad || 0) : 0) + 
+      (taskActiveStatusRef.current.comm ? (commMetrics?.systemLoad || 0) : 0) +
+      (taskActiveStatusRef.current.monitoring ? (monitoringMetrics?.systemLoad || 0) : 0) +
+      (taskActiveStatusRef.current.tracking ? (trackingMetrics?.systemLoad || 0) : 0)
     ));
-    
-    // console.log('SystemHealth - Metrics Update:', {
-    //   resourceLoad: resourceMetrics?.systemLoad || 0,
-    //   commLoad: commMetrics?.systemLoad || 0,
-    //   monitoringLoad: monitoringMetrics?.systemLoad || 0,
-    //   newLoad,
-    //   currentLoad: systemLoad
-    // });
     
     setSystemLoad(newLoad);
   }, [resourceMetrics, commMetrics, monitoringMetrics, trackingMetrics]);
 
-  // Modify the health impact processing effect to handle all tasks consistently
+  // Modify the health impact processing effect to handle active tasks only
   useEffect(() => {
     const processHealthImpacts = () => {
       const now = Date.now();
       const deltaTime = (now - lastImpactTime.current) / 1000; // Convert to seconds
       
-      // Get current impacts (all are per-second rates)
-      const resourceImpact = (resourceMetrics?.healthImpact || 0) * deltaTime;
-      const commImpact = (commMetrics?.healthImpact || 0);     // Already accounts for time
-      const monitoringImpact = (monitoringMetrics?.healthImpact || 0);  // Direct impact, no time scaling needed
-      const trackingImpact = (trackingMetrics?.healthImpact || 0) * deltaTime;
+      // Get current impacts (all are per-second rates), only from active tasks
+      const resourceImpact = taskActiveStatusRef.current.resource ? 
+        (resourceMetrics?.healthImpact || 0) * deltaTime : 0;
+      
+      const commImpact = taskActiveStatusRef.current.comm ? 
+        (commMetrics?.healthImpact || 0) : 0;     // Already accounts for time
+      
+      const monitoringImpact = taskActiveStatusRef.current.monitoring ? 
+        (monitoringMetrics?.healthImpact || 0) : 0;  // Direct impact, no time scaling needed
+      
+      const trackingImpact = taskActiveStatusRef.current.tracking ? 
+        (trackingMetrics?.healthImpact || 0) * deltaTime : 0;
       
       // Apply all impacts
       const totalImpact = resourceImpact + commImpact + monitoringImpact + trackingImpact;
       
       if (totalImpact !== 0) {
         const newHealth = Math.min(100, Math.max(0, internalHealthRef.current + totalImpact));
-        
-        // console.log('SystemHealth - All Tasks Health Update:', {
-        //   deltaTime,
-        //   resourcePerSec: resourceMetrics?.healthImpact || 0,
-        //   resourceImpact,
-        //   commImpact,
-        //   monitoringImpact,
-        //   trackingImpact,
-        //   totalImpact,
-        //   oldHealth: healthRef.current,
-        //   newHealth
-        // });
         
         internalHealthRef.current = newHealth;
         setCumulativeHealth(newHealth);
@@ -173,14 +180,6 @@ const SystemHealth = forwardRef(({
         const newHealth = Math.min(100, Math.max(0, 
           internalHealthRef.current + impact.impact
         ));
-        
-        // console.log('SystemHealth processing impact:', {
-        //   impact: impact.impact,
-        //   oldHealth: healthRef.current,
-        //   newHealth: newHealth,
-        //   source: 'ResourceManagement',
-        //   timestamp: new Date().toISOString()
-        // });
         
         internalHealthRef.current = newHealth;
         setCumulativeHealth(newHealth);

@@ -4,10 +4,16 @@ import { useGamepads } from './hooks/useGamepads';
 import { useAutoScroll } from './hooks/useAutoScroll';
 import { downloadCSV } from './utils/csvExport';
 
+// Add a helper function to detect mobile devices
+const isMobileDevice = () => {
+  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || 
+         (navigator.maxTouchPoints && navigator.maxTouchPoints > 1);
+};
+
 const INITIAL_STATE = {
   cursorPosition: { x: 0, y: 0 },
   targetPosition: { x: 0, y: 0 },
-  inputMode: 'keyboard',
+  inputMode: isMobileDevice() ? 'touch' : 'keyboard', // Set default based on device
   isAuto: true,
   automationFailure: false,
   trackingLog: [],
@@ -23,17 +29,19 @@ const TrackingTask = forwardRef(({
   onStatusUpdate,
   onMetricsUpdate,
   isEnabled = true,
-  autoEvents = false
+  autoEvents = false,
+  isMobile
 }, ref) => {
   const [cursorPosition, setCursorPosition] = useState({ x: 0, y: 0 });
   const [targetPosition, setTargetPosition] = useState({ x: 0, y: 0 });
-  const [inputMode, setInputMode] = useState('keyboard');
+  const [inputMode, setInputMode] = useState(isMobile ? 'touch' : 'keyboard');
   const [isAuto, setIsAuto] = useState(true);
   const [trackingLog, setTrackingLog] = useState([]);
   const [automationFailure, setAutomationFailure] = useState(false);
   const [currentEventDifficulty, setCurrentEventDifficulty] = useState(difficulty);
   const [currentEventDuration, setCurrentEventDuration] = useState(0);
   const [eventStartTime, setEventStartTime] = useState(null);
+  const [showMobileHelp, setShowMobileHelp] = useState(false);
   const failureTimeoutRef = useRef(null);
   const logIntervalRef = useRef(null);
   
@@ -60,6 +68,38 @@ const TrackingTask = forwardRef(({
   // Add near the top with other state
   const [healthImpact, setHealthImpact] = useState(0);
   const [systemLoad, setSystemLoad] = useState(0);
+
+  // Add effect to detect mobile and set input mode on component mount
+  useEffect(() => {
+    if (isMobile) {
+      console.log('Mobile device detected - automatically switching to touch input mode for Tracking Task');
+      setInputMode('touch');
+      setShowMobileHelp(true);
+      
+      // Hide the help tooltip after 7 seconds
+      const helpTimeout = setTimeout(() => {
+        setShowMobileHelp(false);
+      }, 7000);
+      
+      // Log a new tracking entry to record this automatic configuration
+      const now = Date.now();
+      const newEntry = {
+        id: `${now}-mobile-config`,
+        time: new Date(now).toISOString(),
+        event: 'AUTO_CONFIG',
+        description: 'Mobile device detected - automatically switched to touch input',
+        inputMode: 'touch'
+      };
+      setTrackingLog(prev => [...prev, newEntry]);
+      if (onLogUpdate) {
+        onLogUpdate(newEntry);
+      }
+      
+      return () => {
+        clearTimeout(helpTimeout);
+      };
+    }
+  }, [isMobile, onLogUpdate]);
 
   // Schedule automation failures based on eventsPerMinute
   useEffect(() => {
@@ -441,7 +481,8 @@ const TrackingTask = forwardRef(({
   const resetTask = useCallback(() => {
     // Reset all state to initial values
     setCursorPosition(INITIAL_STATE.cursorPosition);
-    setInputMode(INITIAL_STATE.inputMode);
+    // Check for mobile device before resetting input mode
+    setInputMode(isMobile ? 'touch' : INITIAL_STATE.inputMode);
     setIsAuto(INITIAL_STATE.isAuto);
     setTrackingLog(INITIAL_STATE.trackingLog);
     setAutomationFailure(INITIAL_STATE.automationFailure);
@@ -491,7 +532,7 @@ const TrackingTask = forwardRef(({
         rmsError: 0,
         isWithinTarget: true,
         isAuto: true,
-        inputMode: 'keyboard',
+        inputMode: isMobile ? 'touch' : 'keyboard',
         position: { x: 0, y: 0 }
       });
     });
@@ -500,7 +541,7 @@ const TrackingTask = forwardRef(({
     setHealthImpact(0);
     setSystemLoad(0);
     onMetricsUpdate?.({ healthImpact: 0, systemLoad: 0 });
-  }, [onStatusUpdate, onLogUpdate, onMetricsUpdate]);
+  }, [onStatusUpdate, onLogUpdate, onMetricsUpdate, isMobile, difficulty]);
 
   const startAutomation = () => {
     if (moveIntervalRef.current) {
@@ -773,6 +814,26 @@ const TrackingTask = forwardRef(({
           overflow: 'hidden'
         }}
       >
+        {showMobileHelp && (
+          <div style={{
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            background: 'rgba(0, 0, 0, 0.8)',
+            color: 'white',
+            padding: '15px',
+            borderRadius: '10px',
+            zIndex: 10,
+            maxWidth: '80%',
+            textAlign: 'center',
+            boxShadow: '0 0 10px rgba(0,0,0,0.5)'
+          }}>
+            <p style={{ margin: '0 0 10px 0', fontWeight: 'bold' }}>Touch Controls Activated</p>
+            <p style={{ margin: '0' }}>Tap and drag to move the cursor to keep it within the target box.</p>
+          </div>
+        )}
+        
         <TrackingDisplay 
           cursorPosition={cursorPosition}
           targetPosition={targetPosition}

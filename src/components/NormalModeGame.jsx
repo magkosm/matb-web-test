@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
+import ScoreSaveForm from './ScoreSaveForm';
+import ScoreboardService from '../services/ScoreboardService';
 
 const NormalModeGame = ({ 
   duration, 
@@ -10,6 +12,7 @@ const NormalModeGame = ({
   const [timeRemaining, setTimeRemaining] = useState(duration);
   const [score, setScore] = useState(0);
   const [isGameActive, setIsGameActive] = useState(true);
+  const [showScoreSaveForm, setShowScoreSaveForm] = useState(false);
   const [currentSettings, setCurrentSettings] = useState({
     comm: { eventsPerMinute: 2.1, difficulty: 4 },
     monitoring: { eventsPerMinute: 3, difficulty: 4 },
@@ -194,8 +197,20 @@ const NormalModeGame = ({
     clearAllTimers();
     eventService.stopScheduler();
     eventService.pauseAllTasks();
+
+    // Check if the score is high enough to be saved
+    const finalScore = Math.floor(score);
+    const isHighScore = ScoreboardService.isHighScore('normal', finalScore);
+    
+    // If it's a high score, show the save form
+    if (isHighScore) {
+      setShowScoreSaveForm(true);
+    }
+  };
+  
+  const handleReturnToMenu = () => {
     onGameEnd({
-      finalScore: score,
+      finalScore: Math.floor(score),
       gameTime: Math.floor(duration / 1000) - Math.floor(timeRemaining / 1000)
     });
   };
@@ -265,25 +280,39 @@ const NormalModeGame = ({
           alignItems: 'center',
           color: 'white',
           fontSize: '24px',
-          zIndex: 2000
+          zIndex: 2000,
+          pointerEvents: 'auto'
         }}>
           <h2>Game Over</h2>
           <p>Final Score: {Math.floor(score)}</p>
-          <button
-            onClick={() => onGameEnd({ finalScore: score })}
-            style={{
-              backgroundColor: '#007bff',
-              color: 'white',
-              border: 'none',
-              borderRadius: '4px',
-              padding: '10px 20px',
-              cursor: 'pointer',
-              fontSize: '18px',
-              marginTop: '20px'
-            }}
-          >
-            Return to Menu
-          </button>
+          
+          {showScoreSaveForm ? (
+            <div style={{ width: '100%', maxWidth: '400px', pointerEvents: 'auto' }}>
+              <ScoreSaveForm
+                score={Math.floor(score)}
+                mode="normal"
+                onSaved={handleReturnToMenu}
+                onSkip={handleReturnToMenu}
+              />
+            </div>
+          ) : (
+            <button
+              onClick={handleReturnToMenu}
+              style={{
+                backgroundColor: '#007bff',
+                color: 'white',
+                border: 'none',
+                borderRadius: '4px',
+                padding: '10px 20px',
+                cursor: 'pointer',
+                fontSize: '18px',
+                marginTop: '20px',
+                pointerEvents: 'auto'
+              }}
+            >
+              Return to Menu
+            </button>
+          )}
         </div>
       )}
     </div>
