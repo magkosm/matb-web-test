@@ -21,15 +21,6 @@ const isMobileDevice = () => {
          (navigator.maxTouchPoints && navigator.maxTouchPoints > 1);
 };
 
-// Add helper function to get the saved input mode
-const getTrackingInputMode = () => {
-  const savedMode = localStorage.getItem('trackingInputMode');
-  if (savedMode && ['keyboard', 'touch'].includes(savedMode)) {
-    return savedMode;
-  }
-  return isMobileDevice() ? 'touch' : 'keyboard';
-};
-
 function App() {
   // -------------------------
   // 1) STATE & HANDLERS
@@ -117,9 +108,6 @@ function App() {
 
   // Add state for custom game configuration
   const [customGameConfig, setCustomGameConfig] = useState(null);
-
-  // Add tracking input mode state
-  const [trackingInputMode, setTrackingInputMode] = useState(getTrackingInputMode());
 
   // Custom handler to append Tracking logs
   const handleTrackingLogUpdate = useCallback((newEntry) => {
@@ -263,20 +251,7 @@ function App() {
   // Function to handle starting the game from the main menu
   const startGame = useCallback((options) => {
     // Get mode and duration from options
-    const { mode, duration, taskConfig, trackingInputMode: menuInputMode } = options;
-    
-    // Update tracking input mode if provided from menu
-    if (menuInputMode) {
-      console.log(`App: Setting tracking input mode from menu selection: ${menuInputMode}`);
-      setTrackingInputMode(menuInputMode);
-    } else {
-      // If not provided, refresh from localStorage just to be sure
-      const savedMode = localStorage.getItem('trackingInputMode');
-      if (savedMode && ['keyboard', 'touch'].includes(savedMode)) {
-        console.log(`App: Using tracking input mode from localStorage: ${savedMode}`);
-        setTrackingInputMode(savedMode);
-      }
-    }
+    const { mode, duration, taskConfig } = options;
     
     // Reset all tasks to their default states
     resetAllTasksToDefault();
@@ -392,34 +367,6 @@ function App() {
       console.log('MATB-II is running on a mobile device - configuring for touch input');
     }
   }, [isMobile]);
-
-  // Add effect to detect mobile and initialize tracking input mode on component mount
-  useEffect(() => {
-    const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || 
-      (navigator.maxTouchPoints && navigator.maxTouchPoints > 1);
-    
-    setIsMobile(isMobileDevice);
-    
-    // If this is the first time loading and we detected mobile,
-    // initialize the tracking input mode preference to 'touch'
-    if (isMobileDevice && !localStorage.getItem('trackingInputMode')) {
-      localStorage.setItem('trackingInputMode', 'touch');
-      setTrackingInputMode('touch');
-      console.log('Auto-initialized tracking input mode to touch for mobile device');
-    } else {
-      // Ensure we sync our state with the stored preference
-      const savedMode = localStorage.getItem('trackingInputMode');
-      if (savedMode && ['keyboard', 'touch'].includes(savedMode)) {
-        setTrackingInputMode(savedMode);
-        console.log(`App: Using saved tracking input mode: ${savedMode}`);
-      }
-    }
-  }, []);
-
-  // Add a useEffect to log when trackingInputMode changes
-  useEffect(() => {
-    console.log(`App: trackingInputMode state changed to ${trackingInputMode}`);
-  }, [trackingInputMode]);
 
   // If the main menu should be shown, render it instead of the main app
   if (showMainMenu) {
@@ -554,8 +501,6 @@ function App() {
                 isEnabled={isTrackingTaskEnabled}
                 autoEvents={trackingAutoEvents}
                 isMobile={isMobile}
-                defaultInputMode={trackingInputMode}
-                key={`tracking-${trackingInputMode}`}
               />
             ) : (
               <div style={{
