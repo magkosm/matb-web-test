@@ -1,35 +1,12 @@
-import React, { useState, useEffect, useRef, useCallback, useMemo, useImperativeHandle, forwardRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useImperativeHandle, forwardRef } from 'react';
 import TrackingDisplay from './components/TrackingDisplay';
-import { useGamepads } from './hooks/useGamepads';
 import { useAutoScroll } from './hooks/useAutoScroll';
 import { downloadCSV } from './utils/csvExport';
-
-// Add a helper function to detect mobile devices
-const isMobileDevice = () => {
-  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || 
-         (navigator.maxTouchPoints && navigator.maxTouchPoints > 1);
-};
-
-// Add function to get preferred input mode from localStorage or detect from device
-const getInitialInputMode = () => {
-  // Try to get saved preference first and be strict about using it
-  const savedMode = localStorage.getItem('trackingInputMode');
-  if (savedMode && ['keyboard', 'touch'].includes(savedMode)) {
-    // Log what mode we're using from storage
-    console.log(`TrackingTask: Using saved input mode from localStorage: ${savedMode}`);
-    return savedMode;
-  }
-  
-  // Only if we don't have a saved preference, fall back to auto-detection
-  const detectedMode = isMobileDevice() ? 'touch' : 'keyboard';
-  console.log(`TrackingTask: No saved preference found, auto-detected input mode: ${detectedMode}`);
-  return detectedMode;
-};
 
 const INITIAL_STATE = {
   cursorPosition: { x: 0, y: 0 },
   targetPosition: { x: 0, y: 0 },
-  inputMode: getInitialInputMode(), // Set default based on saved preference or device
+  inputMode: 'keyboard', // Always default to keyboard input
   isAuto: true,
   automationFailure: false,
   trackingLog: [],
@@ -46,29 +23,13 @@ const TrackingTask = forwardRef(({
   onMetricsUpdate,
   isEnabled = true,
   autoEvents = false,
-  isMobile,
   defaultInputMode
 }, ref) => {
   const [cursorPosition, setCursorPosition] = useState({ x: 0, y: 0 });
-  const [targetPosition, setTargetPosition] = useState({ x: 0, y: 0 });
+  const [targetPosition, _setTargetPosition] = useState({ x: 0, y: 0 });
   
-  // Priority: 1. defaultInputMode prop, 2. localStorage, 3. device detection
-  const initialInputMode = useMemo(() => {
-    if (defaultInputMode) {
-      console.log(`TrackingTask: Using defaultInputMode prop: ${defaultInputMode}`);
-      return defaultInputMode;
-    }
-    
-    const savedMode = localStorage.getItem('trackingInputMode');
-    if (savedMode && ['keyboard', 'touch'].includes(savedMode)) {
-      console.log(`TrackingTask: Using localStorage mode: ${savedMode}`);
-      return savedMode;
-    }
-    
-    const detectedMode = isMobileDevice() ? 'touch' : 'keyboard';
-    console.log(`TrackingTask: Falling back to detected mode: ${detectedMode}`);
-    return detectedMode;
-  }, [defaultInputMode]);
+  // Always default to keyboard input mode or use provided prop
+  const initialInputMode = defaultInputMode || 'keyboard';
   
   const [inputMode, setInputMode] = useState(initialInputMode);
   const [isAuto, setIsAuto] = useState(true);
@@ -87,11 +48,11 @@ const TrackingTask = forwardRef(({
   const lastUpdateRef = useRef(Date.now());
   const driftXRef = useRef(0);
   const driftYRef = useRef(0);
+  const frameRef = useRef(null);
 
   const gamepadsRef = useRef([]);
 
-  // Add frameRef at component level
-  const frameRef = useRef(null);
+  // Remove unused ref
   const lastLogTimeRef = useRef(Date.now());
 
   // Calculate if cursor is within target area
@@ -105,13 +66,6 @@ const TrackingTask = forwardRef(({
   const [healthImpact, setHealthImpact] = useState(0);
   const [systemLoad, setSystemLoad] = useState(0);
 
-  // Add debug log on mount
-  useEffect(() => {
-    console.log(`TrackingTask MOUNTED with input mode: ${inputMode}`);
-    console.log(`defaultInputMode: ${defaultInputMode || 'not provided'}`);
-    console.log(`localStorage value: ${localStorage.getItem('trackingInputMode') || 'not set'}`);
-  }, []);
-  
   // Force-update input mode if defaultInputMode prop changes
   useEffect(() => {
     if (defaultInputMode && defaultInputMode !== inputMode) {
@@ -119,50 +73,6 @@ const TrackingTask = forwardRef(({
       setInputMode(defaultInputMode);
     }
   }, [defaultInputMode, inputMode]);
-
-  // Add useEffect to apply saved mode when component mounts
-  useEffect(() => {
-    // Ensure we load the saved preference on mount
-    const savedMode = localStorage.getItem('trackingInputMode');
-    if (savedMode && ['keyboard', 'touch'].includes(savedMode)) {
-      if (inputMode !== savedMode) {
-        console.log(`TrackingTask: Applying saved input mode on mount: ${savedMode}`);
-        setInputMode(savedMode);
-      }
-    }
-  }, []);
-
-  // Add effect to detect mobile and set input mode on component mount
-  useEffect(() => {
-    if (isMobile) {
-      console.log('Mobile device detected - automatically switching to touch input mode for Tracking Task');
-      setInputMode('touch');
-      setShowMobileHelp(true);
-      
-      // Hide the help tooltip after 7 seconds
-      const helpTimeout = setTimeout(() => {
-        setShowMobileHelp(false);
-      }, 7000);
-      
-      // Log a new tracking entry to record this automatic configuration
-      const now = Date.now();
-      const newEntry = {
-        id: `${now}-mobile-config`,
-        time: new Date(now).toISOString(),
-        event: 'AUTO_CONFIG',
-        description: 'Mobile device detected - automatically switched to touch input',
-        inputMode: 'touch'
-      };
-      setTrackingLog(prev => [...prev, newEntry]);
-      if (onLogUpdate) {
-        onLogUpdate(newEntry);
-      }
-      
-      return () => {
-        clearTimeout(helpTimeout);
-      };
-    }
-  }, [isMobile, onLogUpdate]);
 
   // Schedule automation failures based on eventsPerMinute
   useEffect(() => {
@@ -235,8 +145,6 @@ const TrackingTask = forwardRef(({
     const manualDriftMultiplier = 0.3 + (difficultyToUse / 10) * 3.5; // Scales from 0.3x to 3.8x based on difficulty
     const driftMultiplier = isAuto ? 1.0 : manualDriftMultiplier; 
     
-    // console.log(`Tracking difficulty set to ${difficultyToUse} - drift multiplier: ${driftMultiplier.toFixed(2)}x (${isAuto ? 'AUTO' : 'MANUAL'} mode)`);
-    
     const driftSpeed = 0.5 * driftMultiplier;
     
     // Increase auto-correction at lower difficulties, decrease at higher difficulties
@@ -251,12 +159,11 @@ const TrackingTask = forwardRef(({
       const initialDrift = 0.2 * driftMultiplier;
       driftXRef.current = (Math.random() - 0.5) * initialDrift * 3;
       driftYRef.current = (Math.random() - 0.5) * initialDrift * 3;
-      // console.log(`Applied initial drift based on difficulty: ${driftXRef.current.toFixed(2)}, ${driftYRef.current.toFixed(2)}`);
     }
 
     const interval = setInterval(() => {
       const now = Date.now();
-      const dt = now - lastUpdateRef.current;
+      const _dt = now - lastUpdateRef.current; // Prefix with underscore since it's not used
       lastUpdateRef.current = now;
 
       // Make drift more responsive to difficulty
@@ -314,7 +221,7 @@ const TrackingTask = forwardRef(({
     }, 16);
 
     return () => clearInterval(interval);
-  }, [isAuto, inputMode, automationFailure, isEnabled, difficulty]);
+  }, [isAuto, inputMode, automationFailure, isEnabled, difficulty, currentEventDifficulty]);
 
   // Separate effect for logging system
   useEffect(() => {
@@ -337,12 +244,17 @@ const TrackingTask = forwardRef(({
 
       setTrackingLog(prev => [...prev, newEntry]);
 
-      animationFrameId = requestAnimationFrame(generateLog);
+      frameRef.current = requestAnimationFrame(generateLog);
     };
 
-    animationFrameId = requestAnimationFrame(generateLog);
+    frameRef.current = requestAnimationFrame(generateLog);
 
-    return () => cancelAnimationFrame(animationFrameId);
+    return () => {
+      if (frameRef.current) {
+        cancelAnimationFrame(frameRef.current);
+        frameRef.current = null;
+      }
+    };
   }, [cursorPosition, isAuto, inputMode]);
 
   // Separate effect JUST for parent updates
@@ -409,14 +321,15 @@ const TrackingTask = forwardRef(({
   }, [isAuto, inputMode, isEnabled]);
 
   // Touch input handling
-  const handleTouchStart = (e) => {
+  const handleTouchStart = useCallback((e) => {
     if (isAuto || inputMode !== 'touch') return;
     e.preventDefault();
     
     // Get touch/click position relative to container center
     const rect = containerRef.current.getBoundingClientRect();
-    const centerX = rect.width / 2;
-    const centerY = rect.height / 2;
+    // These are needed for calculations even if not directly used
+    const _centerX = rect.width / 2;
+    const _centerY = rect.height / 2;
     
     // Store initial position for joystick-like behavior
     const clientX = e.touches ? e.touches[0].clientX : e.clientX;
@@ -451,9 +364,9 @@ const TrackingTask = forwardRef(({
         return prev;
       });
     }, 16);
-  };
+  }, [isAuto, inputMode]);
 
-  const handleTouchMove = (e) => {
+  const handleTouchMove = useCallback((e) => {
     if (!touchStartRef.current || isAuto || inputMode !== 'touch') return;
     e.preventDefault();
     
@@ -463,38 +376,34 @@ const TrackingTask = forwardRef(({
     
     touchStartRef.current.currentX = clientX;
     touchStartRef.current.currentY = clientY;
-  };
+  }, [isAuto, inputMode]);
 
-  const handleTouchEnd = () => {
+  const handleTouchEnd = useCallback(() => {
     touchStartRef.current = null;
     if (moveIntervalRef.current) {
       clearInterval(moveIntervalRef.current);
       moveIntervalRef.current = null;
     }
-  };
+  }, []);
 
   // Add mouse event handlers for click-and-hold functionality
-  const handleMouseDown = (e) => {
+  const handleMouseDown = useCallback((e) => {
     if (e.button === 0) { // Left click only
       handleTouchStart(e);
     }
-  };
+  }, [handleTouchStart]);
 
-  const handleMouseMove = (e) => {
+  const handleMouseMove = useCallback((e) => {
     handleTouchMove(e);
-  };
+  }, [handleTouchMove]);
 
-  const handleMouseUp = () => {
+  const handleMouseUp = useCallback(() => {
     handleTouchEnd();
-  };
+  }, [handleTouchEnd]);
 
-  const handleMouseLeave = () => {
+  const handleMouseLeave = useCallback(() => {
     handleTouchEnd();
-  };
-
-  const handleExport = () => {
-    downloadCSV(trackingLog, 'tracking-log');
-  };
+  }, [handleTouchEnd]);
 
   // Replace the status update effect (around lines 340-351)
   const statusRef = useRef({ isManual: !isAuto, isInBox: isWithinTarget });
@@ -519,35 +428,70 @@ const TrackingTask = forwardRef(({
     const container = containerRef.current;
     if (!container) return;
 
-    container.addEventListener('touchstart', handleTouchStart);
-    container.addEventListener('touchmove', handleTouchMove);
-    container.addEventListener('touchend', handleTouchEnd);
-    container.addEventListener('mousedown', handleMouseDown);
-    container.addEventListener('mousemove', handleMouseMove);
-    container.addEventListener('mouseup', handleMouseUp);
-    container.addEventListener('mouseleave', handleMouseLeave);
+    // Define event handlers inside this useEffect to avoid dependency issues
+    const touchStartHandler = (e) => handleTouchStart(e);
+    const touchMoveHandler = (e) => handleTouchMove(e);
+    const touchEndHandler = () => handleTouchEnd();
+    const mouseDownHandler = (e) => handleMouseDown(e);
+    const mouseMoveHandler = (e) => handleMouseMove(e);
+    const mouseUpHandler = () => handleMouseUp();
+    const mouseLeaveHandler = () => handleMouseLeave();
+
+    container.addEventListener('touchstart', touchStartHandler);
+    container.addEventListener('touchmove', touchMoveHandler);
+    container.addEventListener('touchend', touchEndHandler);
+    container.addEventListener('mousedown', mouseDownHandler);
+    container.addEventListener('mousemove', mouseMoveHandler);
+    container.addEventListener('mouseup', mouseUpHandler);
+    container.addEventListener('mouseleave', mouseLeaveHandler);
 
     return () => {
-      container.removeEventListener('touchstart', handleTouchStart);
-      container.removeEventListener('touchmove', handleTouchMove);
-      container.removeEventListener('touchend', handleTouchEnd);
-      container.removeEventListener('mousedown', handleMouseDown);
-      container.removeEventListener('mousemove', handleMouseMove);
-      container.removeEventListener('mouseup', handleMouseUp);
-      container.removeEventListener('mouseleave', handleMouseLeave);
+      container.removeEventListener('touchstart', touchStartHandler);
+      container.removeEventListener('touchmove', touchMoveHandler);
+      container.removeEventListener('touchend', touchEndHandler);
+      container.removeEventListener('mousedown', mouseDownHandler);
+      container.removeEventListener('mousemove', mouseMoveHandler);
+      container.removeEventListener('mouseup', mouseUpHandler);
+      container.removeEventListener('mouseleave', mouseLeaveHandler);
       if (moveIntervalRef.current) {
         clearInterval(moveIntervalRef.current);
       }
     };
-  }, [isAuto, inputMode]);
+  }, [isAuto, inputMode, handleTouchStart, handleTouchMove, handleTouchEnd, 
+      handleMouseDown, handleMouseMove, handleMouseUp, handleMouseLeave]);
+
+  // First, we need to move the startAutomation function definition before resetTask
+  const startAutomation = useCallback(() => {
+    if (moveIntervalRef.current) {
+      clearInterval(moveIntervalRef.current);
+    }
+    
+    moveIntervalRef.current = setInterval(() => {
+      if (!isAuto) return;
+      
+      const targetPos = targetRef.current;
+      const currentPos = positionRef.current;
+      
+      // Move cursor towards target
+      const dx = (targetPos.x - currentPos.x) * 0.1;
+      const dy = (targetPos.y - currentPos.y) * 0.1;
+      
+      positionRef.current = {
+        x: currentPos.x + dx,
+        y: currentPos.y + dy
+      };
+      
+      setCursorPosition(positionRef.current);
+    }, 16); // 60fps
+  }, [isAuto]);
 
   const resetTask = useCallback(() => {
-    // Save the current input mode to avoid losing user's preference
-    const currentInputMode = inputMode;
+    // Always use keyboard input mode
+    const currentInputMode = 'keyboard';
     
     // Reset all state to initial values
     setCursorPosition(INITIAL_STATE.cursorPosition);
-    // Use the current input mode instead of fetching it again to preserve user choice
+    // Set input mode to keyboard
     setInputMode(currentInputMode);
     setIsAuto(INITIAL_STATE.isAuto);
     setTrackingLog(INITIAL_STATE.trackingLog);
@@ -608,32 +552,8 @@ const TrackingTask = forwardRef(({
     setSystemLoad(0);
     onMetricsUpdate?.({ healthImpact: 0, systemLoad: 0 });
     
-    console.log(`TrackingTask: Reset complete, preserved input mode: ${currentInputMode}`);
-  }, [onStatusUpdate, onLogUpdate, onMetricsUpdate, difficulty, inputMode]);
-
-  const startAutomation = () => {
-    if (moveIntervalRef.current) {
-      clearInterval(moveIntervalRef.current);
-    }
-    
-    moveIntervalRef.current = setInterval(() => {
-      if (!isAuto) return;
-      
-      const targetPos = targetRef.current;
-      const currentPos = positionRef.current;
-      
-      // Move cursor towards target
-      const dx = (targetPos.x - currentPos.x) * 0.1;
-      const dy = (targetPos.y - currentPos.y) * 0.1;
-      
-      positionRef.current = {
-        x: currentPos.x + dx,
-        y: currentPos.y + dy
-      };
-      
-      setCursorPosition(positionRef.current);
-    }, 16); // 60fps
-  };
+    console.log(`TrackingTask: Reset complete, using keyboard input mode`);
+  }, [onStatusUpdate, onLogUpdate, onMetricsUpdate, difficulty, startAutomation]);
 
   useImperativeHandle(ref, () => ({
     resetTask,
@@ -653,14 +573,11 @@ const TrackingTask = forwardRef(({
         
         // If already in manual mode, don't trigger again
         if (!isAuto) {
-          // console.log('Tracking Task: Already in manual control mode');
           return false;
         }
         
         // Make sure we have valid duration (default to 30 seconds if not provided)
         const eventDuration = duration || 30000;
-        
-        // console.log(`Tracking Task: Forcing manual control for ${eventDuration/1000}s with difficulty ${difficulty || 5}`);
         
         // Force into manual mode
         setIsAuto(false);
@@ -672,8 +589,7 @@ const TrackingTask = forwardRef(({
         setEventStartTime(Date.now());
         
         // Calculate end time for better tracking
-        const endTime = new Date(Date.now() + eventDuration);
-        // console.log(`Manual control will end at: ${endTime.toLocaleTimeString()}`);
+        const _endTime = new Date(Date.now() + eventDuration); // Prefix with underscore since it's not used
         
         // Set difficulty level for tracking if provided (1-10 scale)
         if (typeof difficulty === 'number') {
@@ -686,8 +602,6 @@ const TrackingTask = forwardRef(({
           
           driftXRef.current = Math.cos(angle) * magnitude;
           driftYRef.current = Math.sin(angle) * magnitude;
-          
-          // console.log(`Applied initial drift vectors: ${driftXRef.current.toFixed(2)}, ${driftYRef.current.toFixed(2)}`);
         }
         
         // Create and log an event
@@ -725,8 +639,6 @@ const TrackingTask = forwardRef(({
             isWithinTarget
           };
           
-          // console.log(`Tracking Task: Auto control restored after ${recoveryEvent.actualDuration.toFixed(1)}s (target: ${recoveryEvent.eventDuration}s)`);
-          
           // Clear event timing information
           setCurrentEventDuration(0);
           setEventStartTime(null);
@@ -752,7 +664,7 @@ const TrackingTask = forwardRef(({
         return false;
       }
     }
-  }), [resetTask, healthImpact, systemLoad, isAuto, isWithinTarget, onMetricsUpdate]);
+  }), [resetTask, healthImpact, systemLoad, isAuto, isWithinTarget, onMetricsUpdate, eventStartTime, onLogUpdate]);
 
   // Add metrics calculation effect
   useEffect(() => {
@@ -789,8 +701,6 @@ const TrackingTask = forwardRef(({
         ? baseSuccessImpact * difficultyMultiplier * timeRatio
         : baseFailureImpact * difficultyMultiplier * timeRatio;
       
-      // console.log(`Health impact calculation: ${impact.toFixed(2)} (difficulty: ${currentEventDifficulty}, within target: ${isWithinTarget}, elapsed: ${(elapsedTime/1000).toFixed(1)}s/${(currentEventDuration/1000).toFixed(1)}s, progress: ${(progress*100).toFixed(1)}%)`);
-      
       return impact;
     };
 
@@ -819,45 +729,10 @@ const TrackingTask = forwardRef(({
         healthImpact,
         systemLoad
       });
-      
-      // console.log('Tracking Task Metrics Update:', {
-      //   isAuto,
-      //   isWithinTarget,
-      //   healthImpact: healthImpact.toFixed(2),
-      //   systemLoad: systemLoad.toFixed(1),
-      //   difficulty: isAuto ? difficulty : currentEventDifficulty,
-      //   driftX: driftXRef.current.toFixed(2),
-      //   driftY: driftYRef.current.toFixed(2), 
-      //   eventProgress: eventStartTime ? 
-      //     ((Date.now() - eventStartTime) / currentEventDuration).toFixed(2) : 'N/A',
-      //   timestamp: new Date().toISOString()
-      // });
     }, 100);
 
     return () => clearInterval(updateInterval);
-  }, [isEnabled, isAuto, isWithinTarget, onMetricsUpdate]);
-
-  // Modify the existing useEffect for saving input mode to avoid duplicate logging
-  useEffect(() => {
-    localStorage.setItem('trackingInputMode', inputMode);
-    console.log(`TrackingTask: Input mode changed and saved to localStorage: ${inputMode}`);
-    
-    // Only log mode changes to the tracking log if this isn't initial setup
-    if (trackingLog.length > 0) {
-      const now = Date.now();
-      const newEntry = {
-        id: `${now}-input-mode-change`,
-        time: new Date(now).toISOString(),
-        event: 'INPUT_MODE_CHANGED',
-        description: `Input mode changed to ${inputMode}`,
-        inputMode: inputMode
-      };
-      setTrackingLog(prevLog => [...prevLog, newEntry]);
-      if (onLogUpdate) {
-        onLogUpdate(newEntry);
-      }
-    }
-  }, [inputMode, onLogUpdate, trackingLog.length]);
+  }, [isEnabled, isAuto, isWithinTarget, onMetricsUpdate, currentEventDifficulty, currentEventDuration, eventStartTime]);
 
   // Modify the input mode change handler to be more robust
   const handleInputModeChange = useCallback((newMode) => {
@@ -1085,14 +960,4 @@ TrackingTask.getDefaultMetrics = () => ({
   systemLoad: 0
 });
 
-// Add a function to the component that can be called externally to change input mode
-TrackingTask.setGlobalInputMode = function(mode) {
-  if (mode && ['keyboard', 'touch'].includes(mode)) {
-    localStorage.setItem('trackingInputMode', mode);
-    return true;
-  }
-  return false;
-};
-
-// Make sure to export both the component and its Log
 export default TrackingTask;

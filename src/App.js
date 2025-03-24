@@ -45,7 +45,7 @@ function App() {
 
   // Monitoring Task controls
   const [monitoringEPM, setMonitoringEPM] = useState(3);
-  const [showMonitoringLog, setShowMonitoringLog] = useState(false);
+  const [showMonitoringLog, _setShowMonitoringLog] = useState(false); // Prefix with underscore to indicate intentionally unused
   const [monitoringDifficulty, setMonitoringDifficulty] = useState(5);
   const [isMonitoringTaskEnabled, setIsMonitoringTaskEnabled] = useState(true);
   const [monitoringAutoEvents, setMonitoringAutoEvents] = useState(false);
@@ -53,7 +53,7 @@ function App() {
 
   // Communications Task controls
   const [commEPM, setCommEPM] = useState(2);
-  const [showCommLog, setShowCommLog] = useState(false);
+  const [showCommLog, _setShowCommLog] = useState(false); // Prefix with underscore to indicate intentionally unused
   const [commDifficulty, setCommDifficulty] = useState(5);
   const [isCommTaskEnabled, setIsCommTaskEnabled] = useState(true);
   const [commAutoEvents, setCommAutoEvents] = useState(false);
@@ -63,7 +63,7 @@ function App() {
   // Resource Management controls
   const [resourceEPM, setResourceEPM] = useState(2);
   const [resourceDifficulty, setResourceDifficulty] = useState(5);
-  const [showResourceLog, setShowResourceLog] = useState(false);
+  const [showResourceLog, _setShowResourceLog] = useState(false); // Prefix with underscore to indicate intentionally unused
   const [isResourceTaskEnabled, setIsResourceTaskEnabled] = useState(true);
   const [resourceAutoEvents, setResourceAutoEvents] = useState(false);
   const [resourceEventLog, setResourceEventLog] = useState([]);
@@ -76,7 +76,7 @@ function App() {
   // Tracking Task controls
   const [trackingEPM, setTrackingEPM] = useState(2);
   const [trackingDifficulty, setTrackingDifficulty] = useState(5);
-  const [showTrackingLog, setShowTrackingLog] = useState(false);
+  const [showTrackingLog, _setShowTrackingLog] = useState(false); // Prefix with underscore to indicate intentionally unused
   const [isTrackingTaskEnabled, setIsTrackingTaskEnabled] = useState(true);
   const [trackingAutoEvents, setTrackingAutoEvents] = useState(false);
   const [trackingEventLog, setTrackingEventLog] = useState([]);
@@ -89,7 +89,7 @@ function App() {
   );
 
   // Sidebar control
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [_isSidebarOpen, setIsSidebarOpen] = useState(false); // Prefix with underscore to indicate intentionally unused
   const [isEventSidebarOpen, setIsEventSidebarOpen] = useState(false);
 
   // Add state for monitoring metrics
@@ -118,8 +118,8 @@ function App() {
   // Add state for custom game configuration
   const [customGameConfig, setCustomGameConfig] = useState(null);
 
-  // Add tracking input mode state
-  const [trackingInputMode, setTrackingInputMode] = useState(getTrackingInputMode());
+  // Always use keyboard input mode
+  const [trackingInputMode, setTrackingInputMode] = useState('keyboard'); // Default to keyboard input
 
   // Custom handler to append Tracking logs
   const handleTrackingLogUpdate = useCallback((newEntry) => {
@@ -175,12 +175,13 @@ function App() {
       });
     }
   }, [
-    commTaskRef?.current, 
-    monitoringTaskRef?.current, 
-    trackingTaskRef?.current, 
-    resourceTaskRef?.current,
     showMainMenu,
-    tasksRegistered
+    tasksRegistered,
+    commTaskRef,
+    monitoringTaskRef,
+    trackingTaskRef,
+    resourceTaskRef
+    // These refs need to be in the dependency array to ensure registration happens when they're available
   ]);
 
   // Reset all tasks to default states
