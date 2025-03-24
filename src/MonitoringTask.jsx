@@ -841,7 +841,8 @@ function MonitoringTask({
       height: '100%',
       display: 'flex',
       flexDirection: 'column',
-      fontFamily: 'sans-serif'
+      fontFamily: 'sans-serif',
+      backgroundColor: 'white'
     }}>
       <div style={{
         background: 'blue',

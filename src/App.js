@@ -1,5 +1,6 @@
 // src/App.js
 import React, { useState, useCallback, useRef, useEffect } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import MonitoringTask from './MonitoringTask';
 import CommunicationsTask from './CommunicationsTask';
 import ResourceManagementTask from './ResourceManagementTask';
@@ -31,6 +32,101 @@ const getTrackingInputMode = () => {
 };
 
 function App() {
+  // Add game mode state
+  const [gameMode, setGameMode] = useState(null);
+  const systemHealthRef = useRef(null);
+  const [showLeaderboard, setShowLeaderboard] = useState(false);
+  const [leaderboardMode, setLeaderboardMode] = useState(null);
+  const [currentScore, setCurrentScore] = useState(null);
+  const [isNewScore, setIsNewScore] = useState(false);
+  const [isViewingLeaderboard, setIsViewingLeaderboard] = useState(false);
+
+  // Initialize with reasonable defaults
+  const [monitoringEPM, setMonitoringEPM] = useState(2);
+  const [commEPM, setCommEPM] = useState(2);
+  const [resourceEPM, setResourceEPM] = useState(2);
+  const [trackingEPM, setTrackingEPM] = useState(2);
+  const [trackingDifficulty, setTrackingDifficulty] = useState(5);
+  const [resourceDifficulty, setResourceDifficulty] = useState(5);
+
+  // Mode selection handler - updates the settings panel values
+  const handleModeSelect = (mode) => {
+    // First set the game mode
+    setGameMode(mode);
+    
+    // Update settings panel based on mode
+    const settingsPanel = document.querySelector('.settings-section');
+    if (settingsPanel) {
+      const inputs = settingsPanel.querySelectorAll('input[type="number"], input[type="range"]');
+      
+      inputs.forEach(input => {
+        const name = input.parentElement.textContent.toLowerCase();
+        let value;
+
+        switch (mode) {
+          case 'training':
+            value = name.includes('difficulty') ? 3 : 1;
+            break;
+          case 'normal':
+            // Start with training mode settings for normal mode
+            value = name.includes('difficulty') ? 3 : 1;
+            break;
+          case 'infinite':
+            value = name.includes('difficulty') ? 7 : 
+                   name.includes('monitoring') ? 4 : 3;
+            break;
+          default:
+            return;
+        }
+
+        // Update the input value and trigger change event
+        input.value = value;
+        input.dispatchEvent(new Event('change', { bubbles: true }));
+      });
+    }
+  };
+
+  // Handle game end for both modes
+  const handleGameEnd = (score, mode) => {
+    setCurrentScore(score);
+    setLeaderboardMode(mode);
+    setIsNewScore(true);
+    setShowLeaderboard(true);
+  };
+
+  // Update settings handler for infinite mode
+  const handleUpdateSettings = (settings) => {
+    if (settings.monitoringEPM !== undefined) setMonitoringEPM(settings.monitoringEPM);
+    if (settings.commEPM !== undefined) setCommEPM(settings.commEPM);
+    if (settings.resourceEPM !== undefined) setResourceEPM(settings.resourceEPM);
+    if (settings.trackingEPM !== undefined) setTrackingEPM(settings.trackingEPM);
+    if (settings.trackingDifficulty !== undefined) setTrackingDifficulty(settings.trackingDifficulty);
+    if (settings.resourceDifficulty !== undefined) setResourceDifficulty(settings.resourceDifficulty);
+  };
+
+  // Add effect to reset tasks when game mode changes and components are mounted
+  useEffect(() => {
+    if (gameMode) {
+      // Reset all tasks using optional chaining
+      monitoringTaskRef.current?.resetTask();
+      commTaskRef.current?.resetTask();
+      resourceTaskRef.current?.resetTask();
+      trackingTaskRef.current?.resetTask();
+
+      // Reset all event logs
+      setMonitoringEventLog([]);
+      setCommEventLog([]);
+      setResourceEventLog([]);
+      setTrackingEventLog([]);
+
+      // Reset metrics
+      setMonitoringMetrics({ healthImpact: 0, systemLoad: 0 });
+      setCommMetrics({ healthImpact: 0, systemLoad: 0 });
+      setResourceMetrics(ResourceManagementTask.getDefaultMetrics());
+      setTrackingMetrics(TrackingTask.getDefaultMetrics());
+    }
+  }, [gameMode]); // Run this effect when gameMode changes
+
   // -------------------------
   // 1) STATE & HANDLERS
   // -------------------------
@@ -44,7 +140,6 @@ function App() {
   const [gameResults, setGameResults] = useState(null);
 
   // Monitoring Task controls
-  const [monitoringEPM, setMonitoringEPM] = useState(3);
   const [showMonitoringLog, setShowMonitoringLog] = useState(false);
   const [monitoringDifficulty, setMonitoringDifficulty] = useState(5);
   const [isMonitoringTaskEnabled, setIsMonitoringTaskEnabled] = useState(true);
@@ -52,7 +147,6 @@ function App() {
   const [monitoringEventLog, setMonitoringEventLog] = useState([]);
 
   // Communications Task controls
-  const [commEPM, setCommEPM] = useState(2);
   const [showCommLog, setShowCommLog] = useState(false);
   const [commDifficulty, setCommDifficulty] = useState(5);
   const [isCommTaskEnabled, setIsCommTaskEnabled] = useState(true);
@@ -61,8 +155,6 @@ function App() {
   const [commMetrics, setCommMetrics] = useState({ healthImpact: 0, systemLoad: 0 });
 
   // Resource Management controls
-  const [resourceEPM, setResourceEPM] = useState(2);
-  const [resourceDifficulty, setResourceDifficulty] = useState(5);
   const [showResourceLog, setShowResourceLog] = useState(false);
   const [isResourceTaskEnabled, setIsResourceTaskEnabled] = useState(true);
   const [resourceAutoEvents, setResourceAutoEvents] = useState(false);

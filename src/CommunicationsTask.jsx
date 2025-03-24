@@ -1669,7 +1669,8 @@ const CommunicationsTask = forwardRef(({
       flexDirection: 'column',
       overflow: 'hidden',
       maxWidth: '100%',
-      margin: '0 auto'
+      margin: '0 auto',
+      backgroundColor: 'white'
     }}>
       {/* Title Bar with Pause Button */}
       <div style={{
