@@ -969,10 +969,10 @@ function ResourceManagementTaskComponent({
   }
 
   return (
-    <div ref={containerRef} style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', backgroundColor: 'white' }}>
+    <div ref={containerRef} style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column' }}>
       {/* Title Bar */}
       <div style={{
-        backgroundColor: 'blue',
+        background: 'blue',
         color: 'white',
         textAlign: 'center',
         padding: '0.5rem',

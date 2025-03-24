@@ -1,7 +1,7 @@
 {
   "name": "matb-web-test",
   "homepage": "https://magkosm.github.io/matb-web-test",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "private": true,
   "dependencies": {
     "cra-template": "1.2.0",

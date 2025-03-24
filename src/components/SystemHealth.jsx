@@ -1,7 +1,5 @@
 import React, { useState, useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
-import React, { useState, useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
 
-const SystemHealth = forwardRef(({ 
 const SystemHealth = forwardRef(({ 
   monitoringMetrics,
   commMetrics,
@@ -68,10 +66,7 @@ const SystemHealth = forwardRef(({
   // Reset when all metrics are null/undefined
   useEffect(() => {
     if (!monitoringMetrics && !commMetrics && !resourceMetrics) {
-      healthRef.current = 100;
-      setCumulativeHealth(100);
-      pendingImpacts.current = [];
-      lastImpactTime.current = Date.now();
+      resetHealth();
     }
   }, [monitoringMetrics, commMetrics, resourceMetrics]);
 
@@ -81,10 +76,7 @@ const SystemHealth = forwardRef(({
       if (frameRef.current) {
         cancelAnimationFrame(frameRef.current);
       }
-      healthRef.current = 100;
-      setCumulativeHealth(100);
-      pendingImpacts.current = [];
-      lastImpactTime.current = Date.now();
+      resetHealth();
     };
   }, []);
 
@@ -97,7 +89,7 @@ const SystemHealth = forwardRef(({
       if (!isUpdating) return;
       const now = Date.now();
       
-      // Force update every 50ms
+      // Force update every 50ms (was 200ms)
       if (now - lastForceUpdate >= 50) {
         setCumulativeHealth(internalHealthRef.current);
         lastForceUpdate = now;
@@ -215,8 +207,7 @@ const SystemHealth = forwardRef(({
       height: '100%',
       display: 'flex',
       flexDirection: 'column',
-      overflow: 'hidden',
-      backgroundColor: 'white'
+      overflow: 'hidden'
     }}>
       <div style={{
         background: 'blue',
@@ -289,7 +280,6 @@ const SystemHealth = forwardRef(({
       </div>
     </div>
   );
-});
 });
 
 export default SystemHealth; 
