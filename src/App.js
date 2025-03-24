@@ -14,6 +14,7 @@ import eventService from './services/EventService';
 import BackgroundSelector from './components/BackgroundSelector';
 import BackgroundService from './services/BackgroundService';
 import './App.css';
+import { useTranslation } from 'react-i18next';
 
 // Helper function to detect mobile devices
 const isMobileDevice = () => {
@@ -31,6 +32,8 @@ const getTrackingInputMode = () => {
 };
 
 function App() {
+  const { t } = useTranslation();
+
   // -------------------------
   // 1) STATE & HANDLERS
   // -------------------------
@@ -521,10 +524,10 @@ function App() {
                   textAlign: 'center',
                   fontWeight: 'bold'
                 }}>
-                  SYSTEM MONITORING
+                  {t('tasks.monitoring.title')}
                 </div>
                 <div style={{ padding: '20px', textAlign: 'center' }}>
-                  System Monitoring Task Inactive
+                  {t('customMode.monitoringTask')} {t('gameOver.inactive')}
                 </div>
               </div>
             )}
@@ -576,10 +579,10 @@ function App() {
                   textAlign: 'center',
                   fontWeight: 'bold'
                 }}>
-                  TRACKING
+                  {t('tasks.tracking.title')}
                 </div>
                 <div style={{ padding: '20px', textAlign: 'center' }}>
-                  Tracking Task Inactive
+                  {t('customMode.trackingTask')} {t('gameOver.inactive')}
                 </div>
               </div>
             )}
@@ -652,10 +655,10 @@ function App() {
                   textAlign: 'center',
                   fontWeight: 'bold'
                 }}>
-                  COMMUNICATIONS
+                  {t('tasks.communications.title')}
                 </div>
                 <div style={{ padding: '20px', textAlign: 'center' }}>
-                  Communications Task Inactive
+                  {t('customMode.commTask')} {t('gameOver.inactive')}
                 </div>
               </div>
             )}
@@ -698,10 +701,10 @@ function App() {
                   textAlign: 'center',
                   fontWeight: 'bold'
                 }}>
-                  RESOURCE MANAGEMENT
+                  {t('tasks.resource.title')}
                 </div>
                 <div style={{ padding: '20px', textAlign: 'center' }}>
-                  Resource Management Task Inactive
+                  {t('customMode.resourceTask')} {t('gameOver.inactive')}
                 </div>
               </div>
             )}

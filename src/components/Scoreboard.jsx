@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import ScoreboardService from '../services/ScoreboardService';
 
 const Scoreboard = ({ mode, onClose }) => {
+  const { t } = useTranslation();
   const [scores, setScores] = useState([]);
   const [selectedMode, setSelectedMode] = useState(mode || 'normal');
   
@@ -61,7 +63,7 @@ const Scoreboard = ({ mode, onClose }) => {
         boxShadow: '0 0 20px rgba(0, 0, 0, 0.5)',
         pointerEvents: 'auto'
       }}>
-        <h2 style={{ textAlign: 'center', marginBottom: '20px' }}>High Scores</h2>
+        <h2 style={{ textAlign: 'center', marginBottom: '20px' }}>{t('scoreboard.title')}</h2>
         
         {/* Mode selector */}
         <div style={{ 
@@ -82,7 +84,7 @@ const Scoreboard = ({ mode, onClose }) => {
               pointerEvents: 'auto'
             }}
           >
-            Normal Mode
+            {t('mainMenu.normalMode')}
           </button>
           <button
             onClick={() => setSelectedMode('infinite')}
@@ -96,7 +98,7 @@ const Scoreboard = ({ mode, onClose }) => {
               pointerEvents: 'auto'
             }}
           >
-            Infinite Mode
+            {t('mainMenu.infiniteMode')}
           </button>
         </div>
         
@@ -111,11 +113,11 @@ const Scoreboard = ({ mode, onClose }) => {
             <thead>
               <tr style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.2)' }}>
                 <th style={{ padding: '10px', textAlign: 'center', width: '10%' }}>#</th>
-                <th style={{ padding: '10px', textAlign: 'left', width: '40%' }}>Name</th>
+                <th style={{ padding: '10px', textAlign: 'left', width: '40%' }}>{t('scoreboard.playerName')}</th>
                 <th style={{ padding: '10px', textAlign: 'right', width: '25%' }}>
-                  {selectedMode === 'infinite' ? 'Time' : 'Score'}
+                  {selectedMode === 'infinite' ? t('scoreboard.time') : t('scoreboard.score')}
                 </th>
-                <th style={{ padding: '10px', textAlign: 'right', width: '25%' }}>Date</th>
+                <th style={{ padding: '10px', textAlign: 'right', width: '25%' }}>{t('scoreboard.date')}</th>
               </tr>
             </thead>
             <tbody>
@@ -141,7 +143,7 @@ const Scoreboard = ({ mode, onClose }) => {
               ) : (
                 <tr>
                   <td colSpan="4" style={{ padding: '20px', textAlign: 'center' }}>
-                    No scores recorded yet. Be the first!
+                    {t('scoreboard.noScores')}
                   </td>
                 </tr>
               )}
@@ -163,7 +165,7 @@ const Scoreboard = ({ mode, onClose }) => {
               pointerEvents: 'auto'
             }}
           >
-            Close
+            {t('common.back')}
           </button>
         </div>
       </div>

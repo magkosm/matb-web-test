@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import BackgroundService from '../services/BackgroundService';
 
 // Import background images directly for thumbnails
@@ -14,6 +15,7 @@ const BACKGROUND_IMAGES = {
 };
 
 const BackgroundSelector = ({ onClose, small = false }) => {
+  const { t } = useTranslation();
   const [selectedBackground, setSelectedBackground] = useState(BackgroundService.getCurrentBackground());
   const backgrounds = BackgroundService.getBackgroundOptions();
 
@@ -71,7 +73,7 @@ const BackgroundSelector = ({ onClose, small = false }) => {
       boxShadow: '0 0 10px rgba(0, 0, 0, 0.3)',
       pointerEvents: 'auto'
     }}>
-      {!small && <h3 style={{ color: 'white', marginTop: 0, textAlign: 'center' }}>Background Selection</h3>}
+      {!small && <h3 style={{ color: 'white', marginTop: 0, textAlign: 'center' }}>{t('backgroundSelector.title')}</h3>}
       
       <div style={{ 
         display: 'flex', 
@@ -111,7 +113,7 @@ const BackgroundSelector = ({ onClose, small = false }) => {
       
       {!small && onClose && (
         <div style={{ textAlign: 'center', marginTop: '15px' }}>
-          <button 
+          <button
             onClick={onClose}
             style={{
               padding: '5px 15px',
@@ -122,7 +124,7 @@ const BackgroundSelector = ({ onClose, small = false }) => {
               cursor: 'pointer'
             }}
           >
-            Close
+            {t('common.back')}
           </button>
         </div>
       )}

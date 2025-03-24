@@ -1,0 +1,93 @@
+{
+  "common": {
+    "start": "Start",
+    "back": "Back",
+    "cancel": "Cancel",
+    "save": "Save",
+    "exit": "Exit",
+    "yes": "Yes",
+    "no": "No",
+    "ok": "OK",
+    "difficulty": "Difficulty",
+    "duration": "Duration",
+    "settings": "Settings",
+    "minutes": "minutes"
+  },
+  "mainMenu": {
+    "title": "MATB-II Simulation",
+    "subtitle": "Multi-Attribute Task Battery for Human-Automation Interaction Research",
+    "normalMode": "Normal Mode",
+    "testingMode": "Testing Mode",
+    "infiniteMode": "Infinite Mode",
+    "customMode": "Custom Mode",
+    "otherModes": "Other Game Modes",
+    "scoreboard": "High Scores",
+    "changeBackground": "Change Background",
+    "gameModeDescription": "Game Mode",
+    "pressStartToBegin": "Press 'Start Simulation' to begin",
+    "pressCtrlQToReturn": "During simulation, press Ctrl+Q to return to this menu"
+  },
+  "customMode": {
+    "setup": "Custom Mode Setup",
+    "eventsPerMinute": "Events Per Minute",
+    "taskConfiguration": "Task Configuration",
+    "commTask": "Communications Task",
+    "monitoringTask": "System Monitoring Task",
+    "trackingTask": "Tracking Task",
+    "resourceTask": "Resource Management Task"
+  },
+  "scoreboard": {
+    "title": "High Scores",
+    "playerName": "Name",
+    "score": "Score",
+    "time": "Time",
+    "date": "Date",
+    "gameMode": "Game Mode",
+    "duration": "Duration",
+    "noScores": "No scores recorded yet. Be the first!",
+    "finalScore": "Final Score",
+    "timeSurvived": "Time Survived"
+  },
+  "backgroundSelector": {
+    "title": "Background Selection",
+    "applyBackground": "Apply Background"
+  },
+  "tasks": {
+    "communications": {
+      "title": "Communications",
+      "callsign": "Callsign",
+      "frequency": "Frequency",
+      "respond": "Respond",
+      "ignore": "Ignore"
+    },
+    "monitoring": {
+      "title": "System Monitoring",
+      "scale": "Scale",
+      "warning": "Warning",
+      "reset": "Reset"
+    },
+    "tracking": {
+      "title": "Tracking Task",
+      "auto": "AUTO",
+      "manual": "MANUAL"
+    },
+    "resource": {
+      "title": "Resource Management",
+      "tank": "Tank",
+      "pump": "Pump",
+      "on": "ON",
+      "off": "OFF"
+    }
+  },
+  "gameOver": {
+    "title": "Game Over",
+    "score": "Previous Game Results",
+    "enterName": "Enter your name to save your score",
+    "submit": "Submit",
+    "playAgain": "Play Again",
+    "mainMenu": "Main Menu",
+    "finalScore": "Final Score",
+    "timeSurvived": "Time Survived",
+    "inactive": "Inactive"
+  }
+} 

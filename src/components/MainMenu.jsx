@@ -5,8 +5,11 @@ import ScoreboardService from '../services/ScoreboardService';
 import BackgroundSelector from './BackgroundSelector';
 import BackgroundService from '../services/BackgroundService';
 import CustomModeSetup from './CustomModeSetup';
+import { useTranslation } from 'react-i18next';
+import LanguageSelector from './LanguageSelector';
 
 const MainMenu = ({ onStartGame, onExitApp, gameResults }) => {
+  const { t } = useTranslation();
   const [selectedMode, setSelectedMode] = useState('normal'); // Normal is now default
   const [gameDuration, setGameDuration] = useState(5); // Default 5 minutes
   const [showScoreboard, setShowScoreboard] = useState(false);
@@ -122,7 +125,7 @@ const MainMenu = ({ onStartGame, onExitApp, gameResults }) => {
         boxShadow: '0 0 20px rgba(0, 0, 0, 0.5)',
         pointerEvents: 'auto'
       }}>
-        <h2 style={{ textAlign: 'center', marginBottom: '20px' }}>Other Game Modes</h2>
+        <h2 style={{ textAlign: 'center', marginBottom: '20px' }}>{t('mainMenu.otherModes')}</h2>
         
         <div style={{ marginBottom: '20px' }}>
           <div style={{ 
@@ -148,7 +151,7 @@ const MainMenu = ({ onStartGame, onExitApp, gameResults }) => {
                 onChange={() => setSelectedMode('testing')}
                 style={{ marginRight: '10px' }}
               />
-              Testing Mode
+              {t('mainMenu.testingMode')}
             </label>
             
             <label style={{ 
@@ -167,7 +170,7 @@ const MainMenu = ({ onStartGame, onExitApp, gameResults }) => {
                 onChange={() => setSelectedMode('infinite')}
                 style={{ marginRight: '10px' }}
               />
-              Infinite Mode
+              {t('mainMenu.infiniteMode')}
             </label>
             
             <label style={{ 
@@ -185,7 +188,7 @@ const MainMenu = ({ onStartGame, onExitApp, gameResults }) => {
                 onChange={() => setSelectedMode('custom')}
                 style={{ marginRight: '10px' }}
               />
-              Custom Mode
+              {t('mainMenu.customMode')}
             </label>
           </div>
           
@@ -220,7 +223,7 @@ const MainMenu = ({ onStartGame, onExitApp, gameResults }) => {
         </div>
 
         <div style={{ textAlign: 'center' }}>
-          <button
+          <button 
             onClick={() => setShowOtherModes(false)}
             style={{
               padding: '10px 20px',
@@ -232,7 +235,7 @@ const MainMenu = ({ onStartGame, onExitApp, gameResults }) => {
               pointerEvents: 'auto'
             }}
           >
-            Close
+            {t('common.cancel')}
           </button>
         </div>
       </div>
@@ -268,7 +271,7 @@ const MainMenu = ({ onStartGame, onExitApp, gameResults }) => {
         boxShadow: '0 0 20px rgba(0, 0, 0, 0.5)',
         pointerEvents: 'auto'
       }}>
-        <h2 style={{ textAlign: 'center', marginBottom: '20px' }}>Background Selection</h2>
+        <h2 style={{ textAlign: 'center', marginBottom: '20px' }}>{t('backgroundSelector.title')}</h2>
         
         <BackgroundSelector onClose={() => setShowBackgroundSelector(false)} />
       </div>
@@ -299,10 +302,12 @@ const MainMenu = ({ onStartGame, onExitApp, gameResults }) => {
           width: '80%'
         }}
       >
-        <h1 style={{ fontSize: '36px', marginBottom: '20px' }}>MATB-II Simulation</h1>
+        <h1 style={{ fontSize: '36px', marginBottom: '20px' }}>{t('mainMenu.title')}</h1>
         <p style={{ fontSize: '16px', marginBottom: '30px' }}>
-          Multi-Attribute Task Battery for Human-Automation Interaction Research
+          {t('mainMenu.subtitle')}
         </p>
+        
+        <LanguageSelector />
         
         <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
           <div style={{ 
@@ -314,7 +319,7 @@ const MainMenu = ({ onStartGame, onExitApp, gameResults }) => {
             borderRadius: '5px',
             marginBottom: '15px'
           }}>
-            <h3 style={{ marginTop: 0, marginBottom: '10px', alignSelf: 'center' }}>Game Mode</h3>
+            <h3 style={{ marginTop: 0, marginBottom: '10px', alignSelf: 'center' }}>{t('mainMenu.gameModeDescription')}</h3>
             
             {/* Primary Game Mode - Normal Mode */}
             <div style={{ width: '100%' }}>
@@ -337,14 +342,14 @@ const MainMenu = ({ onStartGame, onExitApp, gameResults }) => {
                   style={{ marginRight: '10px' }}
                 />
                 <label htmlFor="normalMode" style={{ fontSize: '18px', fontWeight: 'bold' }}>
-                  Normal Mode
+                  {t('mainMenu.normalMode')}
                 </label>
               </div>
               
               {selectedMode === 'normal' && (
                 <div style={{ width: '100%' }}>
                   <label style={{ display: 'block', marginBottom: '5px' }}>
-                    Game Duration (minutes):
+                    {t('common.duration')} ({t('common.minutes')}):
                   </label>
                   <input 
                     type="number" 
@@ -381,7 +386,7 @@ const MainMenu = ({ onStartGame, onExitApp, gameResults }) => {
             onMouseOver={(e) => e.target.style.backgroundColor = '#0069d9'}
             onMouseOut={(e) => e.target.style.backgroundColor = '#007bff'}
           >
-            Start Simulation
+            {t('common.start')}
           </button>
           
           <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
@@ -402,7 +407,7 @@ const MainMenu = ({ onStartGame, onExitApp, gameResults }) => {
               onMouseOver={(e) => e.target.style.backgroundColor = '#138496'}
               onMouseOut={(e) => e.target.style.backgroundColor = '#17a2b8'}
             >
-              High Scores
+              {t('mainMenu.scoreboard')}
             </button>
             
             <button 
@@ -422,7 +427,7 @@ const MainMenu = ({ onStartGame, onExitApp, gameResults }) => {
               onMouseOver={(e) => e.target.style.backgroundColor = '#5a6268'}
               onMouseOut={(e) => e.target.style.backgroundColor = '#6c757d'}
             >
-              Other Game Modes
+              {t('mainMenu.otherModes')}
             </button>
           </div>
           
@@ -441,7 +446,7 @@ const MainMenu = ({ onStartGame, onExitApp, gameResults }) => {
             onMouseOver={(e) => e.target.style.backgroundColor = '#218838'}
             onMouseOut={(e) => e.target.style.backgroundColor = '#28a745'}
           >
-            Change Background
+            {t('mainMenu.changeBackground')}
           </button>
           
           <button 
@@ -463,20 +468,20 @@ const MainMenu = ({ onStartGame, onExitApp, gameResults }) => {
               e.target.style.backgroundColor = 'transparent';
             }}
           >
-            Exit
+            {t('common.exit')}
           </button>
         </div>
         
         <div style={{ marginTop: '30px', fontSize: '14px', opacity: 0.7 }}>
-          <p>Press 'Start Simulation' to begin</p>
-          <p>During simulation, press Ctrl+Q to return to this menu</p>
+          <p>{t('mainMenu.pressStartToBegin')}</p>
+          <p>{t('mainMenu.pressCtrlQToReturn')}</p>
         </div>
 
         {/* Mini background selector at the bottom */}
         <div style={{ marginTop: '20px' }}>
           <BackgroundSelector small={true} />
         </div>
-
+        
         {gameResults && (
           <div style={{ 
             marginTop: '30px', 
@@ -484,11 +489,11 @@ const MainMenu = ({ onStartGame, onExitApp, gameResults }) => {
             padding: '15px', 
             borderRadius: '5px' 
           }}>
-            <h3 style={{ margin: '0 0 10px 0' }}>Previous Game Results</h3>
+            <h3 style={{ margin: '0 0 10px 0' }}>{t('gameOver.score')}</h3>
             {gameResults.gameMode === 'infinite' ? (
-              <p>Time Survived: {Math.floor(gameResults.finalScore / 60)}:{(gameResults.finalScore % 60).toString().padStart(2, '0')}</p>
+              <p>{t('scoreboard.timeSurvived')}: {Math.floor(gameResults.finalScore / 60)}:{(gameResults.finalScore % 60).toString().padStart(2, '0')}</p>
             ) : (
-              <p>Final Score: {Math.floor(gameResults.finalScore)}</p>
+              <p>{t('scoreboard.finalScore')}: {Math.floor(gameResults.finalScore)}</p>
             )}
           </div>
         )}
@@ -523,8 +528,8 @@ const MainMenu = ({ onStartGame, onExitApp, gameResults }) => {
       
       {showCustomModeSetup && 
         <CustomModeSetup 
-          onSave={handleCustomModeStart} 
-          onCancel={() => setShowCustomModeSetup(false)} 
+          onSave={handleCustomModeStart}
+          onCancel={() => setShowCustomModeSetup(false)}
         />
       }
     </div>

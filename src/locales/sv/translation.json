@@ -1,0 +1,93 @@
+{
+  "common": {
+    "start": "Start",
+    "back": "Tillbaka",
+    "cancel": "Avbryt",
+    "save": "Spara",
+    "exit": "Avsluta",
+    "yes": "Ja",
+    "no": "Nej",
+    "ok": "OK",
+    "difficulty": "Svårighetsgrad",
+    "duration": "Varaktighet",
+    "settings": "Inställningar",
+    "minutes": "minuter"
+  },
+  "mainMenu": {
+    "title": "MATB-II Simulation",
+    "subtitle": "Multi-Attribute Testbatteri för Forskning om Människa-Automation Interaktion",
+    "normalMode": "Normalt Läge",
+    "testingMode": "Testläge",
+    "infiniteMode": "Oändligt Läge",
+    "customMode": "Anpassat Läge",
+    "otherModes": "Andra Spellägen",
+    "scoreboard": "Poängtavla",
+    "changeBackground": "Byt Bakgrund",
+    "gameModeDescription": "Spelläge",
+    "pressStartToBegin": "Tryck på 'Start Simulation' för att börja",
+    "pressCtrlQToReturn": "Under simuleringen, tryck Ctrl+Q för att återgå till denna meny"
+  },
+  "customMode": {
+    "setup": "Inställningar för Anpassat Läge",
+    "eventsPerMinute": "Händelser Per Minut",
+    "taskConfiguration": "Uppgiftskonfiguration",
+    "commTask": "Kommunikationsuppgift",
+    "monitoringTask": "Systemövervakningsuppgift",
+    "trackingTask": "Spårningsuppgift",
+    "resourceTask": "Resurshanteringsuppgift"
+  },
+  "scoreboard": {
+    "title": "Poängtavla",
+    "playerName": "Namn",
+    "score": "Poäng",
+    "time": "Tid",
+    "date": "Datum",
+    "gameMode": "Spelläge",
+    "duration": "Varaktighet",
+    "noScores": "Inga resultat registrerade ännu. Var den första!",
+    "finalScore": "Slutpoäng",
+    "timeSurvived": "Överlevd Tid"
+  },
+  "backgroundSelector": {
+    "title": "Bakgrundsval",
+    "applyBackground": "Tillämpa Bakgrund"
+  },
+  "tasks": {
+    "communications": {
+      "title": "Kommunikation",
+      "callsign": "Anropssignal",
+      "frequency": "Frekvens",
+      "respond": "Svara",
+      "ignore": "Ignorera"
+    },
+    "monitoring": {
+      "title": "Systemövervakning",
+      "scale": "Skala",
+      "warning": "Varning",
+      "reset": "Återställ"
+    },
+    "tracking": {
+      "title": "Spårningsuppgift",
+      "auto": "AUTO",
+      "manual": "MANUELL"
+    },
+    "resource": {
+      "title": "Resurshantering",
+      "tank": "Tank",
+      "pump": "Pump",
+      "on": "PÅ",
+      "off": "AV"
+    }
+  },
+  "gameOver": {
+    "title": "Spelet Slut",
+    "score": "Tidigare Spelresultat",
+    "enterName": "Ange ditt namn för att spara ditt resultat",
+    "submit": "Skicka",
+    "playAgain": "Spela Igen",
+    "mainMenu": "Huvudmeny",
+    "finalScore": "Slutpoäng",
+    "timeSurvived": "Överlevd Tid",
+    "inactive": "Inaktiv"
+  }
+} 

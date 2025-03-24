@@ -1,6 +1,9 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 const CustomModeSetup = ({ onSave, onCancel }) => {
+  const { t } = useTranslation();
+  
   // Initial state for task configuration
   const [taskConfig, setTaskConfig] = useState({
     comm: { 
@@ -86,7 +89,7 @@ const CustomModeSetup = ({ onSave, onCancel }) => {
       }}>
         <div style={{ marginBottom: '10px' }}>
           <label style={{ display: 'block', marginBottom: '5px' }}>
-            Events Per Minute: {config.eventsPerMinute}
+            {t('customMode.eventsPerMinute')}: {config.eventsPerMinute}
           </label>
           <input 
             type="range" 
@@ -101,7 +104,7 @@ const CustomModeSetup = ({ onSave, onCancel }) => {
         
         <div>
           <label style={{ display: 'block', marginBottom: '5px' }}>
-            Difficulty: {config.difficulty}
+            {t('common.difficulty')}: {config.difficulty}
           </label>
           <input 
             type="range" 
@@ -115,7 +118,7 @@ const CustomModeSetup = ({ onSave, onCancel }) => {
       </div>
     </div>
   );
-
+  
   return (
     <div style={{
       backgroundColor: 'rgba(0, 0, 0, 0.85)',
@@ -144,11 +147,11 @@ const CustomModeSetup = ({ onSave, onCancel }) => {
         boxShadow: '0 0 20px rgba(0, 0, 0, 0.5)',
         pointerEvents: 'auto'
       }}>
-        <h2 style={{ textAlign: 'center', marginBottom: '20px' }}>Custom Game Setup</h2>
+        <h2 style={{ textAlign: 'center', marginBottom: '20px' }}>{t('customMode.setup')}</h2>
         
         <div style={{ marginBottom: '20px' }}>
           <label style={{ display: 'block', marginBottom: '5px' }}>
-            Game Duration: {gameDuration} minutes
+            {t('common.duration')}: {gameDuration} {t('common.minutes')}
           </label>
           <input 
             type="range" 
@@ -167,26 +170,26 @@ const CustomModeSetup = ({ onSave, onCancel }) => {
         
         <TaskConfigItem 
           task="monitoring" 
-          label="System Monitoring Task"
-          config={taskConfig.monitoring}
+          label={t('customMode.monitoringTask')} 
+          config={taskConfig.monitoring} 
         />
         
         <TaskConfigItem 
           task="tracking" 
-          label="Tracking Task"
-          config={taskConfig.tracking}
+          label={t('customMode.trackingTask')} 
+          config={taskConfig.tracking} 
         />
         
         <TaskConfigItem 
           task="comm" 
-          label="Communications Task"
+          label={t('customMode.commTask')}
           config={taskConfig.comm}
         />
         
         <TaskConfigItem 
           task="resource" 
-          label="Resource Management Task"
-          config={taskConfig.resource}
+          label={t('customMode.resourceTask')} 
+          config={taskConfig.resource} 
         />
         
         <div style={{ 
@@ -194,7 +197,7 @@ const CustomModeSetup = ({ onSave, onCancel }) => {
           justifyContent: 'space-between',
           marginTop: '20px' 
         }}>
-          <button
+          <button 
             onClick={onCancel}
             style={{
               padding: '10px 20px',
@@ -206,10 +209,10 @@ const CustomModeSetup = ({ onSave, onCancel }) => {
               pointerEvents: 'auto'
             }}
           >
-            Cancel
+            {t('common.cancel')}
           </button>
           
-          <button
+          <button 
             onClick={handleStartGame}
             style={{
               padding: '10px 20px',
@@ -221,7 +224,7 @@ const CustomModeSetup = ({ onSave, onCancel }) => {
               pointerEvents: 'auto'
             }}
           >
-            Start Game
+            {t('common.start')}
           </button>
         </div>
       </div>
