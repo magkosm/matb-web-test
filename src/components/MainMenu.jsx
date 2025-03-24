@@ -13,12 +13,7 @@ const MainMenu = ({ onStartGame, onExitApp, gameResults }) => {
   const [showOtherModes, setShowOtherModes] = useState(false);
   const [showBackgroundSelector, setShowBackgroundSelector] = useState(false);
   const [showCustomModeSetup, setShowCustomModeSetup] = useState(false);
-  const [showSettings, setShowSettings] = useState(false);
-  const [keysPressed, setKeysPressed] = useState(new Set());
   const [currentBackground, setCurrentBackground] = useState(BackgroundService.getCurrentBackground());
-  const [trackingInputMode, setTrackingInputMode] = useState(
-    localStorage.getItem('trackingInputMode') || 'keyboard'
-  );
 
   // Apply background on component mount
   useEffect(() => {
@@ -33,47 +28,25 @@ const MainMenu = ({ onStartGame, onExitApp, gameResults }) => {
   // Handle the combo key press detector for the hidden clear scoreboard feature
   useEffect(() => {
     const handleKeyDown = (e) => {
-      // Add the key to the set of pressed keys
-      setKeysPressed(prev => {
-        const updated = new Set(prev);
-        updated.add(e.key);
+      // Check if the combination is pressed (Shift + S + Q)
+      if (e.key === 's' && e.shiftKey && e.code === 'KeyS') {
+        // We need to verify the Q key state
+        const isQPressed = e.getModifierState('AltGraph') || 
+                         (e.code === 'KeyQ') || 
+                         (document.activeElement?.value?.includes('q'));
         
-        // Check if the combination is pressed (Shift + S + Q)
-        if (
-          updated.has('Shift') && 
-          updated.has('s') && 
-          updated.has('q')
-        ) {
+        if (isQPressed) {
           // Clear all scores
           const cleared = ScoreboardService.clearScores();
           if (cleared) {
             alert('All score records have been cleared.');
           }
-          
-          // Reset the key tracking
-          return new Set();
         }
-        
-        return updated;
-      });
-    };
-    
-    const handleKeyUp = (e) => {
-      // Remove the key from the set of pressed keys
-      setKeysPressed(prev => {
-        const updated = new Set(prev);
-        updated.delete(e.key);
-        return updated;
-      });
+      }
     };
     
     window.addEventListener('keydown', handleKeyDown);
-    window.addEventListener('keyup', handleKeyUp);
-    
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-      window.removeEventListener('keyup', handleKeyUp);
-    };
+    return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
   const handleStartGame = () => {
@@ -82,8 +55,7 @@ const MainMenu = ({ onStartGame, onExitApp, gameResults }) => {
     } else {
       onStartGame({
         mode: selectedMode,
-        duration: gameDuration * 60 * 1000, // Convert minutes to milliseconds
-        trackingInputMode: trackingInputMode // Pass the current input mode to parent
+        duration: gameDuration * 60 * 1000 // Convert minutes to milliseconds
       });
     }
   };
@@ -93,8 +65,7 @@ const MainMenu = ({ onStartGame, onExitApp, gameResults }) => {
     onStartGame({
       mode: 'custom',
       duration: customSettings.duration,
-      taskConfig: customSettings.taskConfig,
-      trackingInputMode: trackingInputMode // Pass the current input mode to parent
+      taskConfig: customSettings.taskConfig
     });
   };
 
@@ -281,132 +252,7 @@ const MainMenu = ({ onStartGame, onExitApp, gameResults }) => {
       }}>
         <h2 style={{ textAlign: 'center', marginBottom: '20px' }}>Background Selection</h2>
         
-        <BackgroundSelector onClose={() => setShowBackgroundSelector(false)} />
-      </div>
-    </div>
-  );
-
-  // Add a settings modal component
-  const SettingsModal = () => (
-    <div style={{
-      backgroundColor: 'rgba(0, 0, 0, 0.85)',
-      color: 'white',
-      width: '100%',
-      height: '100%',
-      position: 'fixed',
-      top: 0,
-      left: 0,
-      zIndex: 2000,
-      display: 'flex',
-      justifyContent: 'center',
-      alignItems: 'center',
-      padding: '20px',
-      boxSizing: 'border-box',
-      pointerEvents: 'auto'
-    }}>
-      <div style={{
-        backgroundColor: '#1a2a3a',
-        borderRadius: '10px',
-        padding: '20px',
-        width: '100%',
-        maxWidth: '500px',
-        maxHeight: '90vh',
-        overflow: 'auto',
-        boxShadow: '0 0 20px rgba(0, 0, 0, 0.5)',
-        pointerEvents: 'auto'
-      }}>
-        <h2 style={{ textAlign: 'center', marginBottom: '20px' }}>Settings</h2>
-        
-        <div style={{ marginBottom: '20px' }}>
-          <h3 style={{ marginBottom: '10px' }}>Tracking Task Input</h3>
-          <p style={{ marginBottom: '15px', fontSize: '14px', color: '#ccc' }}>
-            Choose your preferred control method for the tracking task.
-            This can be changed during gameplay as well.
-          </p>
-          
-          <div style={{ 
-            display: 'flex', 
-            flexDirection: 'column', 
-            gap: '10px',
-            padding: '15px', 
-            backgroundColor: 'rgba(0,0,0,0.2)',
-            borderRadius: '5px' 
-          }}>
-            <label style={{ 
-              display: 'flex', 
-              alignItems: 'center',
-              padding: '8px',
-              borderRadius: '4px',
-              backgroundColor: trackingInputMode === 'keyboard' ? 'rgba(0, 123, 255, 0.2)' : 'transparent'
-            }}>
-              <input 
-                type="radio" 
-                name="trackingInput" 
-                value="keyboard" 
-                checked={trackingInputMode === 'keyboard'} 
-                onChange={() => {
-                  setTrackingInputMode('keyboard');
-                  localStorage.setItem('trackingInputMode', 'keyboard');
-                }}
-                style={{ marginRight: '10px' }}
-              />
-              Keyboard (WASD keys)
-            </label>
-            
-            <label style={{ 
-              display: 'flex', 
-              alignItems: 'center',
-              padding: '8px',
-              borderRadius: '4px',
-              backgroundColor: trackingInputMode === 'touch' ? 'rgba(0, 123, 255, 0.2)' : 'transparent'
-            }}>
-              <input 
-                type="radio" 
-                name="trackingInput" 
-                value="touch" 
-                checked={trackingInputMode === 'touch'} 
-                onChange={() => {
-                  setTrackingInputMode('touch');
-                  localStorage.setItem('trackingInputMode', 'touch');
-                }}
-                style={{ marginRight: '10px' }}
-              />
-              Touch/Mouse Controls
-            </label>
-          </div>
-          
-          <div style={{ 
-            marginTop: '15px',
-            padding: '10px', 
-            backgroundColor: 'rgba(0,0,0,0.3)', 
-            borderRadius: '5px',
-            fontSize: '14px' 
-          }}>
-            <p style={{ margin: 0 }}>
-              <strong>Keyboard:</strong> Better for desktop computers
-            </p>
-            <p style={{ margin: '5px 0 0 0' }}>
-              <strong>Touch/Mouse:</strong> Better for tablets, phones, or touchscreens
-            </p>
-          </div>
-        </div>
-
-        <div style={{ textAlign: 'center' }}>
-          <button
-            onClick={() => setShowSettings(false)}
-            style={{
-              padding: '10px 20px',
-              backgroundColor: '#dc3545',
-              color: 'white',
-              border: 'none',
-              borderRadius: '4px',
-              cursor: 'pointer',
-              pointerEvents: 'auto'
-            }}
-          >
-            Close
-          </button>
-        </div>
+        <BackgroundSelector onClose={() => setShowBackgroundSelector(false)} onBackgroundChange={handleBackgroundChange} />
       </div>
     </div>
   );
@@ -581,24 +427,6 @@ const MainMenu = ({ onStartGame, onExitApp, gameResults }) => {
           </button>
           
           <button 
-            onClick={() => setShowSettings(true)}
-            style={{
-              padding: '10px 20px',
-              fontSize: '16px',
-              backgroundColor: '#17a2b8',
-              color: 'white',
-              border: 'none',
-              borderRadius: '5px',
-              cursor: 'pointer',
-              transition: 'background-color 0.3s'
-            }}
-            onMouseOver={(e) => e.target.style.backgroundColor = '#138496'}
-            onMouseOut={(e) => e.target.style.backgroundColor = '#17a2b8'}
-          >
-            Input Settings
-          </button>
-          
-          <button 
             onClick={onExitApp}
             style={{
               padding: '10px 20px',
@@ -628,7 +456,7 @@ const MainMenu = ({ onStartGame, onExitApp, gameResults }) => {
 
         {/* Mini background selector at the bottom */}
         <div style={{ marginTop: '20px' }}>
-          <BackgroundSelector small={true} />
+          <BackgroundSelector small={true} onBackgroundChange={handleBackgroundChange} />
         </div>
 
         {gameResults && (
@@ -680,14 +508,6 @@ const MainMenu = ({ onStartGame, onExitApp, gameResults }) => {
           onSave={handleCustomModeStart} 
           onCancel={() => setShowCustomModeSetup(false)} 
         />
-      }
-      
-      {/* Settings modal */}
-      {showSettings && 
-        ReactDOM.createPortal(
-          <SettingsModal />,
-          document.body
-        )
       }
     </div>
   );

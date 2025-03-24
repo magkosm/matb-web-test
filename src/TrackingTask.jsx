@@ -4,32 +4,10 @@ import { useGamepads } from './hooks/useGamepads';
 import { useAutoScroll } from './hooks/useAutoScroll';
 import { downloadCSV } from './utils/csvExport';
 
-// Add a helper function to detect mobile devices
-const isMobileDevice = () => {
-  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || 
-         (navigator.maxTouchPoints && navigator.maxTouchPoints > 1);
-};
-
-// Add function to get preferred input mode from localStorage or detect from device
-const getInitialInputMode = () => {
-  // Try to get saved preference first and be strict about using it
-  const savedMode = localStorage.getItem('trackingInputMode');
-  if (savedMode && ['keyboard', 'touch'].includes(savedMode)) {
-    // Log what mode we're using from storage
-    console.log(`TrackingTask: Using saved input mode from localStorage: ${savedMode}`);
-    return savedMode;
-  }
-  
-  // Only if we don't have a saved preference, fall back to auto-detection
-  const detectedMode = isMobileDevice() ? 'touch' : 'keyboard';
-  console.log(`TrackingTask: No saved preference found, auto-detected input mode: ${detectedMode}`);
-  return detectedMode;
-};
-
 const INITIAL_STATE = {
   cursorPosition: { x: 0, y: 0 },
   targetPosition: { x: 0, y: 0 },
-  inputMode: getInitialInputMode(), // Set default based on saved preference or device
+  inputMode: 'keyboard', // Always default to keyboard input
   isAuto: true,
   automationFailure: false,
   trackingLog: [],
@@ -46,29 +24,13 @@ const TrackingTask = forwardRef(({
   onMetricsUpdate,
   isEnabled = true,
   autoEvents = false,
-  isMobile,
   defaultInputMode
 }, ref) => {
   const [cursorPosition, setCursorPosition] = useState({ x: 0, y: 0 });
   const [targetPosition, setTargetPosition] = useState({ x: 0, y: 0 });
   
-  // Priority: 1. defaultInputMode prop, 2. localStorage, 3. device detection
-  const initialInputMode = useMemo(() => {
-    if (defaultInputMode) {
-      console.log(`TrackingTask: Using defaultInputMode prop: ${defaultInputMode}`);
-      return defaultInputMode;
-    }
-    
-    const savedMode = localStorage.getItem('trackingInputMode');
-    if (savedMode && ['keyboard', 'touch'].includes(savedMode)) {
-      console.log(`TrackingTask: Using localStorage mode: ${savedMode}`);
-      return savedMode;
-    }
-    
-    const detectedMode = isMobileDevice() ? 'touch' : 'keyboard';
-    console.log(`TrackingTask: Falling back to detected mode: ${detectedMode}`);
-    return detectedMode;
-  }, [defaultInputMode]);
+  // Always default to keyboard input mode or use provided prop
+  const initialInputMode = defaultInputMode || 'keyboard';
   
   const [inputMode, setInputMode] = useState(initialInputMode);
   const [isAuto, setIsAuto] = useState(true);
@@ -105,13 +67,6 @@ const TrackingTask = forwardRef(({
   const [healthImpact, setHealthImpact] = useState(0);
   const [systemLoad, setSystemLoad] = useState(0);
 
-  // Add debug log on mount
-  useEffect(() => {
-    console.log(`TrackingTask MOUNTED with input mode: ${inputMode}`);
-    console.log(`defaultInputMode: ${defaultInputMode || 'not provided'}`);
-    console.log(`localStorage value: ${localStorage.getItem('trackingInputMode') || 'not set'}`);
-  }, []);
-  
   // Force-update input mode if defaultInputMode prop changes
   useEffect(() => {
     if (defaultInputMode && defaultInputMode !== inputMode) {
@@ -119,50 +74,6 @@ const TrackingTask = forwardRef(({
       setInputMode(defaultInputMode);
     }
   }, [defaultInputMode, inputMode]);
-
-  // Add useEffect to apply saved mode when component mounts
-  useEffect(() => {
-    // Ensure we load the saved preference on mount
-    const savedMode = localStorage.getItem('trackingInputMode');
-    if (savedMode && ['keyboard', 'touch'].includes(savedMode)) {
-      if (inputMode !== savedMode) {
-        console.log(`TrackingTask: Applying saved input mode on mount: ${savedMode}`);
-        setInputMode(savedMode);
-      }
-    }
-  }, []);
-
-  // Add effect to detect mobile and set input mode on component mount
-  useEffect(() => {
-    if (isMobile) {
-      console.log('Mobile device detected - automatically switching to touch input mode for Tracking Task');
-      setInputMode('touch');
-      setShowMobileHelp(true);
-      
-      // Hide the help tooltip after 7 seconds
-      const helpTimeout = setTimeout(() => {
-        setShowMobileHelp(false);
-      }, 7000);
-      
-      // Log a new tracking entry to record this automatic configuration
-      const now = Date.now();
-      const newEntry = {
-        id: `${now}-mobile-config`,
-        time: new Date(now).toISOString(),
-        event: 'AUTO_CONFIG',
-        description: 'Mobile device detected - automatically switched to touch input',
-        inputMode: 'touch'
-      };
-      setTrackingLog(prev => [...prev, newEntry]);
-      if (onLogUpdate) {
-        onLogUpdate(newEntry);
-      }
-      
-      return () => {
-        clearTimeout(helpTimeout);
-      };
-    }
-  }, [isMobile, onLogUpdate]);
 
   // Schedule automation failures based on eventsPerMinute
   useEffect(() => {
@@ -542,12 +453,12 @@ const TrackingTask = forwardRef(({
   }, [isAuto, inputMode]);
 
   const resetTask = useCallback(() => {
-    // Save the current input mode to avoid losing user's preference
-    const currentInputMode = inputMode;
+    // Always use keyboard input mode
+    const currentInputMode = 'keyboard';
     
     // Reset all state to initial values
     setCursorPosition(INITIAL_STATE.cursorPosition);
-    // Use the current input mode instead of fetching it again to preserve user choice
+    // Set input mode to keyboard
     setInputMode(currentInputMode);
     setIsAuto(INITIAL_STATE.isAuto);
     setTrackingLog(INITIAL_STATE.trackingLog);
@@ -608,8 +519,8 @@ const TrackingTask = forwardRef(({
     setSystemLoad(0);
     onMetricsUpdate?.({ healthImpact: 0, systemLoad: 0 });
     
-    console.log(`TrackingTask: Reset complete, preserved input mode: ${currentInputMode}`);
-  }, [onStatusUpdate, onLogUpdate, onMetricsUpdate, difficulty, inputMode]);
+    console.log(`TrackingTask: Reset complete, using keyboard input mode`);
+  }, [onStatusUpdate, onLogUpdate, onMetricsUpdate, difficulty]);
 
   const startAutomation = () => {
     if (moveIntervalRef.current) {
@@ -837,28 +748,6 @@ const TrackingTask = forwardRef(({
     return () => clearInterval(updateInterval);
   }, [isEnabled, isAuto, isWithinTarget, onMetricsUpdate]);
 
-  // Modify the existing useEffect for saving input mode to avoid duplicate logging
-  useEffect(() => {
-    localStorage.setItem('trackingInputMode', inputMode);
-    console.log(`TrackingTask: Input mode changed and saved to localStorage: ${inputMode}`);
-    
-    // Only log mode changes to the tracking log if this isn't initial setup
-    if (trackingLog.length > 0) {
-      const now = Date.now();
-      const newEntry = {
-        id: `${now}-input-mode-change`,
-        time: new Date(now).toISOString(),
-        event: 'INPUT_MODE_CHANGED',
-        description: `Input mode changed to ${inputMode}`,
-        inputMode: inputMode
-      };
-      setTrackingLog(prevLog => [...prevLog, newEntry]);
-      if (onLogUpdate) {
-        onLogUpdate(newEntry);
-      }
-    }
-  }, [inputMode, onLogUpdate, trackingLog.length]);
-
   // Modify the input mode change handler to be more robust
   const handleInputModeChange = useCallback((newMode) => {
     if (newMode === inputMode) return; // No change
@@ -1085,14 +974,4 @@ TrackingTask.getDefaultMetrics = () => ({
   systemLoad: 0
 });
 
-// Add a function to the component that can be called externally to change input mode
-TrackingTask.setGlobalInputMode = function(mode) {
-  if (mode && ['keyboard', 'touch'].includes(mode)) {
-    localStorage.setItem('trackingInputMode', mode);
-    return true;
-  }
-  return false;
-};
-
-// Make sure to export both the component and its Log
 export default TrackingTask;
