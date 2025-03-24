@@ -1,7 +1,7 @@
 {
   "files": {
-    "main.css": "/matb-web-test/static/css/main.d8f8e67f.css",
-    "main.js": "/matb-web-test/static/js/main.4bee4e34.js",
+    "main.css": "/matb-web-test/static/css/main.5fd0b001.css",
+    "main.js": "/matb-web-test/static/js/main.6bc004c1.js",
     "static/js/156.7bf1c5cf.chunk.js": "/matb-web-test/static/js/156.7bf1c5cf.chunk.js",
     "static/media/Cupola.jpg": "/matb-web-test/static/media/Cupola.0a88fc15ed01ab77e1b4.jpg",
     "static/media/CASA.jpeg": "/matb-web-test/static/media/CASA.7117bcb0f6896cfc4822.jpeg",
@@ -87,12 +87,12 @@
     "static/media/OWN_NAV2_115-650.wav": "/matb-web-test/static/media/OWN_NAV2_115-650.9c6564cbe59d161dee20.wav",
     "static/media/OWN_COM1_126-525.wav": "/matb-web-test/static/media/OWN_COM1_126-525.ca669956efb65a70f37a.wav",
     "index.html": "/matb-web-test/index.html",
-    "main.d8f8e67f.css.map": "/matb-web-test/static/css/main.d8f8e67f.css.map",
-    "main.4bee4e34.js.map": "/matb-web-test/static/js/main.4bee4e34.js.map",
+    "main.5fd0b001.css.map": "/matb-web-test/static/css/main.5fd0b001.css.map",
+    "main.6bc004c1.js.map": "/matb-web-test/static/js/main.6bc004c1.js.map",
     "156.7bf1c5cf.chunk.js.map": "/matb-web-test/static/js/156.7bf1c5cf.chunk.js.map"
   },
   "entrypoints": [
-    "static/css/main.d8f8e67f.css",
-    "static/js/main.4bee4e34.js"
+    "static/css/main.5fd0b001.css",
+    "static/js/main.6bc004c1.js"
   ]
 }
