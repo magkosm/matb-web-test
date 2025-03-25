@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import './index.css';
 import App from './App';
+import ReactionTimeGame from './components/ReactionTimeGame';
 import reportWebVitals from './reportWebVitals';
 
 // Import i18n configuration
@@ -51,6 +52,15 @@ const AppWithParams = ({ startParams }) => {
   return <App />;
 };
 
+// Reaction Time Game Route Component
+const ReactionTimeRoute = () => {
+  const handleReturn = () => {
+    window.location.href = process.env.PUBLIC_URL + '/';
+  };
+
+  return <ReactionTimeGame onReturn={handleReturn} />;
+};
+
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
   <React.StrictMode>
@@ -62,6 +72,7 @@ root.render(
         <Route path="/tracking" element={<AppWithParams startParams={{ mode: 'custom', tasks: ['tracking'] }} />} />
         <Route path="/resource" element={<AppWithParams startParams={{ mode: 'custom', tasks: ['resource'] }} />} />
         <Route path="/normal" element={<AppWithParams startParams={{ mode: 'normal', duration: 5 * 60 * 1000 }} />} />
+        <Route path="/reaction" element={<ReactionTimeRoute />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>

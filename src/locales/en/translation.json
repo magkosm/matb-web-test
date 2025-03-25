@@ -11,7 +11,9 @@
     "difficulty": "Difficulty",
     "duration": "Duration",
     "settings": "Settings",
-    "minutes": "minutes"
+    "minutes": "minutes",
+    "seconds": "seconds",
+    "returnToMenu": "Return to Main Menu"
   },
   "mainMenu": {
     "title": "MATB-II Simulation",
@@ -51,6 +53,36 @@
   "backgroundSelector": {
     "title": "Background Selection",
     "applyBackground": "Apply Background"
+  },
+  "reactionTest": {
+    "title": "Reaction Time Test",
+    "configTitle": "Reaction Time Test Configuration",
+    "instructions": "Test your reaction time by clicking or pressing SPACE as quickly as possible when you see a red dot.",
+    "testDetails": "The test will last up to {{duration}} seconds with a maximum of {{maxStimuli}} stimuli.",
+    "startTest": "Start Test",
+    "duration": "Test Duration (seconds)",
+    "stimuliCount": "Number of Stimuli",
+    "stimuli": "stimuli",
+    "minDelay": "Minimum Delay (seconds)",
+    "maxDelay": "Maximum Delay (seconds)",
+    "timeRemaining": "Time",
+    "stimuliProgress": "Stimuli",
+    "getReady": "Get ready for the next stimulus...",
+    "actionInstructions": "Press SPACE or click the red dot when it appears",
+    "pressCtrlQToReturn": "Press Ctrl+Q to return to the main menu at any time",
+    "results": "Reaction Time Results",
+    "averageTime": "Average Reaction Time",
+    "totalStimuli": "Total Stimuli",
+    "fastestTime": "Fastest Time",
+    "slowestTime": "Slowest Time",
+    "stimulus": "Stimulus",
+    "timesByStimulus": "Reaction Times by Stimulus",
+    "timeDistribution": "Reaction Time Distribution",
+    "milliseconds": "Milliseconds (ms)",
+    "frequency": "Frequency",
+    "average": "Average",
+    "reactionTime": "Reaction Time (ms)",
+    "tryAgain": "Try Again"
   },
   "tasks": {
     "communications": {

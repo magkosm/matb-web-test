@@ -96,6 +96,11 @@ const MainMenu = ({ onStartGame, onExitApp, gameResults }) => {
     });
   };
 
+  // Handler for reaction time test button
+  const handleStartReactionTest = () => {
+    window.location.href = `${process.env.PUBLIC_URL}/reaction`;
+  };
+
   // Create Other Game Modes Modal Component
   const OtherGameModesModal = () => (
     <div style={{
@@ -387,6 +392,25 @@ const MainMenu = ({ onStartGame, onExitApp, gameResults }) => {
             onMouseOut={(e) => e.target.style.backgroundColor = '#007bff'}
           >
             {t('common.start')}
+          </button>
+          
+          {/* Add Reaction Time Test button */}
+          <button 
+            onClick={handleStartReactionTest}
+            style={{
+              padding: '15px 30px',
+              fontSize: '18px',
+              backgroundColor: '#9c27b0', // Purple color for distinction
+              color: 'white',
+              border: 'none',
+              borderRadius: '5px',
+              cursor: 'pointer',
+              transition: 'background-color 0.3s'
+            }}
+            onMouseOver={(e) => e.target.style.backgroundColor = '#7B1FA2'}
+            onMouseOut={(e) => e.target.style.backgroundColor = '#9c27b0'}
+          >
+            Reaction Time Test
           </button>
           
           <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>

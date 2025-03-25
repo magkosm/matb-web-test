@@ -20,6 +20,9 @@ const Scoreboard = ({ mode, onClose }) => {
       const minutes = Math.floor(score / 60);
       const seconds = score % 60;
       return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+    } else if (mode === 'reaction') {
+      // For reaction test, show in milliseconds
+      return `${score.toFixed(0)} ms`;
     }
     // Normal mode - just show the number
     return Math.floor(score).toLocaleString();
@@ -68,9 +71,10 @@ const Scoreboard = ({ mode, onClose }) => {
         {/* Mode selector */}
         <div style={{ 
           display: 'flex', 
+          flexWrap: 'wrap',
           justifyContent: 'center', 
           marginBottom: '20px',
-          gap: '20px'
+          gap: '10px'
         }}>
           <button
             onClick={() => setSelectedMode('normal')}
@@ -100,6 +104,20 @@ const Scoreboard = ({ mode, onClose }) => {
           >
             {t('mainMenu.infiniteMode')}
           </button>
+          <button
+            onClick={() => setSelectedMode('reaction')}
+            style={{
+              padding: '8px 16px',
+              backgroundColor: selectedMode === 'reaction' ? '#007bff' : '#6c757d',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: 'pointer',
+              pointerEvents: 'auto'
+            }}
+          >
+            {t('reactionTest.title', 'Reaction Test')}
+          </button>
         </div>
         
         {/* Scores table */}
@@ -115,7 +133,9 @@ const Scoreboard = ({ mode, onClose }) => {
                 <th style={{ padding: '10px', textAlign: 'center', width: '10%' }}>#</th>
                 <th style={{ padding: '10px', textAlign: 'left', width: '40%' }}>{t('scoreboard.playerName')}</th>
                 <th style={{ padding: '10px', textAlign: 'right', width: '25%' }}>
-                  {selectedMode === 'infinite' ? t('scoreboard.time') : t('scoreboard.score')}
+                  {selectedMode === 'infinite' ? t('scoreboard.time') : 
+                   selectedMode === 'reaction' ? t('reactionTest.averageTime', 'Average Time') : 
+                   t('scoreboard.score')}
                 </th>
                 <th style={{ padding: '10px', textAlign: 'right', width: '25%' }}>{t('scoreboard.date')}</th>
               </tr>
@@ -134,6 +154,8 @@ const Scoreboard = ({ mode, onClose }) => {
                     <td style={{ padding: '8px', textAlign: 'left' }}>{score.name}</td>
                     <td style={{ padding: '8px', textAlign: 'right' }}>
                       {formatScore(score.score, selectedMode)}
+                      {selectedMode === 'reaction' && score.stimuliCount && 
+                        ` (${score.stimuliCount} ${t('reactionTest.stimuli', 'stimuli')})`}
                     </td>
                     <td style={{ padding: '8px', textAlign: 'right' }}>
                       {formatDate(score.date)}

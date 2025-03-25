@@ -11,7 +11,9 @@
     "difficulty": "Svårighetsgrad",
     "duration": "Varaktighet",
     "settings": "Inställningar",
-    "minutes": "minuter"
+    "minutes": "minuter",
+    "seconds": "sekunder",
+    "returnToMenu": "Återgå till Huvudmenyn"
   },
   "mainMenu": {
     "title": "MATB-II Simulation",
@@ -51,6 +53,36 @@
   "backgroundSelector": {
     "title": "Bakgrundsval",
     "applyBackground": "Tillämpa Bakgrund"
+  },
+  "reactionTest": {
+    "title": "Reaktionstidstest",
+    "configTitle": "Konfiguration av Reaktionstidstest",
+    "instructions": "Testa din reaktionstid genom att klicka eller trycka på SPACE så snabbt som möjligt när du ser den röda pricken.",
+    "testDetails": "Testet varar i upp till {{duration}} sekunder med maximalt {{maxStimuli}} stimuli.",
+    "startTest": "Starta Test",
+    "duration": "Testvaraktighet (sekunder)",
+    "stimuliCount": "Antal Stimuli",
+    "stimuli": "stimuli",
+    "minDelay": "Minsta Fördröjning (sekunder)",
+    "maxDelay": "Max Fördröjning (sekunder)",
+    "timeRemaining": "Tid",
+    "stimuliProgress": "Stimuli",
+    "getReady": "Gör dig redo för nästa stimulus...",
+    "actionInstructions": "Tryck på SPACE eller klicka på den röda pricken när den visas",
+    "pressCtrlQToReturn": "Tryck på Ctrl+Q för att återgå till huvudmenyn när som helst",
+    "results": "Reaktionstidsresultat",
+    "averageTime": "Genomsnittlig Reaktionstid",
+    "totalStimuli": "Totalt Antal Stimuli",
+    "fastestTime": "Snabbaste Tid",
+    "slowestTime": "Långsammaste Tid",
+    "stimulus": "Stimulus",
+    "timesByStimulus": "Reaktionstider per Stimulus",
+    "timeDistribution": "Reaktionstidsfördelning",
+    "milliseconds": "Millisekunder (ms)",
+    "frequency": "Frekvens",
+    "average": "Genomsnitt",
+    "reactionTime": "Reaktionstid (ms)",
+    "tryAgain": "Försök Igen"
   },
   "tasks": {
     "communications": {
