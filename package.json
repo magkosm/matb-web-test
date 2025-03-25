@@ -1,7 +1,7 @@
 {
-  "name": "matb-web-test",
+  "name": "OrbAch Web Assessments",
   "homepage": "https://magkosm.github.io/matb-web-test",
-  "version": "0.1.0",
+  "version": "1.2.0",
   "private": true,
   "dependencies": {
     "chart.js": "^4.4.2",
