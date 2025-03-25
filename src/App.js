@@ -38,7 +38,13 @@ function App() {
   // 1) STATE & HANDLERS
   // -------------------------
 
-  // Main Menu state
+  // Add loading state
+  const [isInitializing, setIsInitializing] = useState(false);
+  
+  // Check for startup parameters in localStorage
+  const [startupParamsChecked, setStartupParamsChecked] = useState(false);
+
+  // Main Menu state - we'll decide this after checking localStorage
   const [showMainMenu, setShowMainMenu] = useState(true);
   
   // Game mode state
@@ -192,6 +198,9 @@ function App() {
     // Stop the event scheduler if running
     eventService.stopScheduler();
     
+    // Pause all tasks explicitly first
+    eventService.pauseAllTasks();
+    
     // Reset task-specific states
     setCommEPM(2);
     setCommDifficulty(5);
@@ -230,38 +239,53 @@ function App() {
     // Reset task components explicitly
     // Use setTimeout to ensure this runs after state updates
     setTimeout(() => {
+      console.log('Resetting all task components...');
+      
       // Reset Resource Management task (tanks)
       if (resourceTaskRef.current && typeof resourceTaskRef.current.resetTask === 'function') {
         resourceTaskRef.current.resetTask();
+        console.log('Resource task reset');
       }
       
       // Reset Communications task
       if (commTaskRef.current) {
         if (typeof commTaskRef.current.resetTask === 'function') {
           commTaskRef.current.resetTask();
+          console.log('Communications task reset via resetTask');
         } else if (typeof commTaskRef.current.reset === 'function') {
           commTaskRef.current.reset();
+          console.log('Communications task reset via reset');
         } else if (typeof commTaskRef.current.clearActiveMessage === 'function') {
           commTaskRef.current.clearActiveMessage();
+          console.log('Communications task cleared active message');
         }
       }
       
       // Reset Monitoring task
       if (monitoringTaskRef.current && typeof monitoringTaskRef.current.resetTask === 'function') {
         monitoringTaskRef.current.resetTask();
+        console.log('Monitoring task reset');
       }
       
       // Reset Tracking task
       if (trackingTaskRef.current && typeof trackingTaskRef.current.resetTask === 'function') {
         trackingTaskRef.current.resetTask();
+        console.log('Tracking task reset');
       }
 
       // Make sure system health is reset too
       if (systemHealthRef.current && typeof systemHealthRef.current.resetHealth === 'function') {
         systemHealthRef.current.resetHealth();
+        console.log('System health reset');
       }
       systemHealthValueRef.current = 100;
-    }, 100);
+      
+      // Force task unpausing after reset
+      setTimeout(() => {
+        eventService.resumeAllTasks();
+        console.log('All tasks resumed after reset');
+      }, 200);
+    }, 200);
   }, []);
 
   // Function to handle starting the game from the main menu
@@ -316,7 +340,11 @@ function App() {
         } else {
           console.warn('Resource task not available for reset');
         }
-      }, 100);
+        
+        // Ensure all tasks are unpaused after initialization
+        eventService.resumeAllTasks();
+        console.log('Tasks resumed after game start');
+      }, 300);
     }
   }, [resetAllTasksToDefault]);
 
@@ -333,6 +361,9 @@ function App() {
     
     // Reset task registration status
     setTasksRegistered(false);
+    
+    // Clear any stored startup parameters
+    localStorage.removeItem('matb_start_params');
   }, []);
 
   // Handle game end (both Normal Mode and Infinite Mode)
@@ -424,6 +455,114 @@ function App() {
   useEffect(() => {
     console.log(`App: trackingInputMode state changed to ${trackingInputMode}`);
   }, [trackingInputMode]);
+
+  // Check for startup parameters stored in localStorage
+  useEffect(() => {
+    // Only check once and never when initializing
+    if (startupParamsChecked || isInitializing) return;
+    
+    try {
+      const storedParams = localStorage.getItem('matb_start_params');
+      if (storedParams) {
+        setIsInitializing(true); // Set initializing flag to prevent duplicate starts
+        
+        const startParams = JSON.parse(storedParams);
+        
+        // Create task configuration object for custom mode
+        const createCustomTaskConfig = () => {
+          const { tasks } = startParams;
+          return {
+            comm: { 
+              isActive: tasks.includes('comm'),
+              eventsPerMinute: commEPM,
+              difficulty: commDifficulty
+            },
+            monitoring: { 
+              isActive: tasks.includes('monitoring'),
+              eventsPerMinute: monitoringEPM,
+              difficulty: monitoringDifficulty
+            },
+            tracking: { 
+              isActive: tasks.includes('tracking'),
+              eventsPerMinute: trackingEPM,
+              difficulty: trackingDifficulty
+            },
+            resource: { 
+              isActive: tasks.includes('resource'),
+              eventsPerMinute: resourceEPM,
+              difficulty: resourceDifficulty
+            }
+          };
+        };
+        
+        // Set the main menu to hidden
+        setShowMainMenu(false);
+        
+        // Use a longer timeout to ensure the components have fully mounted
+        // and all initialization is complete
+        setTimeout(() => {
+          const { mode, tasks, duration } = startParams;
+          
+          // Ensure we have task registration before starting the game
+          // This prevents issues with tasks being paused when events start
+          const startGameWithTaskCheck = () => {
+            // Check if all necessary tasks are registered
+            const allRefsAvailable = 
+              (!tasks.includes('comm') || commTaskRef?.current) && 
+              (!tasks.includes('monitoring') || monitoringTaskRef?.current) && 
+              (!tasks.includes('tracking') || trackingTaskRef?.current) && 
+              (!tasks.includes('resource') || resourceTaskRef?.current);
+            
+            if (allRefsAvailable) {
+              console.log('All required task refs are ready for auto-start');
+              
+              if (mode === 'normal' && duration) {
+                // Start normal mode with specified duration
+                startGame({
+                  mode: 'normal',
+                  duration
+                });
+              } 
+              else if (mode === 'custom' && tasks) {
+                startGame({
+                  mode: 'custom',
+                  duration: gameDuration, 
+                  taskConfig: createCustomTaskConfig()
+                });
+              }
+              
+              // Ensure tasks are unpaused
+              setTimeout(() => {
+                eventService.resumeAllTasks();
+                console.log('Tasks resumed after auto-start');
+              }, 300);
+              
+              // Clear the params so they don't re-trigger on refresh
+              localStorage.removeItem('matb_start_params');
+              setIsInitializing(false); // Reset initializing flag
+            } else {
+              // If tasks aren't ready yet, try again after a short delay
+              console.log('Not all required task refs are ready, waiting...');
+              setTimeout(startGameWithTaskCheck, 100);
+            }
+          };
+          
+          // Start the task check process
+          startGameWithTaskCheck();
+        }, 800); // Increased timeout to ensure components are mounted
+      } else {
+        // Mark as checked to prevent repeated processing if no parameters found
+        setStartupParamsChecked(true);
+      }
+    } catch (error) {
+      console.error("Error processing startup parameters:", error);
+      localStorage.removeItem('matb_start_params');
+      setStartupParamsChecked(true);
+      setIsInitializing(false); // Reset initializing flag
+    }
+  // We're intentionally only running this once
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isInitializing, startupParamsChecked]);
 
   // If the main menu should be shown, render it instead of the main app
   if (showMainMenu) {
