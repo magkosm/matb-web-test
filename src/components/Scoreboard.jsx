@@ -24,10 +24,11 @@ const Scoreboard = ({ mode, onClose }) => {
       // For reaction test, show in milliseconds
       return `${Number(score).toFixed(0)} ms`;
     } else if (mode === 'nback') {
-      // For n-back test, show as accuracy percentage
+      // For n-back test, show as performance score (d-prime)
       // Ensure score is a number before using toFixed
       const numericScore = typeof score === 'number' ? score : parseFloat(score || 0);
-      return `${numericScore.toFixed(1)}%`;
+      if (isNaN(numericScore)) return '0.0';
+      return `${numericScore.toFixed(1)}`;
     }
     // Normal mode - just show the number
     return Math.floor(score).toLocaleString();
@@ -154,7 +155,7 @@ const Scoreboard = ({ mode, onClose }) => {
                 <th style={{ padding: '10px', textAlign: 'right', width: '25%' }}>
                   {selectedMode === 'infinite' ? t('scoreboard.time') : 
                    selectedMode === 'reaction' ? t('reactionTest.averageTime', 'Average Time') : 
-                   selectedMode === 'nback' ? t('nbackTest.accuracy', 'Accuracy') :
+                   selectedMode === 'nback' ? t('nbackTest.performanceScore', 'Performance Score') :
                    t('scoreboard.score')}
                 </th>
                 <th style={{ padding: '10px', textAlign: 'right', width: '25%' }}>{t('scoreboard.date')}</th>
@@ -171,9 +172,10 @@ const Scoreboard = ({ mode, onClose }) => {
                     }}
                   >
                     <td style={{ padding: '8px', textAlign: 'center' }}>{index + 1}</td>
-                    <td style={{ padding: '8px', textAlign: 'left' }}>{score.name}</td>
+                    <td style={{ padding: '8px', textAlign: 'left' }}>{score.name || 'Anonymous'}</td>
                     <td style={{ padding: '8px', textAlign: 'right' }}>
                       {formatScore(score.score, selectedMode)}
+                      {selectedMode === 'nback' ? '%' : ''}
                       {selectedMode === 'reaction' && score.stimuliCount && 
                         ` (${score.stimuliCount} ${t('reactionTest.stimuli', 'stimuli')})`}
                       {selectedMode === 'nback' && score.nValue && 
