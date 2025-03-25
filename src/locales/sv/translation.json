@@ -48,7 +48,8 @@
     "duration": "Varaktighet",
     "noScores": "Inga resultat registrerade ännu. Var den första!",
     "finalScore": "Slutpoäng",
-    "timeSurvived": "Överlevd Tid"
+    "timeSurvived": "Överlevd Tid",
+    "scoreSaved": "Ditt resultat har sparats!"
   },
   "backgroundSelector": {
     "title": "Bakgrundsval",
@@ -83,6 +84,39 @@
     "average": "Genomsnitt",
     "reactionTime": "Reaktionstid (ms)",
     "tryAgain": "Försök Igen"
+  },
+  "nbackTest": {
+    "title": "N-Back Test",
+    "configTitle": "Konfiguration av N-Back Test",
+    "instructions": "Detta är ett dubbel n-back test med audiovisuella och visuospatiala komponenter.",
+    "letterInstructions": "Tryck på L om den aktuella bokstaven matchar bokstaven från {{n}} steg tillbaka.",
+    "positionInstructions": "Tryck på A om den aktuella fyrkantsplaceringen matchar placeringen från {{n}} steg tillbaka.",
+    "testDetails": "Testet består av {{trials}} stimuli som presenteras i {{time}} sekunder vardera.",
+    "startTest": "Starta Test",
+    "nValue": "N-värde",
+    "trials": "försök",
+    "letterTargets": "Bokstavsmål",
+    "positionTargets": "Positionsmål",
+    "bothTargets": "Dubbla Mål",
+    "stimulusTime": "Tid per Stimulus (sekunder)",
+    "pressCtrlQToReturn": "Tryck på Ctrl+Q för att återgå till huvudmenyn när som helst",
+    "results": "N-Back Testresultat",
+    "accuracy": "Total Noggrannhet",
+    "totalTrials": "Totalt Antal Försök",
+    "performance": "Prestation per Kategori",
+    "hits": "Träffar",
+    "correctRejections": "Korrekta Avvisningar",
+    "misses": "Missar",
+    "falseAlarms": "Falska Alarm",
+    "letterDimension": "Bokstavsdimension",
+    "positionDimension": "Positionsdimension",
+    "count": "Antal",
+    "tryAgain": "Försök Igen",
+    "stimulus": "Stimulus",
+    "position": "Position",
+    "letter": "Bokstav",
+    "memorizeFirst": "Memorera de första {{n}} föremålen...",
+    "matchInstructions": "Tryck L för bokstavsmatch, A för positionsmatch"
   },
   "tasks": {
     "communications": {

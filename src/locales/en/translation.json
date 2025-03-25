@@ -48,7 +48,8 @@
     "duration": "Duration",
     "noScores": "No scores recorded yet. Be the first!",
     "finalScore": "Final Score",
-    "timeSurvived": "Time Survived"
+    "timeSurvived": "Time Survived",
+    "scoreSaved": "Your score has been saved!"
   },
   "backgroundSelector": {
     "title": "Background Selection",
@@ -83,6 +84,39 @@
     "average": "Average",
     "reactionTime": "Reaction Time (ms)",
     "tryAgain": "Try Again"
+  },
+  "nbackTest": {
+    "title": "N-Back Test",
+    "configTitle": "N-Back Test Configuration",
+    "instructions": "This is a dual n-back test with audio-visual and visuospatial components.",
+    "letterInstructions": "Press L if the current letter matches the letter from {{n}} steps ago.",
+    "positionInstructions": "Press A if the current square position matches the position from {{n}} steps ago.",
+    "testDetails": "The test will consist of {{trials}} stimuli presented for {{time}} seconds each.",
+    "startTest": "Start Test",
+    "nValue": "N Value",
+    "trials": "trials",
+    "letterTargets": "Letter Targets",
+    "positionTargets": "Position Targets",
+    "bothTargets": "Dual Targets",
+    "stimulusTime": "Time per Stimulus (seconds)",
+    "pressCtrlQToReturn": "Press Ctrl+Q to return to the main menu at any time",
+    "results": "N-Back Test Results",
+    "accuracy": "Overall Accuracy",
+    "totalTrials": "Total Trials",
+    "performance": "Performance by Category",
+    "hits": "Hits",
+    "correctRejections": "Correct Rejections",
+    "misses": "Misses",
+    "falseAlarms": "False Alarms",
+    "letterDimension": "Letter Dimension",
+    "positionDimension": "Position Dimension",
+    "count": "Count",
+    "tryAgain": "Try Again",
+    "stimulus": "Stimulus",
+    "position": "Position",
+    "letter": "Letter",
+    "memorizeFirst": "Memorize the first {{n}} items...",
+    "matchInstructions": "Press L for letter match, A for position match"
   },
   "tasks": {
     "communications": {

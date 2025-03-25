@@ -100,6 +100,11 @@ const MainMenu = ({ onStartGame, onExitApp, gameResults }) => {
   const handleStartReactionTest = () => {
     window.location.href = `${process.env.PUBLIC_URL}/reaction`;
   };
+  
+  // Handler for n-back test button
+  const handleStartNbackTest = () => {
+    window.location.href = `${process.env.PUBLIC_URL}/nback`;
+  };
 
   // Create Other Game Modes Modal Component
   const OtherGameModesModal = () => (
@@ -410,7 +415,67 @@ const MainMenu = ({ onStartGame, onExitApp, gameResults }) => {
             onMouseOver={(e) => e.target.style.backgroundColor = '#7B1FA2'}
             onMouseOut={(e) => e.target.style.backgroundColor = '#9c27b0'}
           >
-            Reaction Time Test
+            {t('reactionTest.title', 'Reaction Time Test')}
+          </button>
+
+          {/* Quick Launch button for Reaction Time Test */}
+          <button 
+            onClick={() => window.location.href = `${process.env.PUBLIC_URL}/reaction-default`}
+            style={{
+              padding: '15px 30px',
+              fontSize: '18px',
+              backgroundColor: '#7B1FA2', // Darker purple for quick launch
+              color: 'white',
+              border: 'none',
+              borderRadius: '5px',
+              cursor: 'pointer',
+              transition: 'background-color 0.3s',
+              marginTop: '5px'
+            }}
+            onMouseOver={(e) => e.target.style.backgroundColor = '#6A1B9A'}
+            onMouseOut={(e) => e.target.style.backgroundColor = '#7B1FA2'}
+          >
+            {t('reactionTest.quickStart', 'Quick Start Reaction Test')}
+          </button>
+          
+          {/* Add N-Back Test button */}
+          <button 
+            onClick={handleStartNbackTest}
+            style={{
+              padding: '15px 30px',
+              fontSize: '18px',
+              backgroundColor: '#FF9800', // Orange color for distinction
+              color: 'white',
+              border: 'none',
+              borderRadius: '5px',
+              cursor: 'pointer',
+              transition: 'background-color 0.3s',
+              marginTop: '10px'
+            }}
+            onMouseOver={(e) => e.target.style.backgroundColor = '#F57C00'}
+            onMouseOut={(e) => e.target.style.backgroundColor = '#FF9800'}
+          >
+            {t('nbackTest.title', 'N-Back Test')}
+          </button>
+
+          {/* Quick Launch button for N-Back Test */}
+          <button 
+            onClick={() => window.location.href = `${process.env.PUBLIC_URL}/nbackdefault`}
+            style={{
+              padding: '15px 30px',
+              fontSize: '18px',
+              backgroundColor: '#F57C00', // Darker orange for quick launch
+              color: 'white',
+              border: 'none',
+              borderRadius: '5px',
+              cursor: 'pointer',
+              transition: 'background-color 0.3s',
+              marginTop: '5px'
+            }}
+            onMouseOver={(e) => e.target.style.backgroundColor = '#EF6C00'}
+            onMouseOut={(e) => e.target.style.backgroundColor = '#F57C00'}
+          >
+            {t('nbackTest.quickStart', 'Quick Start N-Back Test')}
           </button>
           
           <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>

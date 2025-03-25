@@ -22,7 +22,12 @@ const Scoreboard = ({ mode, onClose }) => {
       return `${minutes}:${seconds.toString().padStart(2, '0')}`;
     } else if (mode === 'reaction') {
       // For reaction test, show in milliseconds
-      return `${score.toFixed(0)} ms`;
+      return `${Number(score).toFixed(0)} ms`;
+    } else if (mode === 'nback') {
+      // For n-back test, show as accuracy percentage
+      // Ensure score is a number before using toFixed
+      const numericScore = typeof score === 'number' ? score : parseFloat(score || 0);
+      return `${numericScore.toFixed(1)}%`;
     }
     // Normal mode - just show the number
     return Math.floor(score).toLocaleString();
@@ -118,6 +123,20 @@ const Scoreboard = ({ mode, onClose }) => {
           >
             {t('reactionTest.title', 'Reaction Test')}
           </button>
+          <button
+            onClick={() => setSelectedMode('nback')}
+            style={{
+              padding: '8px 16px',
+              backgroundColor: selectedMode === 'nback' ? '#007bff' : '#6c757d',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: 'pointer',
+              pointerEvents: 'auto'
+            }}
+          >
+            {t('nbackTest.title', 'N-Back Test')}
+          </button>
         </div>
         
         {/* Scores table */}
@@ -135,6 +154,7 @@ const Scoreboard = ({ mode, onClose }) => {
                 <th style={{ padding: '10px', textAlign: 'right', width: '25%' }}>
                   {selectedMode === 'infinite' ? t('scoreboard.time') : 
                    selectedMode === 'reaction' ? t('reactionTest.averageTime', 'Average Time') : 
+                   selectedMode === 'nback' ? t('nbackTest.accuracy', 'Accuracy') :
                    t('scoreboard.score')}
                 </th>
                 <th style={{ padding: '10px', textAlign: 'right', width: '25%' }}>{t('scoreboard.date')}</th>
@@ -156,6 +176,8 @@ const Scoreboard = ({ mode, onClose }) => {
                       {formatScore(score.score, selectedMode)}
                       {selectedMode === 'reaction' && score.stimuliCount && 
                         ` (${score.stimuliCount} ${t('reactionTest.stimuli', 'stimuli')})`}
+                      {selectedMode === 'nback' && score.nValue && 
+                        ` (${score.nValue}-back)`}
                     </td>
                     <td style={{ padding: '8px', textAlign: 'right' }}>
                       {formatDate(score.date)}

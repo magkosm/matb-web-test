@@ -5,14 +5,15 @@
 const STORAGE_KEYS = {
   NORMAL: 'matb_normal_scores',
   INFINITE: 'matb_infinite_scores',
-  REACTION: 'matb_reaction_scores'
+  REACTION: 'matb_reaction_scores',
+  NBACK: 'matb_nback_scores'
 };
 
 const MAX_SCORES = 10; // Maximum number of scores to keep per mode
 
 /**
  * Get scores for a specific game mode
- * @param {string} mode - 'normal', 'infinite', or 'reaction'
+ * @param {string} mode - 'normal', 'infinite', 'reaction', or 'nback'
  * @returns {Array} Array of score objects sorted by score (descending)
  */
 const getScores = (mode) => {
@@ -21,6 +22,8 @@ const getScores = (mode) => {
     key = STORAGE_KEYS.INFINITE;
   } else if (mode === 'reaction') {
     key = STORAGE_KEYS.REACTION;
+  } else if (mode === 'nback') {
+    key = STORAGE_KEYS.NBACK;
   } else {
     key = STORAGE_KEYS.NORMAL;
   }
@@ -36,7 +39,7 @@ const getScores = (mode) => {
 
 /**
  * Save a new score to the scoreboard
- * @param {string} mode - 'normal', 'infinite', or 'reaction'
+ * @param {string} mode - 'normal', 'infinite', 'reaction', or 'nback'
  * @param {number} score - The score value
  * @param {string} playerName - Player's name
  * @param {object} [details] - Additional details about the score (optional)
@@ -49,6 +52,8 @@ const saveScore = (mode, score, playerName, details = {}) => {
       key = STORAGE_KEYS.INFINITE;
     } else if (mode === 'reaction') {
       key = STORAGE_KEYS.REACTION;
+    } else if (mode === 'nback') {
+      key = STORAGE_KEYS.NBACK;
     } else {
       key = STORAGE_KEYS.NORMAL;
     }
@@ -73,6 +78,9 @@ const saveScore = (mode, score, playerName, details = {}) => {
     } else if (mode === 'reaction') {
       // For reaction test, lower score (faster time) is better
       scores.sort((a, b) => a.score - b.score);
+    } else if (mode === 'nback') {
+      // For n-back test, higher score (better accuracy) is better
+      scores.sort((a, b) => b.score - a.score);
     } else {
       // Sort by score (descending)
       scores.sort((a, b) => b.score - a.score);
@@ -93,7 +101,7 @@ const saveScore = (mode, score, playerName, details = {}) => {
 
 /**
  * Clear all scores for a specific mode or all modes
- * @param {string} [mode] - 'normal', 'infinite', 'reaction', or undefined for all
+ * @param {string} [mode] - 'normal', 'infinite', 'reaction', 'nback', or undefined for all
  * @returns {boolean} Success status
  */
 const clearScores = (mode) => {
@@ -104,11 +112,14 @@ const clearScores = (mode) => {
       localStorage.removeItem(STORAGE_KEYS.INFINITE);
     } else if (mode === 'reaction') {
       localStorage.removeItem(STORAGE_KEYS.REACTION);
+    } else if (mode === 'nback') {
+      localStorage.removeItem(STORAGE_KEYS.NBACK);
     } else {
       // Clear all scores
       localStorage.removeItem(STORAGE_KEYS.NORMAL);
       localStorage.removeItem(STORAGE_KEYS.INFINITE);
       localStorage.removeItem(STORAGE_KEYS.REACTION);
+      localStorage.removeItem(STORAGE_KEYS.NBACK);
     }
     return true;
   } catch (error) {
@@ -119,7 +130,7 @@ const clearScores = (mode) => {
 
 /**
  * Check if a score would make it onto the leaderboard
- * @param {string} mode - 'normal', 'infinite', or 'reaction'
+ * @param {string} mode - 'normal', 'infinite', 'reaction', or 'nback'
  * @param {number} score - The score to check
  * @returns {boolean} Whether the score would make the leaderboard
  */
