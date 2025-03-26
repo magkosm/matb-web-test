@@ -1258,7 +1258,7 @@ const NBackTest = ({
           borderRadius: '5px',
           display: 'inline-block'
         }}>
-          <KeyboardShortcut keys={['Ctrl', 'Q']} description={t('nbackTest.returnToMenu', 'Return to main menu')} />
+          <KeyboardShortcut keys={['Ctrl', 'Q']} description={t('nbackTest.returnToMenu', 'Return to main menu')} onClick={handleMainMenuReturn} />
         </div>
       </div>
     );
@@ -1382,7 +1382,7 @@ const NBackTest = ({
           padding: '10px',
           borderRadius: '5px'
         }}>
-          <KeyboardShortcut keys={['Ctrl', 'Q']} description={t('nbackTest.returnToMenu', 'Return to main menu')} />
+          <KeyboardShortcut keys={['Ctrl', 'Q']} description={t('nbackTest.returnToMenu', 'Return to main menu')} onClick={handleMainMenuReturn} />
         </div>
       </div>
     );
@@ -1453,7 +1453,7 @@ const NBackTest = ({
           padding: '10px',
           borderRadius: '5px'
         }}>
-          <KeyboardShortcut keys={['Ctrl', 'Q']} description={t('nbackTest.returnToMenu', 'Return to main menu')} />
+          <KeyboardShortcut keys={['Ctrl', 'Q']} description={t('nbackTest.returnToMenu', 'Return to main menu')} onClick={handleMainMenuReturn} />
         </div>
       </div>
     </div>
@@ -1461,14 +1461,19 @@ const NBackTest = ({
 };
 
 // Helper component for showing keyboard shortcuts
-const KeyboardShortcut = ({ keys, description }) => (
-  <div style={{
-    display: 'inline-flex',
-    alignItems: 'center',
-    margin: '5px 0',
-    fontSize: '14px',
-    opacity: 0.9
-  }}>
+const KeyboardShortcut = ({ keys, description, onClick }) => (
+  <div 
+    style={{
+      display: 'inline-flex',
+      alignItems: 'center',
+      margin: '5px 0',
+      fontSize: '14px',
+      opacity: '0.9',
+      cursor: onClick ? 'pointer' : 'default'
+    }}
+    onClick={onClick}
+    title={onClick ? "Click to execute this command" : ""}
+  >
     <span style={{ marginRight: '8px' }}>{description}:</span>
     {keys.map((key, index) => (
       <React.Fragment key={index}>

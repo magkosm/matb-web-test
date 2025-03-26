@@ -9,6 +9,35 @@ ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarEleme
 // Debug flag - set to false to disable debug UI and logging
 const DEBUG_MODE = false;
 
+// Helper component for showing keyboard shortcuts
+const KeyboardShortcut = ({ keys, description, onClick }) => (
+  <div 
+    style={{
+      display: 'inline-flex',
+      alignItems: 'center',
+      margin: '5px 0',
+      fontSize: '14px',
+      opacity: '0.9',
+      cursor: onClick ? 'pointer' : 'default'
+    }}
+    onClick={onClick}
+    title={onClick ? "Click to execute this command" : ""}
+  >
+    <span style={{ marginRight: '8px' }}>{description}:</span>
+    {keys.map((key, index) => (
+      <React.Fragment key={index}>
+        {index > 0 && <span style={{ margin: '0 4px' }}>+</span>}
+        <span style={{
+          backgroundColor: 'rgba(255,255,255,0.2)',
+          padding: '2px 6px',
+          borderRadius: '4px',
+          fontFamily: 'monospace'
+        }}>{key}</span>
+      </React.Fragment>
+    ))}
+  </div>
+);
+
 const ReactionTimeTest = ({ 
   duration = 30000, // 30 seconds default
   maxStimuli = 10,
@@ -533,7 +562,11 @@ const ReactionTimeTest = ({
           </button>
           
           <div style={{ marginTop: '20px', fontSize: '14px', opacity: 0.7 }}>
-            <p>{t('reactionTest.pressCtrlQToReturn', 'Press Ctrl+Q to return to the main menu at any time')}</p>
+            <KeyboardShortcut 
+              keys={['Ctrl', 'Q']} 
+              description={t('reactionTest.returnToMenu', 'Return to main menu')} 
+              onClick={handleMainMenuReturn} 
+            />
           </div>
         </div>
       </div>
@@ -819,7 +852,11 @@ const ReactionTimeTest = ({
           </div>
           
           <div style={{ marginTop: '20px', fontSize: '14px', opacity: 0.7, textAlign: 'center' }}>
-            <p>{t('reactionTest.pressCtrlQToReturn', 'Press Ctrl+Q to return to the main menu at any time')}</p>
+            <KeyboardShortcut 
+              keys={['Ctrl', 'Q']} 
+              description={t('reactionTest.returnToMenu', 'Return to main menu')} 
+              onClick={handleMainMenuReturn} 
+            />
           </div>
         </div>
       </div>
@@ -967,7 +1004,11 @@ const ReactionTimeTest = ({
       </p>
       
       <div style={{ marginTop: '20px', fontSize: '14px', opacity: 0.7 }}>
-        <p>{t('reactionTest.pressCtrlQToReturn', 'Press Ctrl+Q to return to the main menu at any time')}</p>
+        <KeyboardShortcut 
+          keys={['Ctrl', 'Q']} 
+          description={t('reactionTest.returnToMenu', 'Return to main menu')} 
+          onClick={handleMainMenuReturn} 
+        />
       </div>
     </div>
   );
