@@ -42,13 +42,9 @@ class EventService {
     this.schedulerState = {
       initialized: false,
       isActive: false,
+      mainInterval: null,
+      checkIntervalMs: 250,
       nextEvents: {
-        comm: null,
-        monitoring: null,
-        tracking: null,
-        resource: null
-      },
-      timeouts: {
         comm: null,
         monitoring: null,
         tracking: null,
@@ -624,7 +620,7 @@ class EventService {
   shutdownScheduler() {
     console.log('EventService: Shutting down scheduler');
     
-    // Stop the scheduler if it's running
+    // Stop the scheduler if it's running (this will clear mainInterval)
     if (this.schedulerState.isActive) {
       this.stopScheduler();
     }
@@ -771,11 +767,18 @@ class EventService {
     
     this.schedulerState.isActive = true;
     
-    // Clear any old timeouts that might be lingering
-    this.clearAllTimeouts();
+    // Schedule initial event times for all enabled tasks
+    this.calculateAllNextEventTimes();
     
-    // Schedule initial events for all enabled tasks
-    this.rescheduleEvents();
+    // Start the main check interval
+    if (this.schedulerState.mainInterval) {
+      clearInterval(this.schedulerState.mainInterval);
+    }
+    this.schedulerState.mainInterval = setInterval(
+      this.checkScheduledEvents.bind(this),
+      this.schedulerState.checkIntervalMs
+    );
+    console.log(`EventService: Main check interval started (${this.schedulerState.checkIntervalMs}ms)`);
     
     this.notifySchedulerListeners();
     return true;
@@ -785,7 +788,13 @@ class EventService {
   stopScheduler() {
     console.log('EventService: Stopping event scheduler');
     this.schedulerState.isActive = false;
-    this.clearAllTimeouts();
+    
+    // Clear the main check interval
+    if (this.schedulerState.mainInterval) {
+      clearInterval(this.schedulerState.mainInterval);
+      this.schedulerState.mainInterval = null;
+      console.log('EventService: Main check interval stopped');
+    }
     
     // Reset next events
     this.schedulerState.nextEvents = {
@@ -799,112 +808,118 @@ class EventService {
     return true;
   }
 
-  // Clear all timeouts
-  clearAllTimeouts() {
-    Object.values(this.schedulerState.timeouts).forEach(timeout => {
-      if (timeout) {
-        clearTimeout(timeout);
-      }
-    });
-    
-    // Reset the timeouts
-    this.schedulerState.timeouts = {
-      comm: null,
-      monitoring: null,
-      tracking: null,
-      resource: null
-    };
-  }
-
   // Reschedule events (call when settings change)
   rescheduleEvents() {
-    // First clear all existing timeouts to prevent overlapping events
-    this.clearAllTimeouts();
-    
+    // Recalculate next event times based on current settings
+    this.calculateAllNextEventTimes();
+    this.notifySchedulerListeners();
+  }
+
+  // Calculate next event times for all enabled tasks
+  calculateAllNextEventTimes() {
     const { settings } = this.schedulerState;
     
-    if (settings.comm?.isEnabled) {
-      this.scheduleNextEvent('comm');
+    if (settings.comm?.isEnabled && settings.comm.eventsPerMinute > 0) {
+      if (!this.schedulerState.nextEvents.comm) {
+        this.calculateNextEventTime('comm');
+      }
     } else {
       this.schedulerState.nextEvents.comm = null;
     }
     
-    if (settings.monitoring?.isEnabled) {
-      this.scheduleNextEvent('monitoring');
+    if (settings.monitoring?.isEnabled && settings.monitoring.eventsPerMinute > 0) {
+      if (!this.schedulerState.nextEvents.monitoring) {
+        this.calculateNextEventTime('monitoring');
+      }
     } else {
       this.schedulerState.nextEvents.monitoring = null;
     }
     
-    if (settings.tracking?.isEnabled) {
-      this.scheduleNextEvent('tracking');
+    if (settings.tracking?.isEnabled && settings.tracking.eventsPerMinute > 0) {
+      if (!this.schedulerState.nextEvents.tracking) {
+        this.calculateNextEventTime('tracking');
+      }
     } else {
       this.schedulerState.nextEvents.tracking = null;
     }
     
-    if (settings.resource?.isEnabled) {
-      this.scheduleNextEvent('resource');
+    if (settings.resource?.isEnabled && settings.resource.eventsPerMinute > 0) {
+      if (!this.schedulerState.nextEvents.resource) {
+        this.calculateNextEventTime('resource');
+      }
     } else {
       this.schedulerState.nextEvents.resource = null;
     }
-    
-    this.notifySchedulerListeners();
   }
-
-  // Schedule the next event for a specific task type
-  scheduleNextEvent(taskType) {
-    // Only auto-schedule when scheduler is active
-    if (!this.schedulerState.isActive) return;
-    
-    // Get the relevant settings
+  
+  // Calculate the next event time for a specific task type
+  calculateNextEventTime(taskType) {
     const settings = this.schedulerState.settings[taskType];
     
-    // Check if the task is enabled and has a valid EPM
+    // Should not happen if called correctly, but double-check
     if (!settings || !settings.isEnabled || settings.eventsPerMinute <= 0) {
       this.schedulerState.nextEvents[taskType] = null;
-      return;
-    }
-    
-    // If a timeout is already set for this task, do not reset it
-    if (this.schedulerState.timeouts[taskType]) {
       return;
     }
     
     // Apply task-specific EPM limits
     let effectiveEPM = settings.eventsPerMinute;
     if (taskType === 'comm') {
-      // Limit communications to 0-6 EPM
       effectiveEPM = Math.min(6, Math.max(0, effectiveEPM));
     }
     
     // Calculate milliseconds between events based on EPM
     const msPerEvent = (60 * 1000) / effectiveEPM;
     
-    // Reduce randomness factor for more consistent timing
+    // Reduce randomness factor
     const randomFactor = taskType === 'comm' || taskType === 'resource' ? 0.15 : 0.3;
-    
-    // Calculate random time between (1-randomFactor) and (1+randomFactor) of the base interval
     const randomizedMs = msPerEvent * (1 - randomFactor + Math.random() * 2 * randomFactor);
     
-    // Calculate next event time
-    const now = Date.now();
-    const nextEventTime = now + randomizedMs;
+    // Calculate next event time relative to now
+    const nextEventTime = Date.now() + randomizedMs;
     
     // Update next event time in state
     this.schedulerState.nextEvents[taskType] = nextEventTime;
     
-    // Schedule the event
-    console.log(`Scheduled ${taskType} event for ${new Date(nextEventTime).toLocaleTimeString()} (in ${Math.round(randomizedMs / 1000)}s), EPM: ${effectiveEPM.toFixed(1)}`);
+    console.log(`Calculated next ${taskType} event for ${new Date(nextEventTime).toLocaleTimeString()} (in ${Math.round(randomizedMs / 1000)}s), EPM: ${effectiveEPM.toFixed(1)}`);
     
-    this.schedulerState.timeouts[taskType] = setTimeout(() => {
-      // Clear the timeout reference first
-      this.schedulerState.timeouts[taskType] = null;
-      
-      // Double-check that scheduler is still active when timeout fires
-      if (this.schedulerState.isActive) {
+    // No setTimeout here anymore
+    this.notifySchedulerListeners(); // Notify about the new time
+  }
+
+  // NEW: Central check function called by mainInterval
+  checkScheduledEvents() {
+    // If scheduler is not active, do nothing
+    if (!this.schedulerState.isActive) {
+        // We might still want to clear the interval if it's somehow running while inactive
+        if (this.schedulerState.mainInterval) {
+             console.warn("Scheduler inactive but interval running. Clearing interval.");
+             clearInterval(this.schedulerState.mainInterval);
+             this.schedulerState.mainInterval = null;
+        }
+        return;
+    }
+
+    const now = Date.now();
+    
+    Object.entries(this.schedulerState.nextEvents).forEach(([taskType, scheduledTime]) => {
+      // Check if the event is due and hasn't been triggered yet
+      if (scheduledTime && now >= scheduledTime) {
+        console.log(`EventService: ${taskType} event is due (scheduled for ${new Date(scheduledTime).toLocaleTimeString()})`);
+        
+        // Mark as null immediately to prevent re-triggering in the same cycle
+        this.schedulerState.nextEvents[taskType] = null; 
+        
         // Trigger the event
-        this.triggerScheduledEvent(taskType);
+        this.triggerScheduledEvent(taskType); 
+        
+        // Immediately calculate the *next* time for this task
+        this.calculateNextEventTime(taskType); 
+        
+        // Since we potentially updated nextEvents, notify listeners
+        this.notifySchedulerListeners();
       }
-    }, randomizedMs);
+    });
   }
 
   // Trigger an event for a specific task type based on the scheduler
@@ -937,14 +952,6 @@ class EventService {
           callType,
           responseWindow // in seconds
         });
-        
-        // Only schedule next event if auto-scheduler is active
-        if (this.schedulerState.isActive) {
-          // Add a small delay before scheduling the next event to prevent overlap
-          setTimeout(() => {
-            this.scheduleNextEvent(taskType);
-          }, 500);
-        }
         
         break;
       }
@@ -1059,14 +1066,6 @@ class EventService {
     } else {
       console.error(`Failed to trigger scheduled ${taskType} event`);
     }
-    
-    // Schedule the next event for this task only if auto-scheduler is active
-    if (this.schedulerState.isActive && taskType !== 'comm') { // Comm handles its own rescheduling
-      this.scheduleNextEvent(taskType);
-    }
-    
-    // Notify listeners about the changes
-    this.notifySchedulerListeners();
     
     return result;
   }
