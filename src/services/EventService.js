@@ -461,27 +461,50 @@ class EventService {
 
   // Check if a task is paused
   isTaskPaused(taskName) {
+    // First check if the task is available
+    if (!this.isTaskAvailable(taskName)) {
+      // If task isn't available, we treat it as not paused
+      return false;
+    }
+
+    // Get the appropriate ref based on task name
+    let taskRef = null;
     switch (taskName) {
       case 'comm':
-        if (!this.isTaskAvailable('comm')) return false;
-        try {
-          // Check if the task has an isPaused method
-          if (typeof this.commTaskRef.current.isPaused === 'function') {
-            const paused = this.commTaskRef.current.isPaused();
-            if (paused) {
-              console.log('EventService: Communications task is paused');
-            }
-            return paused;
-          }
-          return false;
-        } catch (error) {
-          console.error('EventService: Error checking if communications task is paused:', error);
-          return false;
-        }
-      
-      // Add cases for other tasks here when they implement pause functionality
+        taskRef = this.commTaskRef;
+        break;
+      case 'monitoring':
+        taskRef = this.monitoringTaskRef;
+        break;
+      case 'tracking':
+        taskRef = this.trackingTaskRef;
+        break;
+      case 'resource':
+        taskRef = this.resourceTaskRef;
+        break;
       default:
+        console.error(`isTaskPaused called with unknown task name: ${taskName}`);
         return false;
+    }
+
+    // Safety check
+    if (!taskRef || !taskRef.current) {
+      return false;
+    }
+
+    try {
+      // Check if the task has an isPaused method
+      if (typeof taskRef.current.isPaused === 'function') {
+        const paused = taskRef.current.isPaused();
+        if (paused) {
+          console.log(`EventService: ${taskName} task is paused`);
+        }
+        return paused;
+      }
+      return false;
+    } catch (error) {
+      console.error(`EventService: Error checking if ${taskName} task is paused:`, error);
+      return false;
     }
   }
 
@@ -903,6 +926,12 @@ class EventService {
     const now = Date.now();
     
     Object.entries(this.schedulerState.nextEvents).forEach(([taskType, scheduledTime]) => {
+      // Skip this task if it's paused
+      if (this.isTaskPaused(taskType)) {
+        console.log(`EventService: Skipping scheduled ${taskType} event because task is paused`);
+        return;
+      }
+      
       // Check if the event is due and hasn't been triggered yet
       if (scheduledTime && now >= scheduledTime) {
         console.log(`EventService: ${taskType} event is due (scheduled for ${new Date(scheduledTime).toLocaleTimeString()})`);
