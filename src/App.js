@@ -108,6 +108,14 @@ function App() {
     systemLoad: 0
   });
 
+  // System Performance Log (1Hz health/load)
+  const [systemPerformanceLog, setSystemPerformanceLog] = useState([]);
+
+  // Handler for SystemHealth performance updates
+  const handlePerformanceUpdate = useCallback((data) => {
+    setSystemPerformanceLog(prev => [...prev, data]);
+  }, []);
+
   // Inside the App component, add a state for showing the background selector
   const [showBackgroundSelector, setShowBackgroundSelector] = useState(false);
 
@@ -217,6 +225,7 @@ function App() {
     setCommEventLog([]);
     setResourceEventLog([]);
     setTrackingEventLog([]);
+    setSystemPerformanceLog([]);
 
     // Reset task enablement
     setIsCommTaskEnabled(true);
@@ -586,6 +595,13 @@ function App() {
             onGameEnd={handleGameEnd}
             eventService={eventService}
             healthRef={systemHealthValueRef}
+            logs={{
+              comm: commEventLog,
+              resource: resourceEventLog,
+              monitoring: monitoringEventLog,
+              tracking: trackingEventLog,
+              performance: systemPerformanceLog
+            }}
           />
         )}
 
@@ -755,6 +771,7 @@ function App() {
                       isResourceActive={isResourceTaskEnabled}
                       isTrackingActive={isTrackingTaskEnabled}
                       healthRef={systemHealthValueRef}
+                      onPerformanceUpdate={handlePerformanceUpdate}
                     />
                   </div>
 

@@ -1,12 +1,16 @@
 import React, { useState, useEffect, useRef } from 'react';
 import ScoreSaveForm from './ScoreSaveForm';
 import ScoreboardService from '../services/ScoreboardService';
+import { downloadCSV } from '../utils/csvExport';
 
 const NormalModeGame = ({
   duration,
   onGameEnd,
   eventService,
-  healthRef
+  onGameEnd,
+  eventService,
+  healthRef,
+  logs
 }) => {
   // Game state
   const [timeRemaining, setTimeRemaining] = useState(duration);
@@ -231,6 +235,28 @@ const NormalModeGame = ({
     endGame();
   };
 
+  const handleExportData = () => {
+    if (!logs) return;
+
+    // Auto-generate timestamp
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+
+    // Export each log
+    if (logs.comm && logs.comm.length > 0) downloadCSV(logs.comm, `comm_log_${timestamp}`);
+    if (logs.resource && logs.resource.length > 0) downloadCSV(logs.resource, `resource_log_${timestamp}`);
+    if (logs.monitoring && logs.monitoring.length > 0) downloadCSV(logs.monitoring, `monitoring_log_${timestamp}`);
+    if (logs.tracking && logs.tracking.length > 0) downloadCSV(logs.tracking, `tracking_log_${timestamp}`);
+  };
+
+  const handleExportPlots = () => {
+    if (logs?.performance && logs.performance.length > 0) {
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+      downloadCSV(logs.performance, `performance_plots_${timestamp}`);
+    } else {
+      alert("No performance data available to export.");
+    }
+  };
+
   return (
     <div className="normal-mode-hud" style={{
       position: 'absolute',
@@ -288,6 +314,15 @@ const NormalModeGame = ({
         }}>
           <h2>Game Over</h2>
           <p>Final Score: {Math.floor(score)}</p>
+
+          <div style={{ display: 'flex', gap: '10px', marginBottom: '20px', pointerEvents: 'auto' }}>
+            <button onClick={handleExportData} style={{ padding: '8px', cursor: 'pointer' }}>
+              Export Raw Data
+            </button>
+            <button onClick={handleExportPlots} style={{ padding: '8px', cursor: 'pointer' }}>
+              Export Plot Data
+            </button>
+          </div>
 
           {showScoreSaveForm ? (
             <div style={{ width: '100%', maxWidth: '400px', pointerEvents: 'auto' }}>
