@@ -15,11 +15,12 @@ import BackgroundSelector from './components/BackgroundSelector';
 import BackgroundService from './services/BackgroundService';
 import './App.css';
 import { useTranslation } from 'react-i18next';
+import { COMM_CONFIG } from './config/simulationConfig';
 
 // Helper function to detect mobile devices
 const isMobileDevice = () => {
-  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || 
-         (navigator.maxTouchPoints && navigator.maxTouchPoints > 1);
+  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+    (navigator.maxTouchPoints && navigator.maxTouchPoints > 1);
 };
 
 // Add helper function to get the saved input mode
@@ -40,13 +41,13 @@ function App() {
 
   // Add loading state
   const [isInitializing, setIsInitializing] = useState(false);
-  
+
   // Check for startup parameters in localStorage
   const [startupParamsChecked, setStartupParamsChecked] = useState(false);
 
   // Main Menu state - we'll decide this after checking localStorage
   const [showMainMenu, setShowMainMenu] = useState(true);
-  
+
   // Game mode state
   const [currentGameMode, setCurrentGameMode] = useState('testing');
   const [gameDuration, setGameDuration] = useState(5 * 60 * 1000); // 5 minutes default
@@ -61,7 +62,7 @@ function App() {
   const [monitoringEventLog, setMonitoringEventLog] = useState([]);
 
   // Communications Task controls
-  const [commEPM, setCommEPM] = useState(2);
+  const [commEPM, setCommEPM] = useState(COMM_CONFIG.DEFAULT_EPM);
   const [showCommLog, _setShowCommLog] = useState(false); // Prefix with underscore to indicate intentionally unused
   const [commDifficulty, setCommDifficulty] = useState(5);
   const [isCommTaskEnabled, setIsCommTaskEnabled] = useState(true);
@@ -77,9 +78,9 @@ function App() {
   const [resourceAutoEvents, setResourceAutoEvents] = useState(false);
   const [resourceEventLog, setResourceEventLog] = useState([]);
   const [resourceMetrics, setResourceMetrics] = useState(
-    ResourceManagementTask.getDefaultMetrics ? 
-    ResourceManagementTask.getDefaultMetrics() : 
-    { healthImpact: 0, systemLoad: 0 }
+    ResourceManagementTask.getDefaultMetrics ?
+      ResourceManagementTask.getDefaultMetrics() :
+      { healthImpact: 0, systemLoad: 0 }
   );
 
   // Tracking Task controls
@@ -92,9 +93,9 @@ function App() {
   const [isTrackingManual, setIsTrackingManual] = useState(false);
   const [isInBox, setIsInBox] = useState(false);
   const [trackingMetrics, setTrackingMetrics] = useState(
-    TrackingTask.getDefaultMetrics ? 
-    TrackingTask.getDefaultMetrics() : 
-    { healthImpact: 0, systemLoad: 0 }
+    TrackingTask.getDefaultMetrics ?
+      TrackingTask.getDefaultMetrics() :
+      { healthImpact: 0, systemLoad: 0 }
   );
 
   // Sidebar control
@@ -144,20 +145,20 @@ function App() {
   useEffect(() => {
     // Don't try registering more than once if we've already succeeded
     if (tasksRegistered) return;
-    
+
     // Skip registration if we're in the main menu
     if (showMainMenu) return;
-    
+
     // Check if all refs have current values
-    const allRefsAvailable = 
-      commTaskRef?.current && 
-      monitoringTaskRef?.current && 
-      trackingTaskRef?.current && 
+    const allRefsAvailable =
+      commTaskRef?.current &&
+      monitoringTaskRef?.current &&
+      trackingTaskRef?.current &&
       resourceTaskRef?.current;
-    
+
     if (allRefsAvailable) {
       console.log('All task refs are available, registering with EventService...');
-      
+
       // Register the tasks
       const registrationSuccess = eventService.registerTasks(
         commTaskRef,
@@ -165,10 +166,10 @@ function App() {
         trackingTaskRef,
         resourceTaskRef
       );
-      
+
       // Update registration status
       setTasksRegistered(registrationSuccess);
-      
+
       if (registrationSuccess) {
         console.log('All tasks successfully registered with event service');
       } else {
@@ -197,12 +198,12 @@ function App() {
   const resetAllTasksToDefault = useCallback(() => {
     // Stop the event scheduler if running
     eventService.stopScheduler();
-    
+
     // Pause all tasks explicitly first
     eventService.pauseAllTasks();
-    
+
     // Reset task-specific states
-    setCommEPM(2);
+    setCommEPM(COMM_CONFIG.DEFAULT_EPM);
     setCommDifficulty(5);
     setMonitoringEPM(3);
     setMonitoringDifficulty(5);
@@ -210,29 +211,29 @@ function App() {
     setTrackingDifficulty(5);
     setResourceEPM(2);
     setResourceDifficulty(5);
-    
+
     // Reset logs
     setMonitoringEventLog([]);
     setCommEventLog([]);
     setResourceEventLog([]);
     setTrackingEventLog([]);
-    
+
     // Reset task enablement
     setIsCommTaskEnabled(true);
     setIsMonitoringTaskEnabled(true);
     setIsTrackingTaskEnabled(true);
     setIsResourceTaskEnabled(true);
-    
+
     // Reset auto-events
     setMonitoringAutoEvents(false);
     setTrackingAutoEvents(false);
     setCommAutoEvents(false);
     setResourceAutoEvents(false);
-    
+
     // Reset sidebars
     setIsSidebarOpen(false);
     setIsEventSidebarOpen(false);
-    
+
     // Reset game mode state
     setGameResults(null);
 
@@ -240,13 +241,13 @@ function App() {
     // Use setTimeout to ensure this runs after state updates
     setTimeout(() => {
       console.log('Resetting all task components...');
-      
+
       // Reset Resource Management task (tanks)
       if (resourceTaskRef.current && typeof resourceTaskRef.current.resetTask === 'function') {
         resourceTaskRef.current.resetTask();
         console.log('Resource task reset');
       }
-      
+
       // Reset Communications task
       if (commTaskRef.current) {
         if (typeof commTaskRef.current.resetTask === 'function') {
@@ -260,13 +261,13 @@ function App() {
           console.log('Communications task cleared active message');
         }
       }
-      
+
       // Reset Monitoring task
       if (monitoringTaskRef.current && typeof monitoringTaskRef.current.resetTask === 'function') {
         monitoringTaskRef.current.resetTask();
         console.log('Monitoring task reset');
       }
-      
+
       // Reset Tracking task
       if (trackingTaskRef.current && typeof trackingTaskRef.current.resetTask === 'function') {
         trackingTaskRef.current.resetTask();
@@ -279,7 +280,7 @@ function App() {
         console.log('System health reset');
       }
       systemHealthValueRef.current = 100;
-      
+
       // Force task unpausing after reset
       setTimeout(() => {
         eventService.resumeAllTasks();
@@ -292,7 +293,7 @@ function App() {
   const startGame = useCallback((options) => {
     // Get mode and duration from options
     const { mode, duration, taskConfig, trackingInputMode: menuInputMode } = options;
-    
+
     // Update tracking input mode if provided from menu
     if (menuInputMode) {
       console.log(`App: Setting tracking input mode from menu selection: ${menuInputMode}`);
@@ -305,28 +306,28 @@ function App() {
         setTrackingInputMode(savedMode);
       }
     }
-    
+
     // Reset all tasks to their default states
     resetAllTasksToDefault();
-    
+
     // Set game mode and duration
     setCurrentGameMode(mode);
     if (duration) setGameDuration(duration);
-    
+
     // For custom mode, store task configuration
     if (mode === 'custom' && taskConfig) {
       setCustomGameConfig(taskConfig);
-      
+
       // Set task enabled states based on custom configuration
       setIsCommTaskEnabled(taskConfig.comm.isActive);
       setIsMonitoringTaskEnabled(taskConfig.monitoring.isActive);
       setIsTrackingTaskEnabled(taskConfig.tracking.isActive);
       setIsResourceTaskEnabled(taskConfig.resource.isActive);
     }
-    
+
     // Hide the main menu
     setShowMainMenu(false);
-    
+
     // Reset the task registration status so it will register again
     setTasksRegistered(false);
 
@@ -340,7 +341,7 @@ function App() {
         } else {
           console.warn('Resource task not available for reset');
         }
-        
+
         // Ensure all tasks are unpaused after initialization
         eventService.resumeAllTasks();
         console.log('Tasks resumed after game start');
@@ -352,16 +353,16 @@ function App() {
   const exitToMainMenu = useCallback(() => {
     // Stop the event scheduler
     eventService.stopScheduler();
-    
+
     // Pause all tasks
     eventService.pauseAllTasks();
-    
+
     // Show the main menu
     setShowMainMenu(true);
-    
+
     // Reset task registration status
     setTasksRegistered(false);
-    
+
     // Clear any stored startup parameters
     localStorage.removeItem('matb_start_params');
   }, []);
@@ -370,16 +371,16 @@ function App() {
   const handleGameEnd = useCallback((results) => {
     // Preserve the gameMode in the results if it was provided
     const gameMode = results.gameMode || currentGameMode;
-    
+
     // Create a standardized result object with the mode included
     const standardizedResults = {
       ...results,
       gameMode
     };
-    
+
     // Update the game results state with the standardized object
     setGameResults(standardizedResults);
-    
+
     // Return to the main menu
     exitToMainMenu();
   }, [exitToMainMenu, currentGameMode]);
@@ -393,7 +394,7 @@ function App() {
         exitToMainMenu();
       }
     };
-    
+
     window.addEventListener('keydown', handleKeyDown);
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
@@ -430,11 +431,11 @@ function App() {
 
   // Add effect to detect mobile and initialize tracking input mode on component mount
   useEffect(() => {
-    const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || 
+    const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
       (navigator.maxTouchPoints && navigator.maxTouchPoints > 1);
-    
+
     setIsMobile(isMobileDevice);
-    
+
     // If this is the first time loading and we detected mobile,
     // initialize the tracking input mode preference to 'touch'
     if (isMobileDevice && !localStorage.getItem('trackingInputMode')) {
@@ -460,83 +461,83 @@ function App() {
   useEffect(() => {
     // Only check once and never when initializing
     if (startupParamsChecked || isInitializing) return;
-    
+
     try {
       const storedParams = localStorage.getItem('matb_start_params');
       if (storedParams) {
         setIsInitializing(true); // Set initializing flag to prevent duplicate starts
-        
+
         const startParams = JSON.parse(storedParams);
-        
+
         // Create task configuration object for custom mode
         const createCustomTaskConfig = () => {
           const { tasks } = startParams;
           return {
-            comm: { 
+            comm: {
               isActive: tasks.includes('comm'),
               eventsPerMinute: commEPM,
               difficulty: commDifficulty
             },
-            monitoring: { 
+            monitoring: {
               isActive: tasks.includes('monitoring'),
               eventsPerMinute: monitoringEPM,
               difficulty: monitoringDifficulty
             },
-            tracking: { 
+            tracking: {
               isActive: tasks.includes('tracking'),
               eventsPerMinute: trackingEPM,
               difficulty: trackingDifficulty
             },
-            resource: { 
+            resource: {
               isActive: tasks.includes('resource'),
               eventsPerMinute: resourceEPM,
               difficulty: resourceDifficulty
             }
           };
         };
-        
+
         // Set the main menu to hidden
         setShowMainMenu(false);
-        
+
         // Use a longer timeout to ensure the components have fully mounted
         // and all initialization is complete
         setTimeout(() => {
           const { mode, tasks, duration } = startParams;
-          
+
           // Ensure we have task registration before starting the game
           // This prevents issues with tasks being paused when events start
           const startGameWithTaskCheck = () => {
             // Check if all necessary tasks are registered
-            const allRefsAvailable = 
-              (!tasks.includes('comm') || commTaskRef?.current) && 
-              (!tasks.includes('monitoring') || monitoringTaskRef?.current) && 
-              (!tasks.includes('tracking') || trackingTaskRef?.current) && 
+            const allRefsAvailable =
+              (!tasks.includes('comm') || commTaskRef?.current) &&
+              (!tasks.includes('monitoring') || monitoringTaskRef?.current) &&
+              (!tasks.includes('tracking') || trackingTaskRef?.current) &&
               (!tasks.includes('resource') || resourceTaskRef?.current);
-            
+
             if (allRefsAvailable) {
               console.log('All required task refs are ready for auto-start');
-              
+
               if (mode === 'normal' && duration) {
                 // Start normal mode with specified duration
                 startGame({
                   mode: 'normal',
                   duration
                 });
-              } 
+              }
               else if (mode === 'custom' && tasks) {
                 startGame({
                   mode: 'custom',
-                  duration: gameDuration, 
+                  duration: gameDuration,
                   taskConfig: createCustomTaskConfig()
                 });
               }
-              
+
               // Ensure tasks are unpaused
               setTimeout(() => {
                 eventService.resumeAllTasks();
                 console.log('Tasks resumed after auto-start');
               }, 300);
-              
+
               // Clear the params so they don't re-trigger on refresh
               localStorage.removeItem('matb_start_params');
               setIsInitializing(false); // Reset initializing flag
@@ -546,7 +547,7 @@ function App() {
               setTimeout(startGameWithTaskCheck, 100);
             }
           };
-          
+
           // Start the task check process
           startGameWithTaskCheck();
         }, 800); // Increased timeout to ensure components are mounted
@@ -560,16 +561,16 @@ function App() {
       setStartupParamsChecked(true);
       setIsInitializing(false); // Reset initializing flag
     }
-  // We're intentionally only running this once
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // We're intentionally only running this once
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isInitializing, startupParamsChecked]);
 
   // If the main menu should be shown, render it instead of the main app
   if (showMainMenu) {
     return (
-      <MainMenu 
-        onStartGame={startGame} 
-        onExitApp={handleExitApp} 
+      <MainMenu
+        onStartGame={startGame}
+        onExitApp={handleExitApp}
         gameResults={gameResults}
       />
     );
@@ -587,7 +588,7 @@ function App() {
             healthRef={systemHealthValueRef}
           />
         )}
-        
+
         {currentGameMode === 'infinite' && (
           <InfiniteModeGame
             onGameEnd={handleGameEnd}
@@ -595,7 +596,7 @@ function App() {
             healthRef={systemHealthValueRef}
           />
         )}
-        
+
         {currentGameMode === 'custom' && customGameConfig && (
           <CustomModeGame
             duration={gameDuration}
@@ -607,8 +608,8 @@ function App() {
         )}
 
         <div className={`main-content ${isEventSidebarOpen && currentGameMode === 'testing' ? 'sidebar-open' : ''}`}>
-          <div style={{ 
-            display: 'flex', 
+          <div style={{
+            display: 'flex',
             flexDirection: 'column',
             height: '100%',
             position: 'relative'
@@ -616,239 +617,239 @@ function App() {
             {/* Rest of the main content (tasks) */}
             <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
               <div style={{ flex: 1, overflow: 'auto', padding: '1rem' }}>
-        <div style={{ 
-          display: 'grid',
-          gridTemplateColumns: 'repeat(6, 1fr)',
-          gridTemplateRows: '1fr 1fr',
-          gap: '1rem',
-          height: '100vh',
-          padding: '5%',
-          boxSizing: 'border-box'
-        }}>
-          {/* Top Left - System Monitoring */}
-          <div style={{ 
-            gridColumn: '1 / span 2',
-            gridRow: '1',
-            border: '1px solid #ccc',
-            overflow: 'hidden',
-            display: 'flex',
-            flexDirection: 'column',
-            backgroundColor: 'white'
-          }}>
-            {isMonitoringTaskEnabled ? (
-              <MonitoringTask
-                ref={monitoringTaskRef}
-                eventsPerMinute={monitoringEPM}
-                showLog={showMonitoringLog}
-                onLogUpdate={setMonitoringEventLog}
-                onMetricsUpdate={setMonitoringMetrics}
-                isEnabled={isMonitoringTaskEnabled}
-                autoEvents={monitoringAutoEvents}
-              />
-            ) : (
-              <div style={{
-                height: '100%',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                background: '#e0e0e0',
-                color: '#888',
-                flexDirection: 'column'
-              }}>
-                <div style={{ 
-                  backgroundColor: '#d0d0d0', 
-                  color: '#686868',
-                  width: '100%',
-                  padding: '0.5rem',
-                  textAlign: 'center',
-                  fontWeight: 'bold'
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(6, 1fr)',
+                  gridTemplateRows: '1fr 1fr',
+                  gap: '1rem',
+                  height: '100vh',
+                  padding: '5%',
+                  boxSizing: 'border-box'
                 }}>
-                  {t('tasks.monitoring.title')}
-                </div>
-                <div style={{ padding: '20px', textAlign: 'center' }}>
-                  {t('customMode.monitoringTask')} {t('gameOver.inactive')}
-                </div>
-              </div>
-            )}
-          </div>
+                  {/* Top Left - System Monitoring */}
+                  <div style={{
+                    gridColumn: '1 / span 2',
+                    gridRow: '1',
+                    border: '1px solid #ccc',
+                    overflow: 'hidden',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    backgroundColor: 'white'
+                  }}>
+                    {isMonitoringTaskEnabled ? (
+                      <MonitoringTask
+                        ref={monitoringTaskRef}
+                        eventsPerMinute={monitoringEPM}
+                        showLog={showMonitoringLog}
+                        onLogUpdate={setMonitoringEventLog}
+                        onMetricsUpdate={setMonitoringMetrics}
+                        isEnabled={isMonitoringTaskEnabled}
+                        autoEvents={monitoringAutoEvents}
+                      />
+                    ) : (
+                      <div style={{
+                        height: '100%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        background: '#e0e0e0',
+                        color: '#888',
+                        flexDirection: 'column'
+                      }}>
+                        <div style={{
+                          backgroundColor: '#d0d0d0',
+                          color: '#686868',
+                          width: '100%',
+                          padding: '0.5rem',
+                          textAlign: 'center',
+                          fontWeight: 'bold'
+                        }}>
+                          {t('tasks.monitoring.title')}
+                        </div>
+                        <div style={{ padding: '20px', textAlign: 'center' }}>
+                          {t('customMode.monitoringTask')} {t('gameOver.inactive')}
+                        </div>
+                      </div>
+                    )}
+                  </div>
 
-          {/* Top Middle - Tracking Task */}
-          <div style={{ 
-            gridColumn: '3 / span 3',
-            gridRow: '1',
-            border: '1px solid #ccc',
-            overflow: 'hidden',
-            display: 'flex',
-            flexDirection: 'column',
-            backgroundColor: 'white'
-          }}>
-            {isTrackingTaskEnabled ? (
-              <TrackingTask
-                ref={trackingTaskRef}
-                eventsPerMinute={trackingEPM}
-                difficulty={trackingDifficulty}
-                showLog={showTrackingLog}
-                onLogUpdate={handleTrackingLogUpdate}
-                onStatusUpdate={({ isManual, isInBox }) => {
-                  setIsTrackingManual(isManual);
-                  setIsInBox(isInBox);
-                }}
-                onMetricsUpdate={setTrackingMetrics}
-                isEnabled={isTrackingTaskEnabled}
-                autoEvents={trackingAutoEvents}
-                isMobile={isMobile}
-                defaultInputMode={trackingInputMode}
-                key={`tracking-${trackingInputMode}`}
-              />
-            ) : (
-              <div style={{
-                height: '100%',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                background: '#e0e0e0',
-                color: '#888',
-                flexDirection: 'column'
-              }}>
-                <div style={{ 
-                  backgroundColor: '#d0d0d0', 
-                  color: '#686868',
-                  width: '100%',
-                  padding: '0.5rem',
-                  textAlign: 'center',
-                  fontWeight: 'bold'
-                }}>
-                  {t('tasks.tracking.title')}
-                </div>
-                <div style={{ padding: '20px', textAlign: 'center' }}>
-                  {t('customMode.trackingTask')} {t('gameOver.inactive')}
-                </div>
-              </div>
-            )}
-          </div>
+                  {/* Top Middle - Tracking Task */}
+                  <div style={{
+                    gridColumn: '3 / span 3',
+                    gridRow: '1',
+                    border: '1px solid #ccc',
+                    overflow: 'hidden',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    backgroundColor: 'white'
+                  }}>
+                    {isTrackingTaskEnabled ? (
+                      <TrackingTask
+                        ref={trackingTaskRef}
+                        eventsPerMinute={trackingEPM}
+                        difficulty={trackingDifficulty}
+                        showLog={showTrackingLog}
+                        onLogUpdate={handleTrackingLogUpdate}
+                        onStatusUpdate={({ isManual, isInBox }) => {
+                          setIsTrackingManual(isManual);
+                          setIsInBox(isInBox);
+                        }}
+                        onMetricsUpdate={setTrackingMetrics}
+                        isEnabled={isTrackingTaskEnabled}
+                        autoEvents={trackingAutoEvents}
+                        isMobile={isMobile}
+                        defaultInputMode={trackingInputMode}
+                        key={`tracking-${trackingInputMode}`}
+                      />
+                    ) : (
+                      <div style={{
+                        height: '100%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        background: '#e0e0e0',
+                        color: '#888',
+                        flexDirection: 'column'
+                      }}>
+                        <div style={{
+                          backgroundColor: '#d0d0d0',
+                          color: '#686868',
+                          width: '100%',
+                          padding: '0.5rem',
+                          textAlign: 'center',
+                          fontWeight: 'bold'
+                        }}>
+                          {t('tasks.tracking.title')}
+                        </div>
+                        <div style={{ padding: '20px', textAlign: 'center' }}>
+                          {t('customMode.trackingTask')} {t('gameOver.inactive')}
+                        </div>
+                      </div>
+                    )}
+                  </div>
 
-          {/* Top Right - System Health */}
-          <div style={{ 
-            gridColumn: '6',
-            gridRow: '1',
-            border: '1px solid #ccc',
-            overflow: 'hidden',
-            display: 'flex',
-            flexDirection: 'column',
-            backgroundColor: 'white'
-          }}>
-            <SystemHealth
-              ref={systemHealthRef}
-              monitoringLogs={monitoringEventLog}
-              resourceLogs={resourceEventLog}
-              commLogs={commEventLog}
-              trackingLogs={trackingEventLog}
-              isTrackingManual={isTrackingManual}
-              isInBox={isInBox}
-              commMetrics={commMetrics}
-              resourceMetrics={resourceMetrics}
-              monitoringMetrics={monitoringMetrics}
-              trackingMetrics={trackingMetrics}
-              isMonitoringActive={isMonitoringTaskEnabled}
-              isCommActive={isCommTaskEnabled}
-              isResourceActive={isResourceTaskEnabled}
-              isTrackingActive={isTrackingTaskEnabled}
-              healthRef={systemHealthValueRef}
-            />
-          </div>
+                  {/* Top Right - System Health */}
+                  <div style={{
+                    gridColumn: '6',
+                    gridRow: '1',
+                    border: '1px solid #ccc',
+                    overflow: 'hidden',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    backgroundColor: 'white'
+                  }}>
+                    <SystemHealth
+                      ref={systemHealthRef}
+                      monitoringLogs={monitoringEventLog}
+                      resourceLogs={resourceEventLog}
+                      commLogs={commEventLog}
+                      trackingLogs={trackingEventLog}
+                      isTrackingManual={isTrackingManual}
+                      isInBox={isInBox}
+                      commMetrics={commMetrics}
+                      resourceMetrics={resourceMetrics}
+                      monitoringMetrics={monitoringMetrics}
+                      trackingMetrics={trackingMetrics}
+                      isMonitoringActive={isMonitoringTaskEnabled}
+                      isCommActive={isCommTaskEnabled}
+                      isResourceActive={isResourceTaskEnabled}
+                      isTrackingActive={isTrackingTaskEnabled}
+                      healthRef={systemHealthValueRef}
+                    />
+                  </div>
 
-          {/* Bottom Left - Communications Task */}
-          <div style={{ 
-            gridColumn: '1 / span 2',
-            gridRow: '2',
-            border: '1px solid #ccc',
-            overflow: 'hidden',
-            display: 'flex',
-            flexDirection: 'column',
-            backgroundColor: 'white'
-          }}>
-            {isCommTaskEnabled ? (
-              <CommunicationsTask
-                ref={commTaskRef}
-                eventsPerMinute={commEPM}
-                showLog={showCommLog}
-                onLogUpdate={setCommEventLog}
-                onMetricsUpdate={setCommMetrics}
-                autoEvents={commAutoEvents}
-              />
-            ) : (
-              <div style={{
-                height: '100%',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                background: '#e0e0e0',
-                color: '#888',
-                flexDirection: 'column'
-              }}>
-                <div style={{ 
-                  backgroundColor: '#d0d0d0', 
-                  color: '#686868',
-                  width: '100%',
-                  padding: '0.5rem',
-                  textAlign: 'center',
-                  fontWeight: 'bold'
-                }}>
-                  {t('tasks.communications.title')}
-                </div>
-                <div style={{ padding: '20px', textAlign: 'center' }}>
-                  {t('customMode.commTask')} {t('gameOver.inactive')}
-                </div>
-              </div>
-            )}
-          </div>
+                  {/* Bottom Left - Communications Task */}
+                  <div style={{
+                    gridColumn: '1 / span 2',
+                    gridRow: '2',
+                    border: '1px solid #ccc',
+                    overflow: 'hidden',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    backgroundColor: 'white'
+                  }}>
+                    {isCommTaskEnabled ? (
+                      <CommunicationsTask
+                        ref={commTaskRef}
+                        eventsPerMinute={commEPM}
+                        showLog={showCommLog}
+                        onLogUpdate={setCommEventLog}
+                        onMetricsUpdate={setCommMetrics}
+                        autoEvents={commAutoEvents}
+                      />
+                    ) : (
+                      <div style={{
+                        height: '100%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        background: '#e0e0e0',
+                        color: '#888',
+                        flexDirection: 'column'
+                      }}>
+                        <div style={{
+                          backgroundColor: '#d0d0d0',
+                          color: '#686868',
+                          width: '100%',
+                          padding: '0.5rem',
+                          textAlign: 'center',
+                          fontWeight: 'bold'
+                        }}>
+                          {t('tasks.communications.title')}
+                        </div>
+                        <div style={{ padding: '20px', textAlign: 'center' }}>
+                          {t('customMode.commTask')} {t('gameOver.inactive')}
+                        </div>
+                      </div>
+                    )}
+                  </div>
 
-          {/* Resource Management */}
-          <div style={{ 
-            gridColumn: '3 / span 4',
-            gridRow: '2',
-            border: '1px solid #ccc',
-            overflow: 'hidden',
-            backgroundColor: 'white'
-          }}>
-            {isResourceTaskEnabled ? (
-              <ResourceManagementTask
-                ref={resourceTaskRef}
-                eventsPerMinute={resourceEPM}
-                difficulty={resourceDifficulty}
-                showLog={showResourceLog}
-                onLogUpdate={setResourceEventLog}
-                onMetricsUpdate={handleResourceMetricsUpdate}
-                isEnabled={isResourceTaskEnabled}
-                autoEvents={resourceAutoEvents}
-              />
-            ) : (
-              <div style={{
-                height: '100%',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                background: '#e0e0e0',
-                color: '#888',
-                flexDirection: 'column'
-              }}>
-                <div style={{ 
-                  backgroundColor: '#d0d0d0', 
-                  color: '#686868',
-                  width: '100%',
-                  padding: '0.5rem',
-                  textAlign: 'center',
-                  fontWeight: 'bold'
-                }}>
-                  {t('tasks.resource.title')}
+                  {/* Resource Management */}
+                  <div style={{
+                    gridColumn: '3 / span 4',
+                    gridRow: '2',
+                    border: '1px solid #ccc',
+                    overflow: 'hidden',
+                    backgroundColor: 'white'
+                  }}>
+                    {isResourceTaskEnabled ? (
+                      <ResourceManagementTask
+                        ref={resourceTaskRef}
+                        eventsPerMinute={resourceEPM}
+                        difficulty={resourceDifficulty}
+                        showLog={showResourceLog}
+                        onLogUpdate={setResourceEventLog}
+                        onMetricsUpdate={handleResourceMetricsUpdate}
+                        isEnabled={isResourceTaskEnabled}
+                        autoEvents={resourceAutoEvents}
+                      />
+                    ) : (
+                      <div style={{
+                        height: '100%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        background: '#e0e0e0',
+                        color: '#888',
+                        flexDirection: 'column'
+                      }}>
+                        <div style={{
+                          backgroundColor: '#d0d0d0',
+                          color: '#686868',
+                          width: '100%',
+                          padding: '0.5rem',
+                          textAlign: 'center',
+                          fontWeight: 'bold'
+                        }}>
+                          {t('tasks.resource.title')}
+                        </div>
+                        <div style={{ padding: '20px', textAlign: 'center' }}>
+                          {t('customMode.resourceTask')} {t('gameOver.inactive')}
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
-                <div style={{ padding: '20px', textAlign: 'center' }}>
-                  {t('customMode.resourceTask')} {t('gameOver.inactive')}
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
               </div>
             </div>
           </div>
@@ -856,64 +857,64 @@ function App() {
 
         {/* Testing/Normal Mode Control Buttons */}
         {currentGameMode === 'testing' && (
-      <div style={{ 
-        position: 'fixed', 
-            top: '10px', 
-        right: '20px', 
-        zIndex: 1000 
-      }}>
-        <div style={{ display: 'flex', gap: '10px' }}>
-          <button
-            onClick={exitToMainMenu}
-            style={{
-              padding: '8px 12px',
-              background: '#dc3545',
-              color: 'white',
-              border: 'none',
-              borderRadius: '4px',
-              cursor: 'pointer'
-            }}
-          >
-            Main Menu (Ctrl+Q)
-          </button>
-          <button
-            onClick={() => setShowBackgroundSelector(!showBackgroundSelector)}
-            style={{
-              padding: '8px 12px',
-              background: '#28a745',
-              color: 'white',
-              border: 'none',
-              borderRadius: '4px',
-              cursor: 'pointer'
-            }}
-          >
-            Background
-          </button>
-          <button
-            onClick={() => setIsEventSidebarOpen(!isEventSidebarOpen)}
-            style={{
-              padding: '8px 12px',
-              background: isEventSidebarOpen ? '#555' : '#28a745',
-              color: 'white',
-              border: 'none',
-              borderRadius: '4px',
-              cursor: 'pointer'
-            }}
-          >
-            {isEventSidebarOpen ? 'Hide Controls' : 'Show Controls'}
-          </button>
-        </div>
-        {showBackgroundSelector && (
-          <div style={{ 
-            position: 'absolute', 
-            top: '50px', 
-            right: '0', 
-            zIndex: 1500 
+          <div style={{
+            position: 'fixed',
+            top: '10px',
+            right: '20px',
+            zIndex: 1000
           }}>
-            <BackgroundSelector small={true} />
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <button
+                onClick={exitToMainMenu}
+                style={{
+                  padding: '8px 12px',
+                  background: '#dc3545',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '4px',
+                  cursor: 'pointer'
+                }}
+              >
+                Main Menu (Ctrl+Q)
+              </button>
+              <button
+                onClick={() => setShowBackgroundSelector(!showBackgroundSelector)}
+                style={{
+                  padding: '8px 12px',
+                  background: '#28a745',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '4px',
+                  cursor: 'pointer'
+                }}
+              >
+                Background
+              </button>
+              <button
+                onClick={() => setIsEventSidebarOpen(!isEventSidebarOpen)}
+                style={{
+                  padding: '8px 12px',
+                  background: isEventSidebarOpen ? '#555' : '#28a745',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '4px',
+                  cursor: 'pointer'
+                }}
+              >
+                {isEventSidebarOpen ? 'Hide Controls' : 'Show Controls'}
+              </button>
+            </div>
+            {showBackgroundSelector && (
+              <div style={{
+                position: 'absolute',
+                top: '50px',
+                right: '0',
+                zIndex: 1500
+              }}>
+                <BackgroundSelector small={true} />
+              </div>
+            )}
           </div>
-        )}
-      </div>
         )}
 
         {/* Settings Sidebar for Testing Mode */}
@@ -1004,11 +1005,11 @@ function App() {
 
         {/* Add a small background selector button to normal and infinite modes */}
         {(currentGameMode === 'normal' || currentGameMode === 'infinite') && (
-          <div style={{ 
-            position: 'fixed', 
-            top: '10px', 
-            right: '110px', 
-            zIndex: 1000 
+          <div style={{
+            position: 'fixed',
+            top: '10px',
+            right: '110px',
+            zIndex: 1000
           }}>
             <button
               onClick={() => setShowBackgroundSelector(!showBackgroundSelector)}
@@ -1025,11 +1026,11 @@ function App() {
               BG
             </button>
             {showBackgroundSelector && (
-              <div style={{ 
-                position: 'absolute', 
-                top: '40px', 
-                right: '0', 
-                zIndex: 1500 
+              <div style={{
+                position: 'absolute',
+                top: '40px',
+                right: '0',
+                zIndex: 1500
               }}>
                 <BackgroundSelector small={true} />
               </div>

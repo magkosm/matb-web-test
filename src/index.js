@@ -13,15 +13,15 @@ import './i18n';
 // Helper component to set localStorage and render App
 const AppWithParams = ({ startParams }) => {
   const [isLoading, setIsLoading] = React.useState(true);
-  
+
   React.useEffect(() => {
     // Clear any existing params first to prevent conflicts
     localStorage.removeItem('matb_start_params');
-    
+
     if (startParams) {
       // Store the parameters in localStorage
       localStorage.setItem('matb_start_params', JSON.stringify(startParams));
-      
+
       // Small delay to ensure localStorage is set before App checks it
       setTimeout(() => {
         setIsLoading(false);
@@ -29,27 +29,27 @@ const AppWithParams = ({ startParams }) => {
     } else {
       setIsLoading(false);
     }
-    
+
     // Cleanup on unmount
     return () => {
       // We don't remove the params here anymore since the App component will handle them
     };
   }, [startParams]);
-  
+
   if (isLoading) {
     return (
-      <div style={{ 
-        display: 'flex', 
-        justifyContent: 'center', 
-        alignItems: 'center', 
-        height: '100vh', 
+      <div style={{
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        height: '100vh',
         background: '#f0f0f0'
       }}>
         <div>Loading...</div>
       </div>
     );
   }
-  
+
   return <App />;
 };
 
@@ -79,14 +79,14 @@ const DirectReactionTimeRoute = () => {
 
   // Create a ReactionTimeTest component directly with default parameters
   const ReactionTimeTest = React.lazy(() => import('./components/ReactionTimeTest'));
-  
+
   return (
     <React.Suspense fallback={<div>Loading...</div>}>
-      <ReactionTimeTest 
+      <ReactionTimeTest
         duration={30000} // 30 seconds
-        maxStimuli={10} 
-        minDelay={1500} 
-        maxDelay={8000} 
+        maxStimuli={10}
+        minDelay={1500}
+        maxDelay={8000}
         onReturn={handleReturn}
       />
     </React.Suspense>
@@ -101,7 +101,7 @@ const DirectNBackRoute = () => {
 
   // Create an NBackTest component directly with default parameters
   const NBackTest = React.lazy(() => import('./components/NBackTest'));
-  
+
   return (
     <React.Suspense fallback={<div>Loading...</div>}>
       <NBackTest
@@ -127,7 +127,9 @@ root.render(
         <Route path="/monitoring" element={<AppWithParams startParams={{ mode: 'custom', tasks: ['monitoring'] }} />} />
         <Route path="/tracking" element={<AppWithParams startParams={{ mode: 'custom', tasks: ['tracking'] }} />} />
         <Route path="/resource" element={<AppWithParams startParams={{ mode: 'custom', tasks: ['resource'] }} />} />
+        <Route path="/resource" element={<AppWithParams startParams={{ mode: 'custom', tasks: ['resource'] }} />} />
         <Route path="/normal" element={<AppWithParams startParams={{ mode: 'normal', duration: 5 * 60 * 1000 }} />} />
+        <Route path="/2min" element={<AppWithParams startParams={{ mode: 'normal', duration: 2 * 60 * 1000 }} />} />
         <Route path="/reaction" element={<ReactionTimeRoute />} />
         <Route path="/nback" element={<NBackRoute />} />
         <Route path="/reaction-default" element={<DirectReactionTimeRoute />} />

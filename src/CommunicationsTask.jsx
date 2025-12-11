@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
 import { useAutoScroll } from './hooks/useAutoScroll';
 import { downloadCSV } from './utils/csvExport';
+import { COMM_CONFIG } from './config/simulationConfig';
 
 // ---------------------------------------------------------------------------
 // 1) Dynamically import all .wav files
@@ -11,7 +12,7 @@ let audioFiles = [];
 // Define a function to manually load the audio files if the dynamic import fails
 const loadAudioFilesFallback = () => {
   console.log('Using manual audio files fallback');
-  
+
   // Use external MP3 files instead of local WAV files
   // These are reliable external MP3 files that should work in any browser
   return [
@@ -32,32 +33,32 @@ try {
   // Update to handle potential file path issues
   const modules = require.context('./assets/sounds', false, /\.(wav|mp3)$/);
   console.log('Sound files available in require.context:', modules.keys());
-  
+
   audioFiles = modules.keys().map((filename) => {
     try {
-  const fileUrl = modules(filename);
-  const { callsign, radio, frequency } = parseFilename(filename);
+      const fileUrl = modules(filename);
+      const { callsign, radio, frequency } = parseFilename(filename);
       console.log(`Loaded audio file: ${filename} => ${fileUrl}`);
-      
+
       // Ensure uppercase callsign for consistent filtering
-      return { 
-        file: fileUrl, 
+      return {
+        file: fileUrl,
         callsign: callsign.toUpperCase(), // Force uppercase for filtering
-        radio, 
-        frequency 
+        radio,
+        frequency
       };
     } catch (error) {
       console.error(`Error processing file ${filename}:`, error);
       return null;
     }
   }).filter(file => file !== null);
-  
+
   console.log(`Successfully loaded ${audioFiles.length} audio files dynamically`);
-  
+
   // Extra verification for debugging
   console.log('Verifying OWN files:', audioFiles.filter(file => file.callsign === 'OWN').length);
   console.log('Verifying OTHER files:', audioFiles.filter(file => file.callsign !== 'OWN').length);
-  
+
   // If no audio files were loaded from webpack, use fallback
   if (audioFiles.length === 0) {
     console.warn('No audio files were loaded dynamically, using fallback');
@@ -94,23 +95,18 @@ function parseFilename(filename) {
 const radioOrder = ['NAV1', 'NAV2', 'COM1', 'COM2'];
 
 // Constants for ramp-up levels
-const LEVEL1_INTERVAL = 500; // Initial interval in ms
-const LEVEL2_INTERVAL = 200; // Accelerated interval in ms
-const LEVEL2_DELAY = 1000;    // Time to switch to Level 2 in ms
+const LEVEL1_INTERVAL = COMM_CONFIG.CONTROLS.LEVEL1_INTERVAL_MS;
+const LEVEL2_INTERVAL = COMM_CONFIG.CONTROLS.LEVEL2_INTERVAL_MS;
+const LEVEL2_DELAY = COMM_CONFIG.CONTROLS.LEVEL2_DELAY_MS;
 
 // Add these constants near the top, after other constants
 const INITIAL_STATE = {
-  frequencies: {
-    NAV1: '112.500',
-    NAV2: '112.500',
-    COM1: '118.325',
-    COM2: '120.775',
-  },
+  frequencies: { ...COMM_CONFIG.DEFAULT_FREQUENCIES },
   selectedRadio: 'NAV1',
 };
 
-const CommunicationsTask = forwardRef(({ 
-  eventsPerMinute = 2, 
+const CommunicationsTask = forwardRef(({
+  eventsPerMinute = 2,
   showLog = false,
   onLogUpdate,
   onMetricsUpdate,
@@ -162,59 +158,59 @@ const CommunicationsTask = forwardRef(({
   // -------------------------------------------------------------------------
   // Add a helper function to better randomize message selection
   // -------------------------------------------------------------------------
-  
+
   // Keep track of recently used files to avoid repetition
   const [recentlyUsedFiles, setRecentlyUsedFiles] = useState([]);
-  
+
   // Function to select a random file with improved randomization
   const getRandomAudioFile = (callsignType) => {
     console.log(`getRandomAudioFile called with callsignType: ${callsignType}`);
-    
+
     // Normalize callsignType to lowercase to handle case differences
     const normalizedCallType = callsignType.toLowerCase();
-    
+
     // Filter by callsign type (own or other)
     const isOwnCall = normalizedCallType === 'own';
-    
+
     console.log(`Looking for ${isOwnCall ? 'OWN' : 'OTHER'} callsign type`);
-    
+
     // First, check if we have any files at all
     if (audioFiles.length === 0) {
       console.error('No audio files available at all!');
       return null;
     }
-    
+
     // Log all available audio files for debugging
     console.log('All available audio files:');
     audioFiles.forEach((file, index) => {
       console.log(`${index}: ${file.file}, callsign: ${file.callsign}, radio: ${file.radio}, freq: ${file.frequency}`);
     });
-    
+
     // Filter messages by own/other callsign
-    const eligibleFiles = audioFiles.filter(file => 
+    const eligibleFiles = audioFiles.filter(file =>
       isOwnCall ? file.callsign === 'OWN' : file.callsign !== 'OWN'
     );
-    
+
     console.log(`Found ${eligibleFiles.length} eligible files for ${isOwnCall ? 'OWN' : 'OTHER'} callsign`);
-    
+
     if (eligibleFiles.length === 0) {
       console.error(`No eligible audio files found for ${callsignType} callsign`);
-      
+
       // As a fallback, just use any available audio file
       console.log('Using fallback: selecting any random audio file');
       const randomIndex = Math.floor(Math.random() * audioFiles.length);
       return audioFiles[randomIndex];
     }
-    
+
     // Try to find files that haven't been used recently
-    const unusedFiles = eligibleFiles.filter(file => 
+    const unusedFiles = eligibleFiles.filter(file =>
       !recentlyUsedFiles.some(usedFile => usedFile.file === file.file)
     );
-    
+
     console.log(`${unusedFiles.length} unused files available`);
-    
+
     let selectedFile;
-    
+
     if (unusedFiles.length > 0) {
       // Pick a random file from unused ones
       const randomIndex = Math.floor(Math.random() * unusedFiles.length);
@@ -226,15 +222,15 @@ const CommunicationsTask = forwardRef(({
       selectedFile = eligibleFiles[shuffleIndex];
       console.log(`All files recently used, selected: ${selectedFile.file}`);
     }
-    
+
     console.log(`Selected audio file: ${selectedFile.file} (${callsignType} callsign)`);
-    
+
     // Update recently used files list (keep last 5)
     setRecentlyUsedFiles(prev => {
       const newList = [selectedFile, ...prev].slice(0, 5);
       return newList;
     });
-    
+
     return selectedFile;
   };
 
@@ -254,33 +250,40 @@ const CommunicationsTask = forwardRef(({
   // -------------------------------------------------------------------------
   useEffect(() => {
     if (isInitialMount || !autoEvents || isPaused) return;
-    
+
     console.log("Communications Task: Auto events enabled, scheduling messages");
-    
+
     let timeoutId = null;
-    
+
     const scheduleNextMessage = () => {
-      const baseIntervalMs = 60000 / eventsPerMinute; // Base interval in ms (60000ms = 1 minute)
-      const jitter = 0.7 + Math.random() * 0.6; // Random factor between 0.7 and 1.3
-      const waitTime = baseIntervalMs * jitter;
-      
-      console.log(`Communications Task: Next message scheduled in ${Math.round(waitTime/1000)}s`);
-      
+      // Use configured EPM default if not provided
+      const targetEPM = eventsPerMinute || COMM_CONFIG.DEFAULT_EPM;
+      const baseIntervalMs = 60000 / targetEPM;
+
+      // Tunable jitter from config
+      const minJitter = COMM_CONFIG.SCHEDULING.JITTER_MIN;
+      const jitterVar = COMM_CONFIG.SCHEDULING.JITTER_VAR;
+
+      const jitter = minJitter + Math.random() * jitterVar;
+      const waitTime = Math.max(COMM_CONFIG.SCHEDULING.MIN_DELAY_MS, baseIntervalMs * jitter);
+
+      console.log(`Communications Task: Next message scheduled in ${Math.round(waitTime / 1000)}s`);
+
       timeoutId = setTimeout(() => {
         // If the system is now paused, exit early
         if (isPaused) return;
-        
+
         // If there's no active message, trigger a new one
         if (!activeMessage) {
           // Call our existing function to enqueue a random message
-        enqueueRandomMessage();
+          enqueueRandomMessage();
         }
-        
+
         // Schedule the next message regardless
         scheduleNextMessage();
       }, waitTime);
     };
-    
+
     // Start scheduling
     scheduleNextMessage();
 
@@ -291,24 +294,32 @@ const CommunicationsTask = forwardRef(({
 
   const enqueueRandomMessage = () => {
     // Choose randomly between own and other callsigns
-    // Higher difficulty means more other callsigns
-    const ownCallChance = Math.max(0.1, 0.4 - (difficulty * 0.03)); // 0.4 at diff 1, 0.1 at diff 10
+    // Formula from Config: Base - (Diff * Scaler)
+    const baseChance = COMM_CONFIG.CONTENT.OWN_CALL_BASE_CHANCE;
+    const diffScaler = COMM_CONFIG.CONTENT.OWN_CALL_DIFF_SCALER;
+    const minChance = COMM_CONFIG.CONTENT.MIN_OWN_CALL_CHANCE;
+
+    const ownCallChance = Math.max(minChance, baseChance - (difficulty * diffScaler));
     const callsignType = Math.random() < ownCallChance ? 'own' : 'other';
-    
+
     // Use our improved random file selection helper
     const audioFile = getRandomAudioFile(callsignType);
-    
+
     // If no audio file could be found, exit
     if (!audioFile) {
       console.error('Failed to find a suitable audio file');
       return;
     }
-    
+
     // Set consistent timestamp and response window
     const now = Date.now();
     // Response window gets shorter with higher difficulty
-    const responseWindow = Math.max(5000, 10000 - (difficulty * 500)); // 9.5s at diff 1, 5s at diff 10
-    
+    const baseWindow = COMM_CONFIG.RESPONSE_WINDOW.BASE_WINDOW_MS;
+    const windowScaler = COMM_CONFIG.RESPONSE_WINDOW.DIFFICULTY_SCALER;
+    const minWindow = COMM_CONFIG.RESPONSE_WINDOW.MIN_WINDOW_MS;
+
+    const responseWindow = Math.max(minWindow, baseWindow - (difficulty * windowScaler));
+
     // Create message object with all necessary fields including snapshots array
     const messageId = `msg-${now}-${Math.floor(Math.random() * 10000)}`;
     const msg = {
@@ -330,9 +341,9 @@ const CommunicationsTask = forwardRef(({
       queued: true,
       finalized: false
     };
-    
-    console.log(`Communications Task: Enqueueing new message: ${msg.id}, type: ${msg.ownCallsign ? 'OWN' : 'OTHER'}, deadline in ${responseWindow/1000}s`);
-    
+
+    console.log(`Communications Task: Enqueueing new message: ${msg.id}, type: ${msg.ownCallsign ? 'OWN' : 'OTHER'}, deadline in ${responseWindow / 1000}s`);
+
     // Add to queue
     setMessageQueue(prev => [...prev, msg]);
   };
@@ -356,26 +367,26 @@ const CommunicationsTask = forwardRef(({
       setActiveMessage(null);
       return false; // Return false to indicate failure
     }
-    
+
     try {
       // Create Audio object
       // Simplify path handling - if it's a URL use it directly, otherwise use the file as is
-      const audioPath = msg.file.startsWith('http') 
+      const audioPath = msg.file.startsWith('http')
         ? msg.file  // Use URL as is
         : msg.file; // Use file path from webpack without modifications
-      
+
       // Log file details for debugging 
       let fileExtension = 'unknown';
       if (typeof msg.file === 'string') {
         const match = msg.file.match(/\.([^.]+)$/);
         fileExtension = match ? match[1].toLowerCase() : 'unknown';
       }
-      console.log(`[AUDIO] File details - Type: ${fileExtension}, ` + 
-                 `URL type: ${msg.file.startsWith('http') ? 'external' : 'local'}, ` +
-                 `Length: ${msg.file.length}`);
-      
+      console.log(`[AUDIO] File details - Type: ${fileExtension}, ` +
+        `URL type: ${msg.file.startsWith('http') ? 'external' : 'local'}, ` +
+        `Length: ${msg.file.length}`);
+
       console.log(`[AUDIO] Creating audio with path: ${audioPath} for message: ${msg.id}`);
-      
+
       // Close any existing audio
       if (audioRef.current) {
         try {
@@ -387,37 +398,37 @@ const CommunicationsTask = forwardRef(({
           console.warn('Error closing previous audio:', err);
         }
       }
-      
+
       // Create a new audio element
       audioRef.current = new Audio();
-      
+
       // Initialize missing properties if needed
       if (!msg.startTime) msg.startTime = Date.now();
       if (!msg.snapshots) msg.snapshots = [];
-      
+
       // Set up error handling
       audioRef.current.onerror = (e) => {
         console.error(`[AUDIO ERROR] Could not play ${audioPath} for message: ${msg.id}:`, e);
-        
+
         // Try to provide more diagnostic information
         const error = audioRef.current.error;
         if (error) {
           console.error(`[AUDIO ERROR] Code: ${error.code}, Message: ${error.message}`);
         }
-        
+
         // Only try fallback if we haven't successfully started playing
         // and we're not already using a fallback
         if (!msg.audioStarted && !msg.usingFallback) {
           // Use a reliable fallback MP3 file
           const fallbackFile = 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3';
           console.log(`[AUDIO] Trying fallback file: ${fallbackFile} for message: ${msg.id}`);
-          
+
           // Try playing fallback after a short delay
           setTimeout(() => {
             try {
               const fallbackAudio = new Audio(fallbackFile);
               fallbackAudio.play()
-      .then(() => {
+                .then(() => {
                   console.log(`[AUDIO] Fallback audio playing for message: ${msg.id}`);
                   // Mark that we're using fallback so we don't double-play
                   msg.usingFallback = true;
@@ -432,11 +443,11 @@ const CommunicationsTask = forwardRef(({
         } else if (msg.usingFallback) {
           console.log('[AUDIO] Already using fallback, not attempting another one');
         }
-        
+
         // Even if audio fails, we still want to proceed with the event
         recordSnapshot(msg);
         setSystemLoad(msg.callsign === 'OWN' ? 20 : 10);
-        
+
         // Keep moving, set a timer to finalize this message
         if (!msg.audioErrorTimer) {
           msg.audioErrorTimer = setTimeout(() => {
@@ -447,14 +458,14 @@ const CommunicationsTask = forwardRef(({
           }, 5000); // Give 5 seconds before finalizing
         }
       };
-    
-    // Record initial snapshot
-    recordSnapshot(msg);
+
+      // Record initial snapshot
+      recordSnapshot(msg);
 
       // Add event listener for when audio ends
-    audioRef.current.onended = () => {
-      msg.endTime = Date.now();
-      console.log(`[AUDIO] Ended: ${msg.id}`);
+      audioRef.current.onended = () => {
+        msg.endTime = Date.now();
+        console.log(`[AUDIO] Ended: ${msg.id}`);
 
         // Calculate remaining time until responseDeadline
         let timeUntilDeadline = 0;
@@ -469,21 +480,21 @@ const CommunicationsTask = forwardRef(({
         }
 
         // Start a timer for finalization based on the response window
-      msg.postAudioTimer = setTimeout(() => {
+        msg.postAudioTimer = setTimeout(() => {
           console.log(`[TIMER] Response window ended => ${msg.id}`);
-        setSystemLoad(0);
-        onMetricsUpdate?.({ healthImpact, systemLoad: 0 });
-        if (!msg.finalized) finalizeMessage(msg);
+          setSystemLoad(0);
+          onMetricsUpdate?.({ healthImpact, systemLoad: 0 });
+          if (!msg.finalized) finalizeMessage(msg);
         }, timeUntilDeadline);
       };
 
       // Set source after all event handlers are established
       audioRef.current.src = audioPath;
       audioRef.current.preload = 'auto';
-      
+
       // Preload the audio
       audioRef.current.load();
-      
+
       // Short delay to ensure audio is ready to play
       setTimeout(() => {
         // Try to play the audio
@@ -494,27 +505,27 @@ const CommunicationsTask = forwardRef(({
             const loadValue = msg.callsign === 'OWN' ? 20 : 10;
             setSystemLoad(loadValue);
             onMetricsUpdate?.({ healthImpact, systemLoad: loadValue });
-            
+
             // Flag that audio started successfully to avoid playing fallback
             msg.audioStarted = true;
           })
           .catch((err) => {
             console.error(`[AUDIO] Failed to play: ${msg.id}`, err);
-            
+
             // Try to provide more diagnostic information
             if (err.name) {
               console.error(`[AUDIO] Error name: ${err.name}`);
             }
-            
+
             // Only try fallback if we haven't successfully started playing
             if (!msg.audioStarted && !msg.usingFallback) {
               // If it's an AbortError, NotSupportedError, or similar browser-specific issue
               // Try a reliable external audio source
-              if (err.name === 'AbortError' || err.name === 'NotSupportedError' || 
-                  err.message?.includes('NS_BINDING_ABORTED')) {
+              if (err.name === 'AbortError' || err.name === 'NotSupportedError' ||
+                err.message?.includes('NS_BINDING_ABORTED')) {
                 console.log(`[AUDIO] Trying external reliable audio source for message: ${msg.id}`);
                 const reliableUrl = 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3';
-                
+
                 try {
                   const reliableAudio = new Audio(reliableUrl);
                   reliableAudio.play()
@@ -530,15 +541,15 @@ const CommunicationsTask = forwardRef(({
             } else if (msg.usingFallback) {
               console.log('[AUDIO] Already using fallback, not attempting another one');
             }
-            
+
             // Keep track of this error in the message
             msg.audioError = err.message || "Unknown error";
-            
+
             // Keep the flow going - set system load even if audio fails
             const loadValue = msg.callsign === 'OWN' ? 20 : 10;
             setSystemLoad(loadValue);
             onMetricsUpdate?.({ healthImpact, systemLoad: loadValue });
-            
+
             // Keep moving, set a timer to finalize this message
             if (!msg.audioErrorTimer) {
               msg.audioErrorTimer = setTimeout(() => {
@@ -558,40 +569,40 @@ const CommunicationsTask = forwardRef(({
       return false; // Return false to indicate failure
     }
   };
-  
+
   // Helper function to try fallback audio
   const tryFallbackAudio = (msg) => {
     console.log('[AUDIO] Trying reliable fallback audio source');
-    
+
     // Always use a known reliable audio source as fallback
     const fallbackUrl = 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3';
-    
+
     // Keep the original message details, just change the file
     const fallbackMsg = {
       ...msg,
       id: `fallback-${Date.now()}`,
       file: fallbackUrl
     };
-    
+
     console.log(`[AUDIO] Created fallback message: ${fallbackMsg.id}`);
-    
+
     // Set as new active message
     setActiveMessage(fallbackMsg);
-    
+
     // Create a new audio element directly for the fallback
     const fallbackAudio = new Audio(fallbackUrl);
-    
+
     // Set up basic events
     fallbackAudio.onended = () => {
       console.log(`[AUDIO] Fallback ended: ${fallbackMsg.id}`);
       finalizeMessage(fallbackMsg);
     };
-    
+
     fallbackAudio.onerror = (e) => {
       console.error('[AUDIO] Even fallback audio failed:', e);
       finalizeWithError(fallbackMsg, new Error('Fallback audio failed'));
     };
-    
+
     // Try to play
     fallbackAudio.play()
       .then(() => {
@@ -606,13 +617,13 @@ const CommunicationsTask = forwardRef(({
         finalizeWithError(fallbackMsg, err);
       });
   };
-  
+
   // Helper to finalize a message with error
   const finalizeWithError = (msg, error) => {
     // Keep track of this error in the message
     if (msg) {
       msg.audioError = error.message || "Unknown error";
-      
+
       // Set a timer to finalize this message
       if (!msg.audioErrorTimer) {
         msg.audioErrorTimer = setTimeout(() => {
@@ -638,26 +649,26 @@ const CommunicationsTask = forwardRef(({
       console.error('Cannot record snapshot for null message');
       return;
     }
-    
+
     // Don't recursively call for the active message - that's a mistake that would cause infinite recursion
-    
+
     if (!msg.snapshots) {
       console.warn(`Message ${msg.id} has no snapshots array, initializing it`);
       msg.snapshots = [];
     }
-    
+
     if (!msg.startTime) {
       console.warn(`Message ${msg.id} has no startTime, using current time`);
       msg.startTime = Date.now();
     }
-    
+
     const dt = Date.now() - msg.startTime;
     const snap = {
       t: dt,
       selectedRadio: selectedRadioRef.current,
       frequencies: { ...frequenciesRef.current },
     };
-    
+
     msg.snapshots.push(snap);
     console.log(
       `[SNAPSHOT] ${msg.id} @${dt}ms selRadio=${snap.selectedRadio} freq=${JSON.stringify(
@@ -676,16 +687,16 @@ const CommunicationsTask = forwardRef(({
       setActiveMessage(null);
       return;
     }
-    
+
     if (msg.finalized) {
       console.log(`Message ${msg.id || 'unknown'} already finalized, skipping`);
       setActiveMessage(null);
       return;
     }
-    
+
     console.log(`Finalizing message ${msg.id || 'unknown'}`);
     msg.finalized = true;
-    
+
     // Clear any existing post-audio timer
     if (msg.postAudioTimer) {
       clearTimeout(msg.postAudioTimer);
@@ -697,15 +708,15 @@ const CommunicationsTask = forwardRef(({
 
     // Record one last snapshot to capture the final state
     recordSnapshot(msg);
-    
+
     // Check if the response deadline has passed or if we're finalizing early
     const now = Date.now();
     const deadlinePassed = !msg.responseDeadline || now >= msg.responseDeadline;
-    
+
     if (!deadlinePassed) {
-      console.log(`Finalizing message ${msg.id || 'unknown'} before deadline (${Math.round((msg.responseDeadline - now)/1000)}s remaining)`);
+      console.log(`Finalizing message ${msg.id || 'unknown'} before deadline (${Math.round((msg.responseDeadline - now) / 1000)}s remaining)`);
     }
-    
+
     // Analyze response based on snapshots
     let responseType = 'MISS';
     let responseTime = null;
@@ -714,11 +725,11 @@ const CommunicationsTask = forwardRef(({
     if (msg.callsign === 'OWN') {
       // Own ship message - look for correct radio and frequency
       let correctResponse = false;
-      
+
       for (let i = 0; i < msg.snapshots.length; i++) {
         const snap = msg.snapshots[i];
-        if (snap.selectedRadio === msg.radio && 
-            snap.frequencies[msg.radio] === msg.frequency) {
+        if (snap.selectedRadio === msg.radio &&
+          snap.frequencies[msg.radio] === msg.frequency) {
           responseType = 'HIT';
           responseTime = snap.t / 1000;
           impact = 10; // +10 for hits
@@ -726,7 +737,7 @@ const CommunicationsTask = forwardRef(({
           break;
         }
       }
-      
+
       // Only count as a miss if the deadline has passed and no correct response
       if (!correctResponse) {
         if (deadlinePassed) {
@@ -750,7 +761,7 @@ const CommunicationsTask = forwardRef(({
           )
         );
       });
-      
+
       if (hasChanges) {
         responseType = 'FA'; // False alarm (changed controls for other ship)
         impact = -10;
@@ -763,12 +774,12 @@ const CommunicationsTask = forwardRef(({
     // Prepare the log entry before setting state
     const logEntry = {
       index: msg.index || messageIndexRef.current++,
-          Time: new Date().toISOString(),
+      Time: new Date().toISOString(),
       Ship: msg.callsign || 'Unknown',
       Radio_T: msg.radio || 'Unknown',
       Freq_T: msg.frequency || 'Unknown',
-          Radio_S: selectedRadioRef.current,
-          Freq_S: frequenciesRef.current[selectedRadioRef.current],
+      Radio_S: selectedRadioRef.current,
+      Freq_S: frequenciesRef.current[selectedRadioRef.current],
       RT: responseTime || (msg.endTime ? (msg.endTime - msg.startTime) / 1000 : 0),
       Remarks: responseType,
       Deadline: msg.responseDeadline ? new Date(msg.responseDeadline).toISOString().substring(11, 19) : 'Unknown',
@@ -779,7 +790,7 @@ const CommunicationsTask = forwardRef(({
     const newHealthImpact = impact;
     setHealthImpact(newHealthImpact);
     console.log(`Setting health impact: ${newHealthImpact} for response type: ${responseType}`);
-    
+
     // Use the callback version of setState to update the commLog
     setCommLog(prev => {
       const newLog = [...prev, logEntry];
@@ -787,12 +798,12 @@ const CommunicationsTask = forwardRef(({
       setTimeout(() => {
         if (onLogUpdate) onLogUpdate(newLog);
       }, 0);
-        return newLog;
-      });
+      return newLog;
+    });
 
     // Wrap the activeMessage clear in setTimeout to avoid state updates during render
     setTimeout(() => {
-    setActiveMessage(null);
+      setActiveMessage(null);
     }, 0);
   };
 
@@ -921,7 +932,7 @@ const CommunicationsTask = forwardRef(({
     setFrequencies(prev => {
       const currentFreq = Number(prev[radio]);
       let newFreq;
-      
+
       if (isDouble) {
         // For whole number steps
         newFreq = Math.floor(currentFreq) + direction;
@@ -935,7 +946,7 @@ const CommunicationsTask = forwardRef(({
           newFreq = Math.ceil(currentFreq * 40) / 40 - 0.025;
         }
       }
-      
+
       return {
         ...prev,
         [radio]: newFreq.toFixed(3)
@@ -949,7 +960,7 @@ const CommunicationsTask = forwardRef(({
         setFrequencies(prev => {
           const currentFreq = Number(prev[radio]);
           let newFreq;
-          
+
           if (isDouble) {
             newFreq = Math.floor(currentFreq) + direction;
           } else {
@@ -959,7 +970,7 @@ const CommunicationsTask = forwardRef(({
               newFreq = Math.ceil(currentFreq * 40) / 40 - 0.025;
             }
           }
-          
+
           return {
             ...prev,
             [radio]: newFreq.toFixed(3)
@@ -1017,7 +1028,7 @@ const CommunicationsTask = forwardRef(({
   // Add a new method to forcibly reset the active message state
   const clearActiveMessage = () => {
     console.log('Forcibly clearing active message state');
-    
+
     // Stop any playing audio
     if (audioRef.current) {
       try {
@@ -1027,12 +1038,12 @@ const CommunicationsTask = forwardRef(({
         console.warn('Error stopping audio:', err);
       }
     }
-    
+
     // Clear any timers
     if (activeMessage && activeMessage.postAudioTimer) {
       clearTimeout(activeMessage.postAudioTimer);
     }
-    
+
     // Reset state
     setActiveMessage(null);
     setSystemLoad(0);
@@ -1045,10 +1056,10 @@ const CommunicationsTask = forwardRef(({
     if (activeMessage && activeMessage.audioErrorTimer) {
       clearTimeout(activeMessage.audioErrorTimer);
     }
-    
+
     // Use the clearActiveMessage function for consistency
     clearActiveMessage();
-    
+
     // Reset all other state
     setSelectedRadio(INITIAL_STATE.selectedRadio);
     setFrequencies(INITIAL_STATE.frequencies);
@@ -1061,13 +1072,13 @@ const CommunicationsTask = forwardRef(({
   const togglePause = () => {
     const newPausedState = !isPaused;
     console.log(`CommunicationsTask: ${newPausedState ? 'Pausing' : 'Resuming'} all activity`);
-    
+
     // If pausing, clear any active message and empty the queue
     if (newPausedState) {
       clearActiveMessage();
       setMessageQueue([]);
     }
-    
+
     setIsPaused(newPausedState);
   };
 
@@ -1080,14 +1091,14 @@ const CommunicationsTask = forwardRef(({
         console.log('CommunicationsTask: System is paused, ignoring triggerCall');
         return false;
       }
-      
+
       console.log('CommunicationsTask: triggerCall called with config:', config);
-      
+
       // Check if there's already an active message
       if (activeMessage) {
         const messageAge = Date.now() - activeMessage.startTime;
         console.log(`CommunicationsTask: Active message exists (age: ${messageAge}ms)`);
-        
+
         // If the message is old (> 15 seconds), clear it automatically
         if (messageAge > 15000) {
           console.log('CommunicationsTask: Clearing stale active message');
@@ -1097,31 +1108,31 @@ const CommunicationsTask = forwardRef(({
           return false;
         }
       }
-      
+
       // Use external audio files if specified
       if (config.useExternalAudio) {
         console.log('CommunicationsTask: Using external audio files');
         return triggerExternalAudio(config.callType);
       }
-      
+
       // Proceed with normal call trigger
       const eligible = getEligibleFiles(config.callType);
       console.log(`CommunicationsTask: Found ${eligible.length} eligible audio files for call type: ${config.callType}`);
-      
+
       if (eligible.length === 0) {
         console.error('CommunicationsTask: No eligible audio files found for call type:', config.callType);
         return false;
       }
-      
+
       const randomIndex = Math.floor(Math.random() * eligible.length);
       const selectedFile = eligible[randomIndex];
-      
+
       console.log('CommunicationsTask: Selected audio file:', selectedFile);
-      
+
       // Create a proper message object
       const messageId = `msg-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
       const responseWindow = config.responseWindow ? config.responseWindow * 1000 : 10000; // Convert to ms if provided
-      
+
       const msg = {
         id: messageId,
         file: selectedFile.file,
@@ -1141,34 +1152,34 @@ const CommunicationsTask = forwardRef(({
         queued: false,
         finalized: false
       };
-      
+
       console.log(`CommunicationsTask: Created message object with ID: ${msg.id}`);
-      
+
       // Set as active message first, then play
       setActiveMessage(msg);
-      
+
       // Play the message and return the result
       return playMessage(msg);
     },
-    
+
     // Clear any active message
     clearActiveMessage: () => {
       console.log('CommunicationsTask: Clearing active message');
       clearActiveMessage();
       return true;
     },
-    
+
     // Check if there's an active message
     isActiveMessage: () => {
       return !!activeMessage;
     },
-    
+
     // Get the age of the active message in ms
     getActiveMessageAge: () => {
       if (!activeMessage) return 0;
       return Date.now() - activeMessage.startTime;
     },
-    
+
     // Test function to play a specific type of audio
     testAudio: (callType = 'own') => {
       // Don't allow test audio if paused
@@ -1176,26 +1187,26 @@ const CommunicationsTask = forwardRef(({
         console.log('CommunicationsTask: System is paused, ignoring testAudio');
         return false;
       }
-      
+
       console.log(`CommunicationsTask: Test audio function called for type: ${callType}`);
       clearActiveMessage();
-      
+
       // Determine whether to use local audio or external audio
       // First try with local audio if we have eligible files
       const eligible = getEligibleFiles(callType);
       console.log(`CommunicationsTask: Found ${eligible.length} eligible local files for test audio`);
-      
+
       if (eligible.length > 0) {
         // We have local audio files, use those
         const randomIndex = Math.floor(Math.random() * eligible.length);
         const selectedFile = eligible[randomIndex];
-        
+
         console.log('CommunicationsTask: Using local audio file for test:', selectedFile);
-        
+
         // Create a proper message object
         const messageId = `test-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
         const responseWindow = 10000; // Default 10s for test
-        
+
         const msg = {
           id: messageId,
           file: selectedFile.file,
@@ -1216,12 +1227,12 @@ const CommunicationsTask = forwardRef(({
           finalized: false,
           isTest: true // Mark as a test message
         };
-        
+
         console.log(`CommunicationsTask: Created test message object with ID: ${msg.id}`);
-        
+
         // Set as active message first, then play
         setActiveMessage(msg);
-        
+
         // Play the message and return the result
         return playMessage(msg);
       } else {
@@ -1230,16 +1241,16 @@ const CommunicationsTask = forwardRef(({
         return triggerExternalAudio(callType);
       }
     },
-    
+
     // New method to toggle pause state
     togglePause: () => {
       togglePause();
       return isPaused;
     },
-    
+
     // New method to check pause state
     isPaused: () => isPaused,
-    
+
     // Debug info
     getDebugInfo: () => {
       return {
@@ -1289,7 +1300,7 @@ const CommunicationsTask = forwardRef(({
       console.error("No audio files were loaded! Communications task won't work properly.");
     } else {
       // Log a sample of files to verify their structure
-      console.log("Sample audio files:", 
+      console.log("Sample audio files:",
         audioFiles.slice(0, 3).map(file => ({
           callsign: file.callsign,
           radio: file.radio,
@@ -1297,10 +1308,10 @@ const CommunicationsTask = forwardRef(({
         }))
       );
     }
-    
+
     // Log when auto events are enabled/disabled
     console.log(`Communications Task: Auto events ${autoEvents ? 'enabled' : 'disabled'}`);
-    
+
     // Initialize audio context when component mounts
     // We're commenting this out because it was causing audio to play on startup
     /*
@@ -1318,24 +1329,24 @@ const CommunicationsTask = forwardRef(({
     try {
       // Choose a call type if not forced
       const callType = forceCallType || (Math.random() < 0.3 ? 'own' : 'other');
-      
+
       // Only use direct URL audio files for testing to avoid browser compatibility issues
       const testAudioFiles = [
         { file: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3', callsign: 'OWN', radio: 'COM1', frequency: '126.450' },
         { file: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3', callsign: 'OTHER', radio: 'COM1', frequency: '126.175' }
       ];
-      
+
       console.log(`[TEST] Testing with reliable audio files for ${callType} calls`);
-      
+
       // Select file based on callType
       const selectedFile = callType === 'own' ? testAudioFiles[0] : testAudioFiles[1];
       console.log(`[TEST] Selected file for testing: ${selectedFile.file}`);
-      
+
       // Get the audio path (already a URL)
       const audioPath = selectedFile.file;
-        
+
       console.log(`[TEST] Using audio path: ${audioPath}`);
-      
+
       // First check if the file exists using fetch
       console.log(`[TEST] Checking if file exists: ${audioPath}`);
       fetch(audioPath)
@@ -1356,29 +1367,29 @@ const CommunicationsTask = forwardRef(({
               snapshots: [],
               startTime: Date.now()
             };
-            
+
             // Try to play the audio
             const audio = new Audio(audioPath);
             audio.volume = 0.1; // Low volume for testing
-            
+
             audio.oncanplaythrough = () => {
               console.log(`[TEST] Audio can play through: ${testMsg.callsign}_${testMsg.radio}_${testMsg.frequency}`);
               audio.pause();
             };
-            
+
             audio.onerror = (e) => {
               console.error(`[TEST] Audio error:`, e);
-              
+
               // Try to provide more diagnostic information
               const error = audio.error;
               if (error) {
                 console.error(`[TEST] Audio error code: ${error.code}, message: ${error.message}`);
               }
-              
+
               // Try a fallback
               testFallbackAudio();
             };
-            
+
             audio.play()
               .then(() => console.log(`[TEST] Audio playback started`))
               .catch(e => {
@@ -1391,27 +1402,27 @@ const CommunicationsTask = forwardRef(({
           console.error(`[TEST] Network error checking file: ${err.message}`);
           testFallbackAudio();
         });
-        
+
       return true;
     } catch (error) {
       console.error('[TEST] Error in test function:', error);
       return false;
     }
   };
-  
+
   // Update the fallback audio test to use a reliable source
   const testFallbackAudio = () => {
     console.log('[TEST] Trying fallback audio file (external URL)');
     const fallbackUrl = 'https://bigsoundbank.com/UPLOAD/mp3/0001.mp3';
-    
+
     const audio = new Audio(fallbackUrl);
     audio.volume = 0.1; // Low volume for testing
-    
+
     audio.oncanplaythrough = () => {
       console.log(`[TEST] Fallback audio can play through`);
       audio.pause();
     };
-    
+
     audio.onerror = (e) => {
       console.error(`[TEST] Fallback audio error:`, e);
       const error = audio.error;
@@ -1419,7 +1430,7 @@ const CommunicationsTask = forwardRef(({
         console.error(`[TEST] Fallback audio error code: ${error.code}, message: ${error.message}`);
       }
     };
-    
+
     audio.play()
       .then(() => console.log(`[TEST] Fallback audio playback started`))
       .catch(e => console.error(`[TEST] Fallback audio playback failed:`, e));
@@ -1431,7 +1442,7 @@ const CommunicationsTask = forwardRef(({
       console.warn('CommunicationsTask: No audio files available');
       return [];
     }
-    
+
     // Log all available audio files for debugging
     console.log(`CommunicationsTask: Searching for ${callType} files among ${audioFiles.length} available files`);
     // Display sample of first few files for debugging
@@ -1441,19 +1452,19 @@ const CommunicationsTask = forwardRef(({
       radio: file.radio,
       frequency: file.frequency
     })));
-    
+
     // Filter files based on callType
     let eligible = [];
-    
+
     if (callType.toLowerCase() === 'own') {
       eligible = audioFiles.filter(file => file.callsign === 'OWN');
     } else {
       eligible = audioFiles.filter(file => file.callsign !== 'OWN');
     }
-    
+
     // Add additional logging about the filtering
     console.log(`CommunicationsTask: Found ${eligible.length} eligible files of type ${callType} from ${audioFiles.length} total files`);
-    
+
     // If we have no eligible files, log details for debugging
     if (eligible.length === 0 && audioFiles.length > 0) {
       console.log('CommunicationsTask: Audio file details:', audioFiles.map(file => ({
@@ -1470,39 +1481,39 @@ const CommunicationsTask = forwardRef(({
         frequency: file.frequency
       })));
     }
-    
+
     return eligible;
   };
 
   // Function to trigger external audio playback (more reliable across browsers)
   const triggerExternalAudio = (callType) => {
     console.log(`CommunicationsTask: Triggering external audio for type ${callType}`);
-    
+
     // Remove the initialization check so manual triggers always work
     // Only auto events should be affected by initialization state
-    
+
     // Define reliable external audio sources - using .mp3 files which are more widely supported
     const externalAudioFiles = [
-      { 
-        file: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3', 
-        callsign: 'OWN', 
-        radio: 'COM1', 
-        frequency: '126.450' 
+      {
+        file: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
+        callsign: 'OWN',
+        radio: 'COM1',
+        frequency: '126.450'
       },
-      { 
-        file: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3', 
-        callsign: 'OTHER', 
-        radio: 'COM1', 
-        frequency: '126.175' 
+      {
+        file: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3',
+        callsign: 'OTHER',
+        radio: 'COM1',
+        frequency: '126.175'
       },
-      { 
-        file: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3', 
-        callsign: 'OWN', 
-        radio: 'COM2', 
-        frequency: '124.850' 
+      {
+        file: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3',
+        callsign: 'OWN',
+        radio: 'COM2',
+        frequency: '124.850'
       }
     ];
-    
+
     // Preload the audio files
     externalAudioFiles.forEach(audio => {
       try {
@@ -1515,7 +1526,7 @@ const CommunicationsTask = forwardRef(({
         console.warn(`Failed to pre-cache audio: ${audio.file}`, e);
       }
     });
-    
+
     // Select appropriate audio file based on call type
     let selectedFile;
     if (callType.toLowerCase() === 'own') {
@@ -1525,12 +1536,12 @@ const CommunicationsTask = forwardRef(({
       // Use the "other" external file
       selectedFile = externalAudioFiles[1];
     }
-    
+
     console.log('CommunicationsTask: Selected external audio file:', selectedFile);
-    
+
     // Default response window (30 seconds)
     const responseWindow = 30000;
-    
+
     // Create message object - using file instead of path
     const messageId = `external-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
     const newMessage = {
@@ -1553,9 +1564,9 @@ const CommunicationsTask = forwardRef(({
       queued: false,
       isExternal: true // Mark as external audio
     };
-    
+
     console.log(`CommunicationsTask: Created external audio message with ID: ${messageId}, type: ${newMessage.callsign}`);
-    
+
     // Set as active message and play it
     setActiveMessage(newMessage);
     return playMessage(newMessage);
@@ -1564,20 +1575,20 @@ const CommunicationsTask = forwardRef(({
   // Modified useEffect for initialization
   useEffect(() => {
     console.log('CommunicationsTask: Initializing component...');
-    
+
     // Create an initialization flag
     let initAttempted = false;
 
     // Helper function to signal when initialization is complete
     const completeInitialization = () => {
       console.log('CommunicationsTask: Initialization complete');
-      
+
       // Debug output of initialized state
       console.log('CommunicationsTask initialized with:', {
         audioFilesCount: audioFiles.length,
         autoEvents
       });
-      
+
       // Mark initialization as complete after a small delay to prevent immediate audio playback
       setTimeout(() => {
         setIsInitialMount(false);
@@ -1598,11 +1609,11 @@ const CommunicationsTask = forwardRef(({
       const source = silentContext.createBufferSource();
       source.buffer = silentBuffer;
       source.connect(silentContext.destination);
-      
+
       // Don't actually play the silent audio buffer, just initialize the context
       // source.start();
       // source.stop(0.001); // Schedule to stop immediately
-      
+
       console.log('CommunicationsTask: Audio context initialized with silent buffer');
     } catch (e) {
       console.warn('CommunicationsTask: Could not initialize audio context:', e);
@@ -1612,10 +1623,10 @@ const CommunicationsTask = forwardRef(({
     const checkAudioInitialization = () => {
       // Check if we have audio files loaded
       const hasAudioFiles = audioFiles && audioFiles.length > 0;
-      
+
       if (hasAudioFiles) {
         console.log(`CommunicationsTask: ${audioFiles.length} audio files are loaded and ready.`);
-        
+
         // Print some example audio files for debugging
         if (audioFiles.length > 0) {
           console.log('Sample audio files:', audioFiles.slice(0, 3).map(file => ({
@@ -1624,11 +1635,11 @@ const CommunicationsTask = forwardRef(({
             radio: file.radio
           })));
         }
-        
+
         completeInitialization();
       } else {
         console.warn('CommunicationsTask: No audio files loaded yet. Will try fallback loading.');
-        
+
         // Set a timeout to load fallback audio if dynamic loading fails
         setTimeout(() => {
           if (audioFiles.length === 0) {
@@ -1655,7 +1666,7 @@ const CommunicationsTask = forwardRef(({
       console.log('CommunicationsTask: Component unmounting, cleaning up...');
       // Cleanup code
     };
-  // Use an empty dependency array as we only want this to run once at mount
+    // Use an empty dependency array as we only want this to run once at mount
   }, []);
 
   // -------------------------------------------------------------------------
@@ -1699,8 +1710,8 @@ const CommunicationsTask = forwardRef(({
         minHeight: 0
       }}>
         {/* Call Sign */}
-        <div style={{ 
-          textAlign: 'center', 
+        <div style={{
+          textAlign: 'center',
           fontSize: '1.2rem',
           padding: '0.5rem',
           flexShrink: 0
@@ -1719,8 +1730,8 @@ const CommunicationsTask = forwardRef(({
           padding: '1%'
         }}>
           {radioOrder.map((r) => (
-            <div key={r} style={{ 
-              display: 'flex', 
+            <div key={r} style={{
+              display: 'flex',
               alignItems: 'center',
               gap: '10%',
               padding: '0.5%',
@@ -1729,9 +1740,9 @@ const CommunicationsTask = forwardRef(({
               height: 'min(8vh, 60px)'
             }}>
               {/* Radio Selection */}
-              <div style={{ 
-                display: 'flex', 
-                alignItems: 'center', 
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
                 gap: '0.5vw',
                 width: '15%',
                 flexShrink: 0
@@ -1741,14 +1752,14 @@ const CommunicationsTask = forwardRef(({
                   name="radioSelect"
                   checked={selectedRadio === r}
                   onChange={() => handleRadioSelect(r)}
-                  style={{ 
+                  style={{
                     width: '2.5vh',
                     height: '2.5vh',
                     cursor: 'pointer'
                   }}
                 />
-                <span style={{ 
-                  fontWeight: 'bold', 
+                <span style={{
+                  fontWeight: 'bold',
                   color: 'blue',
                   fontSize: 'clamp(0.7rem, 1.8vh, 1.2rem)'
                 }}>
@@ -1757,15 +1768,15 @@ const CommunicationsTask = forwardRef(({
               </div>
 
               {/* Frequency Controls */}
-              <div style={{ 
-                display: 'flex', 
+              <div style={{
+                display: 'flex',
                 flex: 1,
                 gap: '1%',
                 alignItems: 'center',
                 justifyContent: 'space-between'
               }}>
                 <button
-                  style={{ 
+                  style={{
                     width: '15%',
                     height: '3%',
                     fontSize: 'clamp(0.8rem, 2vh, 1.2rem)',
@@ -1781,7 +1792,7 @@ const CommunicationsTask = forwardRef(({
                   --
                 </button>
                 <button
-                  style={{ 
+                  style={{
                     width: '10%',
                     height: '3%',
                     fontSize: 'clamp(0.8rem, 2vh, 1.2rem)',
@@ -1799,7 +1810,7 @@ const CommunicationsTask = forwardRef(({
 
                 <input
                   type="text"
-                  style={{ 
+                  style={{
                     width: '30%',
                     height: '20%',
                     fontSize: 'clamp(1rem, 2vh, 1.5rem)',
@@ -1812,7 +1823,7 @@ const CommunicationsTask = forwardRef(({
                 />
 
                 <button
-                  style={{ 
+                  style={{
                     width: '10%',
                     height: '3%',
                     fontSize: 'clamp(0.8rem, 2vh, 1.2rem)',
@@ -1828,7 +1839,7 @@ const CommunicationsTask = forwardRef(({
                   +
                 </button>
                 <button
-                  style={{ 
+                  style={{
                     width: '15%',
                     height: '3%',
                     fontSize: 'clamp(0.8rem, 2vh, 1.2rem)',
@@ -1855,7 +1866,7 @@ const CommunicationsTask = forwardRef(({
 // Add Log component as a separate component
 const Log = ({ commLog }) => {
   const scrollRef = useAutoScroll();
-  
+
   const handleExport = () => {
     downloadCSV(commLog, 'communications-log');
   };
@@ -1866,7 +1877,7 @@ const Log = ({ commLog }) => {
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '0.5rem' }}>
-        <button 
+        <button
           onClick={handleExport}
           style={{
             padding: '0.25rem 0.5rem',

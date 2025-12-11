@@ -2,9 +2,9 @@ import React, { useState, useEffect, useRef } from 'react';
 import ScoreSaveForm from './ScoreSaveForm';
 import ScoreboardService from '../services/ScoreboardService';
 
-const NormalModeGame = ({ 
-  duration, 
-  onGameEnd, 
+const NormalModeGame = ({
+  duration,
+  onGameEnd,
   eventService,
   healthRef
 }) => {
@@ -19,7 +19,7 @@ const NormalModeGame = ({
     tracking: { eventsPerMinute: 1.5, difficulty: 4 },
     resource: { eventsPerMinute: 3, difficulty: 1 }
   });
-  
+
   // Refs for timers
   const gameTimerRef = useRef(null);
   const scoreTimerRef = useRef(null);
@@ -31,42 +31,45 @@ const NormalModeGame = ({
   useEffect(() => {
     // Apply initial settings to the event service
     eventService.updateSchedulerSettings({
-      comm: { 
+      comm: {
         isEnabled: true,
         eventsPerMinute: currentSettings.comm.eventsPerMinute,
         difficulty: currentSettings.comm.difficulty
       },
-      monitoring: { 
+      monitoring: {
         isEnabled: true,
         eventsPerMinute: currentSettings.monitoring.eventsPerMinute,
         difficulty: currentSettings.monitoring.difficulty
       },
-      tracking: { 
+      tracking: {
         isEnabled: true,
         eventsPerMinute: currentSettings.tracking.eventsPerMinute,
         difficulty: currentSettings.tracking.difficulty
       },
-      resource: { 
+      resource: {
         isEnabled: true,
         eventsPerMinute: currentSettings.resource.eventsPerMinute,
         difficulty: currentSettings.resource.difficulty
       }
     });
 
-    // Start scheduler
-    eventService.startScheduler();
-    
+    // Start scheduler with a delay to ensure everything is initialized
+    const startTimer = setTimeout(() => {
+      console.log('Starting scheduler after init delay...');
+      eventService.startScheduler();
+    }, 1000);
+
     // Start game timer
     gameTimerRef.current = setInterval(() => {
       const elapsed = Math.floor((Date.now() - gameStartTimeRef.current) / 1000);
       const remaining = Math.max(0, Math.floor(duration / 1000) - elapsed);
       setTimeRemaining(remaining * 1000);
-      
+
       if (remaining <= 0) {
         endGame();
       }
     }, 1000);
-    
+
     // Start score calculation timer (every second)
     scoreTimerRef.current = setInterval(() => {
       if (healthRef.current) {
@@ -74,107 +77,107 @@ const NormalModeGame = ({
         setScore(prevScore => prevScore + currentHealth);
       }
     }, 1000);
-    
+
     // Setup EPM progression (every 45 seconds)
     epmIntervalRef.current = setInterval(() => {
       setCurrentSettings(prevSettings => {
         const newSettings = {
-          comm: { 
+          comm: {
             ...prevSettings.comm,
-            eventsPerMinute: Math.min(10, prevSettings.comm.eventsPerMinute + 1) 
+            eventsPerMinute: Math.min(10, prevSettings.comm.eventsPerMinute + 1)
           },
-          monitoring: { 
+          monitoring: {
             ...prevSettings.monitoring,
-            eventsPerMinute: Math.min(10, prevSettings.monitoring.eventsPerMinute + 1) 
+            eventsPerMinute: Math.min(10, prevSettings.monitoring.eventsPerMinute + 1)
           },
-          tracking: { 
+          tracking: {
             ...prevSettings.tracking,
-            eventsPerMinute: Math.min(10, prevSettings.tracking.eventsPerMinute + 1) 
+            eventsPerMinute: Math.min(10, prevSettings.tracking.eventsPerMinute + 1)
           },
-          resource: { 
+          resource: {
             ...prevSettings.resource,
-            eventsPerMinute: Math.min(10, prevSettings.resource.eventsPerMinute + 1) 
+            eventsPerMinute: Math.min(10, prevSettings.resource.eventsPerMinute + 1)
           }
         };
-        
+
         // Update event service with new EPM values
         eventService.updateSchedulerSettings({
-          comm: { 
+          comm: {
             isEnabled: true,
             eventsPerMinute: newSettings.comm.eventsPerMinute,
             difficulty: newSettings.comm.difficulty
           },
-          monitoring: { 
+          monitoring: {
             isEnabled: true,
             eventsPerMinute: newSettings.monitoring.eventsPerMinute,
             difficulty: newSettings.monitoring.difficulty
           },
-          tracking: { 
+          tracking: {
             isEnabled: true,
             eventsPerMinute: newSettings.tracking.eventsPerMinute,
             difficulty: newSettings.tracking.difficulty
           },
-          resource: { 
+          resource: {
             isEnabled: true,
             eventsPerMinute: newSettings.resource.eventsPerMinute,
             difficulty: newSettings.resource.difficulty
           }
         });
-        
+
         return newSettings;
       });
     }, 45000); // 45 seconds
-    
+
     // Setup difficulty progression (every 90 seconds)
     difficultyIntervalRef.current = setInterval(() => {
       setCurrentSettings(prevSettings => {
         const newSettings = {
-          comm: { 
+          comm: {
             ...prevSettings.comm,
-            difficulty: Math.min(10, prevSettings.comm.difficulty + 1) 
+            difficulty: Math.min(10, prevSettings.comm.difficulty + 1)
           },
-          monitoring: { 
+          monitoring: {
             ...prevSettings.monitoring,
-            difficulty: Math.min(10, prevSettings.monitoring.difficulty + 1) 
+            difficulty: Math.min(10, prevSettings.monitoring.difficulty + 1)
           },
-          tracking: { 
+          tracking: {
             ...prevSettings.tracking,
-            difficulty: Math.min(10, prevSettings.tracking.difficulty + 1) 
+            difficulty: Math.min(10, prevSettings.tracking.difficulty + 1)
           },
-          resource: { 
+          resource: {
             ...prevSettings.resource,
-            difficulty: Math.min(10, prevSettings.resource.difficulty + 1) 
+            difficulty: Math.min(10, prevSettings.resource.difficulty + 1)
           }
         };
-        
+
         // Update event service with new difficulty values
         eventService.updateSchedulerSettings({
-          comm: { 
+          comm: {
             isEnabled: true,
             eventsPerMinute: newSettings.comm.eventsPerMinute,
             difficulty: newSettings.comm.difficulty
           },
-          monitoring: { 
+          monitoring: {
             isEnabled: true,
             eventsPerMinute: newSettings.monitoring.eventsPerMinute,
             difficulty: newSettings.monitoring.difficulty
           },
-          tracking: { 
+          tracking: {
             isEnabled: true,
             eventsPerMinute: newSettings.tracking.eventsPerMinute,
             difficulty: newSettings.tracking.difficulty
           },
-          resource: { 
+          resource: {
             isEnabled: true,
             eventsPerMinute: newSettings.resource.eventsPerMinute,
             difficulty: newSettings.resource.difficulty
           }
         });
-        
+
         return newSettings;
       });
     }, 90000); // 90 seconds
-    
+
     // Cleanup function
     return () => {
       clearAllTimers();
@@ -182,7 +185,7 @@ const NormalModeGame = ({
       eventService.pauseAllTasks();
     };
   }, [duration, eventService, healthRef]);
-  
+
   // Helper to clear all timers
   const clearAllTimers = () => {
     if (gameTimerRef.current) clearInterval(gameTimerRef.current);
@@ -190,7 +193,7 @@ const NormalModeGame = ({
     if (epmIntervalRef.current) clearInterval(epmIntervalRef.current);
     if (difficultyIntervalRef.current) clearInterval(difficultyIntervalRef.current);
   };
-  
+
   // End game function
   const endGame = () => {
     setIsGameActive(false);
@@ -201,20 +204,20 @@ const NormalModeGame = ({
     // Check if the score is high enough to be saved
     const finalScore = Math.floor(score);
     const isHighScore = ScoreboardService.isHighScore('normal', finalScore);
-    
+
     // If it's a high score, show the save form
     if (isHighScore) {
       setShowScoreSaveForm(true);
     }
   };
-  
+
   const handleReturnToMenu = () => {
     onGameEnd({
       finalScore: Math.floor(score),
       gameTime: Math.floor(duration / 1000) - Math.floor(timeRemaining / 1000)
     });
   };
-  
+
   // Format time remaining as mm:ss
   const formatTimeRemaining = () => {
     const totalSeconds = Math.floor(timeRemaining / 1000);
@@ -222,12 +225,12 @@ const NormalModeGame = ({
     const seconds = totalSeconds % 60;
     return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
   };
-  
+
   // Handle early quit
   const handleQuit = () => {
     endGame();
   };
-  
+
   return (
     <div className="normal-mode-hud" style={{
       position: 'absolute',
@@ -250,7 +253,7 @@ const NormalModeGame = ({
         <div>
           <strong>Score: </strong>{Math.floor(score)}
         </div>
-        <button 
+        <button
           onClick={handleQuit}
           style={{
             backgroundColor: '#ff5555',
@@ -265,7 +268,7 @@ const NormalModeGame = ({
           Quit Game
         </button>
       </div>
-      
+
       {!isGameActive && (
         <div style={{
           position: 'fixed',
@@ -285,7 +288,7 @@ const NormalModeGame = ({
         }}>
           <h2>Game Over</h2>
           <p>Final Score: {Math.floor(score)}</p>
-          
+
           {showScoreSaveForm ? (
             <div style={{ width: '100%', maxWidth: '400px', pointerEvents: 'auto' }}>
               <ScoreSaveForm
