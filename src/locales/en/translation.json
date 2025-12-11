@@ -22,8 +22,8 @@
     "testingMode": "Testing Mode",
     "infiniteMode": "Infinite Mode",
     "customMode": "Custom Mode",
-    "otherModes": "Other Game Modes",
-    "scoreboard": "High Scores",
+    "otherModes": "Other Simulation Modes",
+    "scoreboard": "Performance History",
     "changeBackground": "Change Background",
     "gameModeDescription": "Game Mode",
     "pressStartToBegin": "Press 'Start Simulation' to begin",
@@ -39,17 +39,17 @@
     "resourceTask": "Resource Management Task"
   },
   "scoreboard": {
-    "title": "High Scores",
-    "playerName": "Name",
-    "score": "Score",
+    "title": "Top Performances",
+    "playerName": "Participant ID",
+    "score": "Performance Score",
     "time": "Time",
     "date": "Date",
-    "gameMode": "Game Mode",
+    "gameMode": "Simulation Mode",
     "duration": "Duration",
-    "noScores": "No scores recorded yet. Be the first!",
+    "noScores": "No data recorded yet.",
     "finalScore": "Final Score",
-    "timeSurvived": "Time Survived",
-    "scoreSaved": "Your score has been saved!"
+    "timeSurvived": "Duration Completed",
+    "scoreSaved": "Performance data saved"
   },
   "backgroundSelector": {
     "title": "Background Selection",
@@ -146,14 +146,14 @@
     }
   },
   "gameOver": {
-    "title": "Game Over",
-    "score": "Previous Game Results",
-    "enterName": "Enter your name to save your score",
-    "submit": "Submit",
-    "playAgain": "Play Again",
+    "title": "Simulation Complete",
+    "score": "Previous Session Results",
+    "enterName": "Enter Participant ID",
+    "submit": "Save Data",
+    "playAgain": "Restart Simulation",
     "mainMenu": "Main Menu",
     "finalScore": "Final Score",
-    "timeSurvived": "Time Survived",
+    "timeSurvived": "Duration Completed",
     "inactive": "Inactive"
   }
-} 
+}
