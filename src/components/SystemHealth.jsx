@@ -9,7 +9,6 @@ const SystemHealth = forwardRef(({
   isCommActive = true,
   isResourceActive = true,
   isTrackingActive = true,
-  isTrackingActive = true,
   healthRef,
   onPerformanceUpdate
 }, ref) => {

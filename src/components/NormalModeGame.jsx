@@ -7,8 +7,6 @@ const NormalModeGame = ({
   duration,
   onGameEnd,
   eventService,
-  onGameEnd,
-  eventService,
   healthRef,
   logs
 }) => {
@@ -227,7 +225,7 @@ const NormalModeGame = ({
     const totalSeconds = Math.floor(timeRemaining / 1000);
     const minutes = Math.floor(totalSeconds / 60);
     const seconds = totalSeconds % 60;
-    return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')} `;
   };
 
   // Handle early quit
@@ -242,16 +240,16 @@ const NormalModeGame = ({
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
 
     // Export each log
-    if (logs.comm && logs.comm.length > 0) downloadCSV(logs.comm, `comm_log_${timestamp}`);
-    if (logs.resource && logs.resource.length > 0) downloadCSV(logs.resource, `resource_log_${timestamp}`);
-    if (logs.monitoring && logs.monitoring.length > 0) downloadCSV(logs.monitoring, `monitoring_log_${timestamp}`);
-    if (logs.tracking && logs.tracking.length > 0) downloadCSV(logs.tracking, `tracking_log_${timestamp}`);
+    if (logs.comm && logs.comm.length > 0) downloadCSV(logs.comm, `comm_log_${timestamp} `);
+    if (logs.resource && logs.resource.length > 0) downloadCSV(logs.resource, `resource_log_${timestamp} `);
+    if (logs.monitoring && logs.monitoring.length > 0) downloadCSV(logs.monitoring, `monitoring_log_${timestamp} `);
+    if (logs.tracking && logs.tracking.length > 0) downloadCSV(logs.tracking, `tracking_log_${timestamp} `);
   };
 
   const handleExportPlots = () => {
     if (logs?.performance && logs.performance.length > 0) {
       const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-      downloadCSV(logs.performance, `performance_plots_${timestamp}`);
+      downloadCSV(logs.performance, `performance_plots_${timestamp} `);
     } else {
       alert("No performance data available to export.");
     }
