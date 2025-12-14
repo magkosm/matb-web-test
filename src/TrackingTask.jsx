@@ -14,10 +14,10 @@ const INITIAL_STATE = {
   driftY: 0
 };
 
-const TrackingTask = forwardRef(({ 
+const TrackingTask = forwardRef(({
   eventsPerMinute = 2,
   difficulty = 5,
-  showLog = false, 
+  showLog = false,
   onLogUpdate,
   onStatusUpdate,
   onMetricsUpdate,
@@ -27,10 +27,10 @@ const TrackingTask = forwardRef(({
 }, ref) => {
   const [cursorPosition, setCursorPosition] = useState({ x: 0, y: 0 });
   const [targetPosition, _setTargetPosition] = useState({ x: 0, y: 0 });
-  
+
   // Always default to keyboard input mode or use provided prop
   const initialInputMode = defaultInputMode || 'keyboard';
-  
+
   const [inputMode, setInputMode] = useState(initialInputMode);
   const [isAuto, setIsAuto] = useState(true);
   const [trackingLog, setTrackingLog] = useState([]);
@@ -41,7 +41,7 @@ const TrackingTask = forwardRef(({
   const [showMobileHelp, setShowMobileHelp] = useState(false);
   const failureTimeoutRef = useRef(null);
   const logIntervalRef = useRef(null);
-  
+
   const containerRef = useRef(null);
   const moveIntervalRef = useRef(null);
   const touchStartRef = useRef(null);
@@ -77,7 +77,7 @@ const TrackingTask = forwardRef(({
   // Schedule automation failures based on eventsPerMinute
   useEffect(() => {
     if (!isEnabled || !autoEvents) return;
-    
+
     const scheduleNextFailure = () => {
       if (failureTimeoutRef.current) {
         clearTimeout(failureTimeoutRef.current);
@@ -114,7 +114,7 @@ const TrackingTask = forwardRef(({
   // Auto-recovery after manual intervention
   useEffect(() => {
     let recoveryTimeout;
-    
+
     // Only apply auto-recovery when it's not a manually triggered event
     // If we have an eventStartTime, that means it's a manually triggered event with a specific duration
     if (!isAuto && automationFailure && !eventStartTime) {
@@ -136,24 +136,24 @@ const TrackingTask = forwardRef(({
   // Physics effect
   useEffect(() => {
     if (!isEnabled) return;
-    
+
     // Scale drift parameters based on difficulty (0-10)
     // Use event difficulty when in manual mode, otherwise use base difficulty
     const difficultyToUse = !isAuto ? currentEventDifficulty : difficulty;
-    
+
     // More dramatic effect of difficulty on manual mode
     const manualDriftMultiplier = 0.3 + (difficultyToUse / 10) * 3.5; // Scales from 0.3x to 3.8x based on difficulty
-    const driftMultiplier = isAuto ? 1.0 : manualDriftMultiplier; 
-    
+    const driftMultiplier = isAuto ? 1.0 : manualDriftMultiplier;
+
     const driftSpeed = 0.5 * driftMultiplier;
-    
+
     // Increase auto-correction at lower difficulties, decrease at higher difficulties
-    const autoCorrection = isAuto 
-      ? 0.4 
+    const autoCorrection = isAuto
+      ? 0.4
       : Math.max(0.05, 0.3 - (difficultyToUse / 40)); // Scales from 0.3 to 0.05
-      
+
     const maxDriftVelocity = 2.0 * driftMultiplier;
-    
+
     // Apply initial drift based on difficulty when entering manual mode
     if (!isAuto && (driftXRef.current === 0 && driftYRef.current === 0)) {
       const initialDrift = 0.2 * driftMultiplier;
@@ -169,7 +169,7 @@ const TrackingTask = forwardRef(({
       // Make drift more responsive to difficulty
       const difficultyToUse = !isAuto ? currentEventDifficulty : difficulty;
       const randomFactor = 0.4 * driftMultiplier;
-      const difficultyScale = 1 + (difficultyToUse/15); // Scales from 1.07 to 1.67
+      const difficultyScale = 1 + (difficultyToUse / 15); // Scales from 1.07 to 1.67
 
       // Add random acceleration to drift
       driftXRef.current += (Math.random() - 0.5) * randomFactor * difficultyScale;
@@ -183,22 +183,18 @@ const TrackingTask = forwardRef(({
         let newX = prev.x + driftXRef.current * driftSpeed;
         let newY = prev.y + driftYRef.current * driftSpeed;
 
-        // Auto mode correction - stronger in auto mode, weaker in manual
-        // Calculate stronger correction at low difficulties, weaker at high difficulties
-        const difficultyFactor = isAuto ? 1 : (1 - (difficultyToUse / 20)); // 0.5 to 1.0
-        
-        if (Math.abs(newX) > 25 || Math.abs(newY) > 25) {
-          // Apply stronger correction for low difficulties
-          driftXRef.current *= (1 - autoCorrection * difficultyFactor);
-          driftYRef.current *= (1 - autoCorrection * difficultyFactor);
-          
-          if (isAuto) {
-            // In auto mode, more aggressive correction
-            driftXRef.current -= (newX / 30);
-            driftYRef.current -= (newY / 30);
-          } else {
-            // In manual mode, apply very mild correction based on difficulty
-            // At low difficulties, provide more assistance
+        // Auto mode logic - constant centering (simulating perfect pilot)
+        if (isAuto) {
+          // Apply strong pull towards center (Spring force)
+          driftXRef.current -= (newX * 0.05);
+          driftYRef.current -= (newY * 0.05);
+
+          // Apply damping to prevent oscillation
+          driftXRef.current *= 0.9;
+          driftYRef.current *= 0.9;
+        } else {
+          // Manual mode logic - mild assistance at boundaries
+          if (Math.abs(newX) > 25 || Math.abs(newY) > 25) {
             const assistLevel = Math.max(0, 0.15 - (difficultyToUse / 100));
             driftXRef.current -= (newX / 100) * assistLevel;
             driftYRef.current -= (newY / 100) * assistLevel;
@@ -282,7 +278,7 @@ const TrackingTask = forwardRef(({
   // Keyboard input handling (separate from physics)
   useEffect(() => {
     if (isAuto || inputMode !== 'keyboard' || !isEnabled) return;
-    
+
     const keysPressed = new Set();
     const moveStep = 2;
 
@@ -296,7 +292,7 @@ const TrackingTask = forwardRef(({
 
     const moveInterval = setInterval(() => {
       let dx = 0, dy = 0;
-      
+
       if (keysPressed.has('w')) dy -= moveStep;
       if (keysPressed.has('s')) dy += moveStep;
       if (keysPressed.has('a')) dx -= moveStep;
@@ -324,38 +320,38 @@ const TrackingTask = forwardRef(({
   const handleTouchStart = useCallback((e) => {
     if (isAuto || inputMode !== 'touch') return;
     e.preventDefault();
-    
+
     // Get touch/click position relative to container center
     const rect = containerRef.current.getBoundingClientRect();
     // These are needed for calculations even if not directly used
     const _centerX = rect.width / 2;
     const _centerY = rect.height / 2;
-    
+
     // Store initial position for joystick-like behavior
     const clientX = e.touches ? e.touches[0].clientX : e.clientX;
     const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-    
+
     touchStartRef.current = {
       x: clientX,
       y: clientY
     };
-    
+
     // Start movement loop with initial direction
     clearInterval(moveIntervalRef.current);
     moveIntervalRef.current = setInterval(() => {
       if (!touchStartRef.current) return;
-      
+
       setCursorPosition(prev => {
         const moveStep = 2; // Reduced speed
         const deltaX = touchStartRef.current.currentX - touchStartRef.current.x;
         const deltaY = touchStartRef.current.currentY - touchStartRef.current.y;
-        
+
         // Calculate movement based on drag distance from start point
         const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
         if (distance > 0) {
           const normalizedX = deltaX / distance;
           const normalizedY = deltaY / distance;
-          
+
           return {
             x: Math.max(-150, Math.min(150, prev.x + normalizedX * moveStep)),
             y: Math.max(-150, Math.min(150, prev.y + normalizedY * moveStep))
@@ -369,11 +365,11 @@ const TrackingTask = forwardRef(({
   const handleTouchMove = useCallback((e) => {
     if (!touchStartRef.current || isAuto || inputMode !== 'touch') return;
     e.preventDefault();
-    
+
     // Update current position for joystick calculations
     const clientX = e.touches ? e.touches[0].clientX : e.clientX;
     const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-    
+
     touchStartRef.current.currentX = clientX;
     touchStartRef.current.currentY = clientY;
   }, [isAuto, inputMode]);
@@ -413,10 +409,10 @@ const TrackingTask = forwardRef(({
       isManual: !isAuto,
       isInBox: isWithinTarget
     };
-    
+
     // Only update if status actually changed
-    if (newStatus.isManual !== statusRef.current.isManual || 
-        newStatus.isInBox !== statusRef.current.isInBox) {
+    if (newStatus.isManual !== statusRef.current.isManual ||
+      newStatus.isInBox !== statusRef.current.isInBox) {
       statusRef.current = newStatus;
       requestAnimationFrame(() => {
         onStatusUpdate?.(newStatus);
@@ -457,38 +453,15 @@ const TrackingTask = forwardRef(({
         clearInterval(moveIntervalRef.current);
       }
     };
-  }, [isAuto, inputMode, handleTouchStart, handleTouchMove, handleTouchEnd, 
-      handleMouseDown, handleMouseMove, handleMouseUp, handleMouseLeave]);
+  }, [isAuto, inputMode, handleTouchStart, handleTouchMove, handleTouchEnd,
+    handleMouseDown, handleMouseMove, handleMouseUp, handleMouseLeave]);
 
-  // First, we need to move the startAutomation function definition before resetTask
-  const startAutomation = useCallback(() => {
-    if (moveIntervalRef.current) {
-      clearInterval(moveIntervalRef.current);
-    }
-    
-    moveIntervalRef.current = setInterval(() => {
-      if (!isAuto) return;
-      
-      const targetPos = targetRef.current;
-      const currentPos = positionRef.current;
-      
-      // Move cursor towards target
-      const dx = (targetPos.x - currentPos.x) * 0.1;
-      const dy = (targetPos.y - currentPos.y) * 0.1;
-      
-      positionRef.current = {
-        x: currentPos.x + dx,
-        y: currentPos.y + dy
-      };
-      
-      setCursorPosition(positionRef.current);
-    }, 16); // 60fps
-  }, [isAuto]);
+  // Removed startAutomation - functionality moved to main physics loop
 
   const resetTask = useCallback(() => {
     // Always use keyboard input mode
     const currentInputMode = 'keyboard';
-    
+
     // Reset all state to initial values
     setCursorPosition(INITIAL_STATE.cursorPosition);
     // Set input mode to keyboard
@@ -499,7 +472,7 @@ const TrackingTask = forwardRef(({
     setCurrentEventDifficulty(difficulty);
     setCurrentEventDuration(0);
     setEventStartTime(null);
-    
+
     // Reset all refs
     driftXRef.current = INITIAL_STATE.driftX;
     driftYRef.current = INITIAL_STATE.driftY;
@@ -509,7 +482,7 @@ const TrackingTask = forwardRef(({
     positionRef.current = { ...INITIAL_STATE.cursorPosition };
     targetRef.current = { x: 0, y: 0 };
     statusRef.current = { isManual: false, isInBox: true };
-    
+
     // Clear all timeouts and intervals
     if (failureTimeoutRef.current) {
       clearTimeout(failureTimeoutRef.current);
@@ -523,15 +496,14 @@ const TrackingTask = forwardRef(({
       clearInterval(logIntervalRef.current);
       logIntervalRef.current = null;
     }
-    
+
     // Cancel any pending animation frames
     if (frameRef.current) {
       cancelAnimationFrame(frameRef.current);
       frameRef.current = null;
     }
 
-    // Restart automation immediately
-    startAutomation();
+    // Automation is handled by the main physics loop now
 
     // Notify parent components of reset
     requestAnimationFrame(() => {
@@ -551,9 +523,9 @@ const TrackingTask = forwardRef(({
     setHealthImpact(0);
     setSystemLoad(0);
     onMetricsUpdate?.({ healthImpact: 0, systemLoad: 0 });
-    
+
     console.log(`TrackingTask: Reset complete, using keyboard input mode`);
-  }, [onStatusUpdate, onLogUpdate, onMetricsUpdate, difficulty, startAutomation]);
+  }, [onStatusUpdate, onLogUpdate, onMetricsUpdate, difficulty]);
 
   useImperativeHandle(ref, () => ({
     resetTask,
@@ -570,40 +542,40 @@ const TrackingTask = forwardRef(({
     forceManualControl: (config) => {
       try {
         const { duration, difficulty } = config;
-        
+
         // If already in manual mode, don't trigger again
         if (!isAuto) {
           return false;
         }
-        
+
         // Make sure we have valid duration (default to 30 seconds if not provided)
         const eventDuration = duration || 30000;
-        
+
         // Force into manual mode
         setIsAuto(false);
         setAutomationFailure(true);
-        
+
         // Store current event parameters in state
         setCurrentEventDifficulty(difficulty || 5);
         setCurrentEventDuration(eventDuration);
         setEventStartTime(Date.now());
-        
+
         // Calculate end time for better tracking
         const _endTime = new Date(Date.now() + eventDuration); // Prefix with underscore since it's not used
-        
+
         // Set difficulty level for tracking if provided (1-10 scale)
         if (typeof difficulty === 'number') {
           // Apply difficulty by adjusting the drift values - more intense than before
           const difficultyFactor = (difficulty / 5.0) * 2; // Convert 1-10 scale to 0.4-4.0 factor
-          
+
           // Create an initial push in a random direction
           const angle = Math.random() * Math.PI * 2; // Random angle
           const magnitude = 0.1 * difficultyFactor;
-          
+
           driftXRef.current = Math.cos(angle) * magnitude;
           driftYRef.current = Math.sin(angle) * magnitude;
         }
-        
+
         // Create and log an event
         const eventData = {
           time: Date.now(),
@@ -613,15 +585,15 @@ const TrackingTask = forwardRef(({
           difficulty: difficulty || 5,
           isWithinTarget
         };
-        
+
         // Log the event to the tracking log
         setTrackingLog(prev => [...prev, eventData]);
-        
+
         // If onLogUpdate is provided, send the event to the parent component
         if (onLogUpdate) {
           onLogUpdate(eventData);
         }
-        
+
         // Set timer to revert to automatic mode
         const timeoutId = setTimeout(() => {
           // Return to auto mode
@@ -629,7 +601,7 @@ const TrackingTask = forwardRef(({
           setAutomationFailure(false);
           driftXRef.current = 0;
           driftYRef.current = 0;
-          
+
           // Log recovery event
           const recoveryEvent = {
             time: Date.now(),
@@ -638,26 +610,26 @@ const TrackingTask = forwardRef(({
             actualDuration: (Date.now() - eventStartTime) / 1000,
             isWithinTarget
           };
-          
+
           // Clear event timing information
           setCurrentEventDuration(0);
           setEventStartTime(null);
-          
+
           // Log the recovery event
           setTrackingLog(prev => [...prev, recoveryEvent]);
-          
+
           // If onLogUpdate is provided, send the event to the parent component
           if (onLogUpdate) {
             onLogUpdate(recoveryEvent);
           }
         }, eventDuration);
-        
+
         // Save timeout ID to clear if needed
         if (failureTimeoutRef.current) {
           clearTimeout(failureTimeoutRef.current);
         }
         failureTimeoutRef.current = timeoutId;
-        
+
         return true;
       } catch (error) {
         console.error('Error forcing manual control:', error);
@@ -675,56 +647,56 @@ const TrackingTask = forwardRef(({
 
     const calculateHealthImpact = () => {
       if (isAuto) return 0;
-      
+
       // Scale impact by difficulty (higher difficulty = higher impact)
       const difficultyMultiplier = currentEventDifficulty / 5;
-      
+
       // Calculate time elapsed ratio if we have start time and duration
       let timeRatio = 1.0;
       let elapsedTime = 0;
       let progress = 0;
-      
+
       if (eventStartTime && currentEventDuration) {
         elapsedTime = Date.now() - eventStartTime;
         progress = Math.min(1, elapsedTime / currentEventDuration);
         // Make impact stronger in the middle of the event
         timeRatio = 1 - (Math.abs(progress - 0.5) * 0.5);
       }
-      
+
       // Base values: success = +0.5 to +1.5, failure = -0.5 to -3.0 
       // Scale based on difficulty
       const baseSuccessImpact = 0.5 + (currentEventDifficulty / 10);
       const baseFailureImpact = -0.5 - (currentEventDifficulty / 5);
-      
+
       // Apply time and difficulty scaling
-      const impact = isWithinTarget 
+      const impact = isWithinTarget
         ? baseSuccessImpact * difficultyMultiplier * timeRatio
         : baseFailureImpact * difficultyMultiplier * timeRatio;
-      
+
       return impact;
     };
 
     const calculateSystemLoad = () => {
       if (isAuto) return 0;
-      
+
       // Scale system load by difficulty (higher difficulty = higher load)
       const difficultyMultiplier = currentEventDifficulty / 5;
-      
+
       // Base values: on target = 15, off target = 30
       const baseLoadOnTarget = 15 * difficultyMultiplier;
       const baseLoadOffTarget = 30 * difficultyMultiplier;
-      
+
       return isWithinTarget ? baseLoadOnTarget : baseLoadOffTarget;
     };
 
     const updateInterval = setInterval(() => {
       const healthImpact = calculateHealthImpact();
       const systemLoad = calculateSystemLoad();
-      
+
       // Store calculated values in state for imperative handle
       setHealthImpact(healthImpact);
       setSystemLoad(systemLoad);
-      
+
       onMetricsUpdate?.({
         healthImpact,
         systemLoad
@@ -737,17 +709,17 @@ const TrackingTask = forwardRef(({
   // Modify the input mode change handler to be more robust
   const handleInputModeChange = useCallback((newMode) => {
     if (newMode === inputMode) return; // No change
-    
+
     // Clear any active touch/movement handlers
     if (moveIntervalRef.current) {
       clearInterval(moveIntervalRef.current);
       moveIntervalRef.current = null;
     }
     touchStartRef.current = null;
-    
+
     // Update the input mode
     setInputMode(newMode);
-    
+
     // Show help tooltip for 5 seconds when switching to touch mode
     if (newMode === 'touch') {
       setShowMobileHelp(true);
@@ -772,8 +744,8 @@ const TrackingTask = forwardRef(({
   }
 
   return (
-    <div style={{ 
-      width: '100%', 
+    <div style={{
+      width: '100%',
       height: '100%',
       display: 'flex',
       flexDirection: 'column'
@@ -788,7 +760,7 @@ const TrackingTask = forwardRef(({
         TRACKING - {isAuto ? 'AUTO' : 'MANUAL'}
       </div>
 
-      <div 
+      <div
         ref={containerRef}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
@@ -819,14 +791,14 @@ const TrackingTask = forwardRef(({
             <p style={{ margin: '0' }}>Tap and drag to move the cursor to keep it within the target box.</p>
           </div>
         )}
-        
-        <TrackingDisplay 
+
+        <TrackingDisplay
           cursorPosition={cursorPosition}
           targetPosition={targetPosition}
           isAuto={isAuto}
           isWithinTarget={isWithinTarget}
         />
-        
+
         <div style={{
           position: 'absolute',
           top: 10,
@@ -850,7 +822,7 @@ const TrackingTask = forwardRef(({
             borderRadius: '4px',
             boxShadow: '0 0 5px rgba(0,0,0,0.2)'
           }}>
-            <select 
+            <select
               value={inputMode}
               onChange={(e) => handleInputModeChange(e.target.value)}
               style={{
@@ -875,7 +847,7 @@ const TrackingTask = forwardRef(({
 // Add this static Log component to TrackingTask
 TrackingTask.Log = function TrackingLog({ trackingLog }) {
   const scrollRef = useAutoScroll();
-  
+
   const handleExport = () => {
     downloadCSV(trackingLog, 'tracking-log');
   };
@@ -890,7 +862,7 @@ TrackingTask.Log = function TrackingLog({ trackingLog }) {
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '0.5rem' }}>
-        <button 
+        <button
           onClick={handleExport}
           style={{
             padding: '0.25rem 0.5rem',
@@ -926,17 +898,17 @@ TrackingTask.Log = function TrackingLog({ trackingLog }) {
                   {entry.event ? entry.event : (entry.isAuto ? 'Auto' : 'Manual')}
                 </td>
                 <td style={{ padding: '0.5rem', textAlign: 'center' }}>
-                  {entry.event ? 
-                    (entry.actualDuration ? `Duration: ${entry.actualDuration.toFixed(1)}s` : '') : 
+                  {entry.event ?
+                    (entry.actualDuration ? `Duration: ${entry.actualDuration.toFixed(1)}s` : '') :
                     entry.inputMode}
                 </td>
                 <td style={{ padding: '0.5rem', textAlign: 'center' }}>
-                  {entry.position ? 
-                    `(${Math.round(entry.position.x)}, ${Math.round(entry.position.y)})` : 
+                  {entry.position ?
+                    `(${Math.round(entry.position.x)}, ${Math.round(entry.position.y)})` :
                     '---'}
                 </td>
-                <td style={{ 
-                  padding: '0.5rem', 
+                <td style={{
+                  padding: '0.5rem',
                   textAlign: 'center',
                   color: entry.isWithinTarget ? 'green' : 'red'
                 }}>
