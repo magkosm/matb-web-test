@@ -13,7 +13,17 @@
     "settings": "Inställningar",
     "minutes": "minuter",
     "seconds": "sekunder",
-    "returnToMenu": "Återgå till Huvudmenyn"
+    "time": "Tid",
+    "returnToMenu": "Återgå till Huvudmenyn",
+    "status": "Status",
+    "normal": "Normal",
+    "warning": "Varning",
+    "critical": "Kritisk",
+    "activePumps": "Aktiva Pumpar",
+    "failedPumps": "Misslyckade Pumpar",
+    "systemStatus": "Systemstatus",
+    "tankA": "Tank A",
+    "tankB": "Tank B"
   },
   "mainMenu": {
     "title": "MATB-II Simulation",
@@ -27,7 +37,13 @@
     "changeBackground": "Byt Bakgrund",
     "gameModeDescription": "Spelläge",
     "pressStartToBegin": "Tryck på 'Start Simulation' för att börja",
-    "pressCtrlQToReturn": "Under simuleringen, tryck Ctrl+Q för att återgå till denna meny"
+    "pressCtrlQToReturn": "Under simuleringen, tryck Ctrl+Q för att återgå till denna meny",
+    "presets": "Förinställningar",
+    "trainingPresets": "Träningslägen",
+    "2minTest": "Snabbtest (2 min)",
+    "2minDesc": "Snabb valideringskörning med alla uppgifter aktiverade.",
+    "standardRun": "Standard 10-minuters körning",
+    "standardDesc": "Fullständig session för datainsamling."
   },
   "customMode": {
     "setup": "Inställningar för Anpassat Läge",
@@ -36,7 +52,13 @@
     "commTask": "Kommunikationsuppgift",
     "monitoringTask": "Systemövervakningsuppgift",
     "trackingTask": "Spårningsuppgift",
-    "resourceTask": "Resurshanteringsuppgift"
+    "resourceTask": "Resurshanteringsuppgift",
+    "intro": "Välj vilka uppgifter som ska aktiveras och ställ in deras ursprungliga svårighetsgrad. När spelet startar kommer svårighetsgrad och frekvens att öka över tid precis som i normalt läge."
+  },
+  "systemStatus": {
+    "title": "SYSTEMSTATUS",
+    "health": "Hälsa",
+    "load": "Belastning"
   },
   "scoreboard": {
     "title": "Poängtavla",
@@ -49,7 +71,8 @@
     "noScores": "Inga resultat registrerade ännu. Var den första!",
     "finalScore": "Slutpoäng",
     "timeSurvived": "Överlevd Tid",
-    "scoreSaved": "Ditt resultat har sparats!"
+    "scoreSaved": "Ditt resultat har sparats!",
+    "anonymous": "Anonym"
   },
   "backgroundSelector": {
     "title": "Bakgrundsval",
@@ -83,7 +106,8 @@
     "frequency": "Frekvens",
     "average": "Genomsnitt",
     "reactionTime": "Reaktionstid (ms)",
-    "tryAgain": "Försök Igen"
+    "tryAgain": "Försök Igen",
+    "quickStart": "Snabbstart Reaktionstest"
   },
   "nbackTest": {
     "title": "N-Back Test",
@@ -102,6 +126,7 @@
     "pressCtrlQToReturn": "Tryck på Ctrl+Q för att återgå till huvudmenyn när som helst",
     "results": "N-Back Testresultat",
     "accuracy": "Total Noggrannhet",
+    "performanceScore": "Prestationspoäng",
     "totalTrials": "Totalt Antal Försök",
     "performance": "Prestation per Kategori",
     "hits": "Träffar",
@@ -116,7 +141,18 @@
     "position": "Position",
     "letter": "Bokstav",
     "memorizeFirst": "Memorera de första {{n}} föremålen...",
-    "matchInstructions": "Tryck L för bokstavsmatch, A för positionsmatch"
+    "matchInstructions": "Tryck L för bokstavsmatch, A för positionsmatch",
+    "quickStart": "Snabbstart N-Back Test"
+  },
+  "training": {
+    "commOnly": "Kommunikationsträning",
+    "commOnlyDesc": "Träna på radiokommunikationsuppgifter isolerat.",
+    "trackingOnly": "Spårningsträning",
+    "trackingOnlyDesc": "Träna på manuella och automatiska spårningsuppgifter isolerat.",
+    "resourceOnly": "Resurshanteringsträning",
+    "resourceOnlyDesc": "Träna på bränslehantering och pumpoperationer isolerat.",
+    "monitoringOnly": "Systemövervakningsträning",
+    "monitoringOnlyDesc": "Träna på mätar- och ljusövervakning isolerat."
   },
   "tasks": {
     "communications": {
@@ -124,25 +160,52 @@
       "callsign": "Anropssignal",
       "frequency": "Frekvens",
       "respond": "Svara",
-      "ignore": "Ignorera"
+      "ignore": "Ignorera",
+      "radio": "Radio",
+      "selected": "Vald",
+      "log": "Kommunikationslogg"
     },
     "monitoring": {
       "title": "Systemövervakning",
       "scale": "Skala",
       "warning": "Varning",
-      "reset": "Återställ"
+      "reset": "Återställ",
+      "log": "Övervakningslogg",
+      "lights": "Ljus",
+      "gauges": "Mätare"
     },
     "tracking": {
       "title": "Spårningsuppgift",
       "auto": "AUTO",
-      "manual": "MANUELL"
+      "manual": "MANUELL",
+      "rms": "RMS Fel",
+      "joystick": "Joystick",
+      "keyboard": "Tangentbord",
+      "touch": "Touch/Mus",
+      "touchActive": "Touchkontroller Aktiverade",
+      "touchHint": "Tryck och dra för att flytta markören så att den håller sig inom målrutan.",
+      "log": "Spårningslogg",
+      "event": "Händelse/Läge",
+      "details": "Detaljer",
+      "position": "Position",
+      "status": "Status",
+      "error": "Fel (px)"
     },
     "resource": {
       "title": "Resurshantering",
       "tank": "Tank",
       "pump": "Pump",
       "on": "PÅ",
-      "off": "AV"
+      "off": "AV",
+      "failed": "MISSLYCKADES",
+      "flow": "Flöde",
+      "volume": "Volym",
+      "target": "Mål",
+      "level": "Nivå",
+      "log": "Resurslogg",
+      "diff": "Skillnad",
+      "activePumps": "Aktiva Pumpar",
+      "failedPumps": "Misslyckade Pumpar"
     }
   },
   "gameOver": {
@@ -154,6 +217,9 @@
     "mainMenu": "Huvudmeny",
     "finalScore": "Slutpoäng",
     "timeSurvived": "Överlevd Tid",
-    "inactive": "Inaktiv"
+    "inactive": "Inaktiv",
+    "time": "Tid",
+    "currentScore": "Poäng",
+    "quit": "Avsluta Spel"
   }
-} 
+}

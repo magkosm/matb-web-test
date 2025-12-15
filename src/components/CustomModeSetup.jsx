@@ -3,28 +3,28 @@ import { useTranslation } from 'react-i18next';
 
 const CustomModeSetup = ({ onSave, onCancel }) => {
   const { t } = useTranslation();
-  
+
   // Initial state for task configuration
   const [taskConfig, setTaskConfig] = useState({
-    comm: { 
-      isActive: true, 
-      eventsPerMinute: 2, 
-      difficulty: 3 
+    comm: {
+      isActive: true,
+      eventsPerMinute: 2,
+      difficulty: 3
     },
-    monitoring: { 
-      isActive: true, 
-      eventsPerMinute: 3, 
-      difficulty: 3 
+    monitoring: {
+      isActive: true,
+      eventsPerMinute: 3,
+      difficulty: 3
     },
-    tracking: { 
-      isActive: true, 
-      eventsPerMinute: 2, 
-      difficulty: 3 
+    tracking: {
+      isActive: true,
+      eventsPerMinute: 2,
+      difficulty: 3
     },
-    resource: { 
-      isActive: true, 
-      eventsPerMinute: 2, 
-      difficulty: 3 
+    resource: {
+      isActive: true,
+      eventsPerMinute: 2,
+      difficulty: 3
     }
   });
 
@@ -63,18 +63,18 @@ const CustomModeSetup = ({ onSave, onCancel }) => {
       borderRadius: '8px',
       marginBottom: '15px'
     }}>
-      <div style={{ 
-        display: 'flex', 
-        alignItems: 'center', 
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
         marginBottom: '10px',
         padding: '8px',
         backgroundColor: config.isActive ? 'rgba(0, 123, 255, 0.2)' : 'rgba(108, 117, 125, 0.2)',
         borderRadius: '4px'
       }}>
-        <input 
-          type="checkbox" 
-          id={`${task}-active`} 
-          checked={config.isActive} 
+        <input
+          type="checkbox"
+          id={`${task}-active`}
+          checked={config.isActive}
           onChange={(e) => handleTaskConfigChange(task, 'isActive', e.target.checked)}
           style={{ marginRight: '10px' }}
         />
@@ -83,7 +83,7 @@ const CustomModeSetup = ({ onSave, onCancel }) => {
         </label>
       </div>
 
-      <div style={{ 
+      <div style={{
         opacity: config.isActive ? '1' : '0.5',
         pointerEvents: config.isActive ? 'auto' : 'none'
       }}>
@@ -91,26 +91,26 @@ const CustomModeSetup = ({ onSave, onCancel }) => {
           <label style={{ display: 'block', marginBottom: '5px' }}>
             {t('customMode.eventsPerMinute')}: {config.eventsPerMinute}
           </label>
-          <input 
-            type="range" 
-            min="1" 
-            max="10" 
+          <input
+            type="range"
+            min="1"
+            max="10"
             step="0.5"
-            value={config.eventsPerMinute} 
+            value={config.eventsPerMinute}
             onChange={(e) => handleTaskConfigChange(task, 'eventsPerMinute', parseFloat(e.target.value))}
             style={{ width: '100%' }}
           />
         </div>
-        
+
         <div>
           <label style={{ display: 'block', marginBottom: '5px' }}>
             {t('common.difficulty')}: {config.difficulty}
           </label>
-          <input 
-            type="range" 
-            min="1" 
-            max="10" 
-            value={config.difficulty} 
+          <input
+            type="range"
+            min="1"
+            max="10"
+            value={config.difficulty}
             onChange={(e) => handleTaskConfigChange(task, 'difficulty', parseInt(e.target.value, 10))}
             style={{ width: '100%' }}
           />
@@ -118,7 +118,7 @@ const CustomModeSetup = ({ onSave, onCancel }) => {
       </div>
     </div>
   );
-  
+
   return (
     <div style={{
       backgroundColor: 'rgba(0, 0, 0, 0.85)',
@@ -148,56 +148,55 @@ const CustomModeSetup = ({ onSave, onCancel }) => {
         pointerEvents: 'auto'
       }}>
         <h2 style={{ textAlign: 'center', marginBottom: '20px' }}>{t('customMode.setup')}</h2>
-        
+
         <div style={{ marginBottom: '20px' }}>
           <label style={{ display: 'block', marginBottom: '5px' }}>
             {t('common.duration')}: {gameDuration} {t('common.minutes')}
           </label>
-          <input 
-            type="range" 
-            min="1" 
-            max="20" 
-            value={gameDuration} 
+          <input
+            type="range"
+            min="1"
+            max="20"
+            value={gameDuration}
             onChange={handleDurationChange}
             style={{ width: '100%' }}
           />
         </div>
-        
+
         <p style={{ marginBottom: '20px', opacity: '0.8' }}>
-          Select which tasks to activate and set their initial difficulty. 
-          Once the game starts, difficulty and frequency will increase over time just like in Normal Mode.
+          {t('customMode.intro')}
         </p>
-        
-        <TaskConfigItem 
-          task="monitoring" 
-          label={t('customMode.monitoringTask')} 
-          config={taskConfig.monitoring} 
+
+        <TaskConfigItem
+          task="monitoring"
+          label={t('customMode.monitoringTask')}
+          config={taskConfig.monitoring}
         />
-        
-        <TaskConfigItem 
-          task="tracking" 
-          label={t('customMode.trackingTask')} 
-          config={taskConfig.tracking} 
+
+        <TaskConfigItem
+          task="tracking"
+          label={t('customMode.trackingTask')}
+          config={taskConfig.tracking}
         />
-        
-        <TaskConfigItem 
-          task="comm" 
+
+        <TaskConfigItem
+          task="comm"
           label={t('customMode.commTask')}
           config={taskConfig.comm}
         />
-        
-        <TaskConfigItem 
-          task="resource" 
-          label={t('customMode.resourceTask')} 
-          config={taskConfig.resource} 
+
+        <TaskConfigItem
+          task="resource"
+          label={t('customMode.resourceTask')}
+          config={taskConfig.resource}
         />
-        
-        <div style={{ 
-          display: 'flex', 
+
+        <div style={{
+          display: 'flex',
           justifyContent: 'space-between',
-          marginTop: '20px' 
+          marginTop: '20px'
         }}>
-          <button 
+          <button
             onClick={onCancel}
             style={{
               padding: '10px 20px',
@@ -211,8 +210,8 @@ const CustomModeSetup = ({ onSave, onCancel }) => {
           >
             {t('common.cancel')}
           </button>
-          
-          <button 
+
+          <button
             onClick={handleStartGame}
             style={{
               padding: '10px 20px',

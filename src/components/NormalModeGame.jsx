@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import ScoreSaveForm from './ScoreSaveForm';
 import PerformancePlot from './PerformancePlot';
 import ScoreboardService from '../services/ScoreboardService';
@@ -11,6 +12,7 @@ const NormalModeGame = ({
   healthRef,
   logs
 }) => {
+  const { t } = useTranslation();
   // Game state
   const [timeRemaining, setTimeRemaining] = useState(duration);
   const [score, setScore] = useState(0);
@@ -57,7 +59,7 @@ const NormalModeGame = ({
     });
 
     // Start scheduler with a delay to ensure everything is initialized
-    const startTimer = setTimeout(() => {
+    setTimeout(() => {
       console.log('Starting scheduler after init delay...');
       eventService.startScheduler();
     }, 1000);
@@ -187,6 +189,7 @@ const NormalModeGame = ({
       eventService.stopScheduler();
       eventService.pauseAllTasks();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [duration, eventService, healthRef]);
 
   // Helper to clear all timers
@@ -273,10 +276,10 @@ const NormalModeGame = ({
         color: 'white'
       }}>
         <div>
-          <strong>Time: </strong>{formatTimeRemaining()}
+          <strong>{t('gameOver.time')}: </strong>{formatTimeRemaining()}
         </div>
         <div>
-          <strong>Score: </strong>{Math.floor(score)}
+          <strong>{t('gameOver.currentScore')}: </strong>{Math.floor(score)}
         </div>
         <button
           onClick={handleQuit}
@@ -290,7 +293,7 @@ const NormalModeGame = ({
             pointerEvents: 'auto'
           }}
         >
-          Quit Game
+          {t('gameOver.quit')}
         </button>
       </div>
 
@@ -351,7 +354,7 @@ const NormalModeGame = ({
                 pointerEvents: 'auto'
               }}
             >
-              Return to Menu
+              {t('common.returnToMenu', 'Return to Menu')}
             </button>
           )}
         </div>

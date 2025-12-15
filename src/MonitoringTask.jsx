@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useImperativeHandle, forwardRef, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useAutoScroll } from './hooks/useAutoScroll';
 import { downloadCSV } from './utils/csvExport';
 
@@ -31,6 +32,7 @@ function MonitoringTask({
   onOptionsUpdate,
   autoEvents = false,
 }, ref) {
+  const { t } = useTranslation();
   // ---------------------
   // 1) STATE & REFS
   // ---------------------
@@ -52,7 +54,7 @@ function MonitoringTask({
   // For gauges: track level (0..10) + eventSide ('low'|'high'|null)
   const [items, setItems] = useState([
     { label: 'F1', colorNormal: 'green', colorEvent: 'gray', eventActive: false },
-    { label: 'F2', colorNormal: 'gray',  colorEvent: 'red',  eventActive: false },
+    { label: 'F2', colorNormal: 'gray', colorEvent: 'red', eventActive: false },
     { label: 'F3', level: 5, eventActive: false, eventSide: null },
     { label: 'F4', level: 5, eventActive: false, eventSide: null },
     { label: 'F5', level: 5, eventActive: false, eventSide: null },
@@ -120,29 +122,29 @@ function MonitoringTask({
         .map((item, index) => ({ item, index }))
         .filter(({ item }) => !item.eventActive)
         .map(({ index }) => index);
-      
+
       if (availableIndices.length === 0) return false;
-      
+
       const randomIndex = Math.floor(Math.random() * availableIndices.length);
       const itemIndex = availableIndices[randomIndex];
       label = items[itemIndex].label;
     }
-    
+
     // Find the item
     const itemIndex = items.findIndex(item => item.label === label);
     if (itemIndex === -1 || items[itemIndex].eventActive) return false;
-    
+
     // Calculate duration - use custom if provided, otherwise default random
     const baseDuration = 15000; // 15 seconds by default
     const randomFactor = 0.5 + Math.random(); // Random multiplier between 0.5 and 1.5
     let duration = customDuration || Math.floor(baseDuration * randomFactor);
-    
+
     // Generate event ID
     const eventId = generateEventId(label);
-    
+
     // Update item state
     const updatedItems = [...items];
-    
+
     // For F1 and F2 (buttons)
     if (label === 'F1' || label === 'F2') {
       updatedItems[itemIndex] = {
@@ -154,7 +156,7 @@ function MonitoringTask({
     else {
       const eventSide = Math.random() > 0.5 ? 'high' : 'low';
       const targetLevel = eventSide === 'high' ? 10 : 0;
-      
+
       updatedItems[itemIndex] = {
         ...updatedItems[itemIndex],
         eventActive: true,
@@ -162,28 +164,28 @@ function MonitoringTask({
         targetLevel
       };
     }
-    
+
     setItems(updatedItems);
-    
+
     // Add to active events
     const newActiveEvent = {
-        id: eventId,
+      id: eventId,
       label,
-        timestamp: Date.now(),
-        responded: false,
-        responseTime: null,
-        type: null,
-        hasCustomTimeout: duration !== undefined
-      };
+      timestamp: Date.now(),
+      responded: false,
+      responseTime: null,
+      type: null,
+      hasCustomTimeout: duration !== undefined
+    };
 
     setActiveEvents(prev => [...prev, newActiveEvent]);
-    
+
     // Update metrics
-      setTaskMetrics(prev => ({
-        ...prev,
-        activeEvents: prev.activeEvents + 1,
-        totalEvents: prev.totalEvents + 1
-      }));
+    setTaskMetrics(prev => ({
+      ...prev,
+      activeEvents: prev.activeEvents + 1,
+      totalEvents: prev.totalEvents + 1
+    }));
 
     // Schedule event to end
     const timeoutId = setTimeout(() => {
@@ -191,30 +193,30 @@ function MonitoringTask({
       setActiveEvents(prev => {
         const updatedEvents = [];
         let wasFinalized = false;
-        
+
         for (const evt of prev) {
           if (evt.id === eventId && evt.type === null) {
             // Update the event status
             evt.responded = false;
             evt.responseTime = null;
             evt.type = 'MISS';
-            
+
             // Log it
             setEventLog(prevLog => [...prevLog, evt]);
             wasFinalized = true;
-            
+
             // Update metrics
-            setTaskMetrics(prev => ({ 
-              ...prev, 
+            setTaskMetrics(prev => ({
+              ...prev,
               misses: prev.misses + 1,
-              activeEvents: prev.activeEvents - 1 
+              activeEvents: prev.activeEvents - 1
             }));
             setHealthImpact(-5); // Negative impact for miss
-            
+
             // Deactivate the indicator
-            setItems(items => 
-              items.map(item => 
-                item.label === evt.label 
+            setItems(items =>
+              items.map(item =>
+                item.label === evt.label
                   ? item.label.startsWith('F') && parseInt(item.label[1]) > 2
                     ? { ...item, eventActive: false, eventSide: null, level: 5 }
                     : { ...item, eventActive: false }
@@ -225,11 +227,11 @@ function MonitoringTask({
             updatedEvents.push(evt);
           }
         }
-        
+
         return updatedEvents;
       });
     }, duration);
-    
+
     // Store timeout ID
     eventTimeoutRef.current = timeoutId;
 
@@ -243,16 +245,16 @@ function MonitoringTask({
    */
   const handleResponse = useCallback((label) => {
     if (!isEnabledRef.current) return false;
-    
+
     // Debug which label is being processed
     console.log('Processing response for:', label);
-    
+
     // Find the item
     const itemIndex = items.findIndex(item => item.label === label);
     if (itemIndex === -1) return false;
-    
+
     const item = items[itemIndex];
-    
+
     // Check if there's an active event for this item
     if (!item.eventActive) {
       // False alarm!
@@ -261,7 +263,7 @@ function MonitoringTask({
         falseAlarms: prev.falseAlarms + 1
       }));
       setHealthImpact(-2); // Smaller negative impact for false alarm
-      
+
       // Add to event log
       const falseAlarmEvent = {
         id: generateEventId(label),
@@ -272,26 +274,26 @@ function MonitoringTask({
         type: 'FA'
       };
       setEventLog(prev => [...prev, falseAlarmEvent]);
-      
+
       return false;
     }
-    
+
     // Find the corresponding active event
     setActiveEvents(prev => {
       const updatedEvents = [];
       let wasResponded = false;
-      
+
       for (const evt of prev) {
         if (evt.label === label && evt.type === null) {
           // Update the event
           evt.responded = true;
           evt.responseTime = Date.now() - evt.timestamp;
           evt.type = 'HIT';
-          
+
           // Add to log
           setEventLog(prevLog => [...prevLog, evt]);
           wasResponded = true;
-          
+
           // Update metrics
           setTaskMetrics(prevMetrics => ({
             ...prevMetrics,
@@ -303,10 +305,10 @@ function MonitoringTask({
           updatedEvents.push(evt);
         }
       }
-      
+
       return updatedEvents;
     });
-    
+
     // Reset the item's state
     const updatedItems = [...items];
     if (label.startsWith('F') && parseInt(label[1]) > 2) {
@@ -325,7 +327,7 @@ function MonitoringTask({
       };
     }
     setItems(updatedItems);
-    
+
     return true;
   }, [items, setItems, setActiveEvents, setEventLog, setTaskMetrics, setHealthImpact]);
 
@@ -337,51 +339,51 @@ function MonitoringTask({
     triggerMultipleEvents: (config) => {
       try {
         const { triggerCount, duration } = config;
-        
+
         // console.log(`Attempting to trigger ${triggerCount} monitoring events with duration ${duration}ms`);
-        
+
         // Validate trigger count (1-6)
         // Higher difficulty means more simultaneous events can be triggered
         const maxEvents = Math.min(6, Math.floor(3 + (difficulty * 0.3))); // 3 at diff 1, up to 6 at diff 10
         const count = Math.min(maxEvents, Math.max(1, triggerCount || 1));
-        
+
         // Get all available indicators (not currently active)
         const availableIndicators = items
           .filter(item => !item.eventActive)
           .map(item => item.label);
-        
+
         if (availableIndicators.length === 0) {
           // console.log('No available indicators to trigger');
           return false;
         }
-        
+
         // Shuffle the array of labels
         const shuffledLabels = [...availableIndicators].sort(() => Math.random() - 0.5);
-        
+
         // Take the first 'count' items, but no more than are available
         const selectedLabels = shuffledLabels.slice(0, Math.min(count, availableIndicators.length));
-        
+
         // console.log(`Selected indicators to trigger: ${selectedLabels.join(', ')}`);
-        
+
         // Create a new items array for batch update
         const newItems = [...items];
         const newActiveEvents = [];
         let triggeredCount = 0;
-        
+
         selectedLabels.forEach(label => {
           const itemIndex = newItems.findIndex(item => item.label === label);
           if (itemIndex === -1) return;
-          
+
           const item = newItems[itemIndex];
-          
+
           // For gauges (F3-F6), randomly choose high or low event
           if (label.startsWith('F') && parseInt(label[1]) > 2) {
             const eventSide = Math.random() < 0.5 ? 'low' : 'high';
             const targetLevel = eventSide === 'low' ? 0 : 10;
-            
+
             // Higher difficulty means more extreme deviations
             const deviation = 5 + (difficulty * 0.3); // 5.3 at diff 1, 8 at diff 10
-            
+
             newItems[itemIndex] = {
               ...item,
               eventActive: true,
@@ -396,7 +398,7 @@ function MonitoringTask({
               eventActive: true
             };
           }
-          
+
           // Create event object
           const eventId = generateEventId(label);
           const event = {
@@ -407,39 +409,39 @@ function MonitoringTask({
             responseTime: null,
             type: null
           };
-          
+
           newActiveEvents.push(event);
-          
+
           // Set up timeout to finalize event if not responded to
           setTimeout(() => {
             // Find the event in the current activeEvents state
             setActiveEvents(prev => {
               const updatedEvents = [];
               let wasFinalized = false;
-              
+
               for (const evt of prev) {
                 if (evt.id === eventId && evt.type === null) {
                   // Update the event status
                   evt.responded = false;
                   evt.responseTime = null;
                   evt.type = 'MISS';
-                  
+
                   // Log it
                   setEventLog(prevLog => [...prevLog, evt]);
                   wasFinalized = true;
-                  
+
                   // Update metrics
-                  setTaskMetrics(prev => ({ 
-                    ...prev, 
+                  setTaskMetrics(prev => ({
+                    ...prev,
                     misses: prev.misses + 1,
-                    activeEvents: prev.activeEvents - 1 
+                    activeEvents: prev.activeEvents - 1
                   }));
                   setHealthImpact(-5); // Negative impact for miss
-                  
+
                   // Deactivate the indicator
-                  setItems(items => 
-                    items.map(item => 
-                      item.label === evt.label 
+                  setItems(items =>
+                    items.map(item =>
+                      item.label === evt.label
                         ? item.label.startsWith('F') && parseInt(item.label[1]) > 2
                           ? { ...item, eventActive: false, eventSide: null, level: 5 }
                           : { ...item, eventActive: false }
@@ -450,14 +452,14 @@ function MonitoringTask({
                   updatedEvents.push(evt);
                 }
               }
-              
+
               return updatedEvents;
             });
           }, duration);
-          
+
           triggeredCount++;
         });
-        
+
         // Apply all updates at once
         if (triggeredCount > 0) {
           setItems(newItems);
@@ -468,7 +470,7 @@ function MonitoringTask({
             totalEvents: prev.totalEvents + triggeredCount
           }));
         }
-        
+
         // console.log(`Successfully triggered ${triggeredCount} monitoring events`);
         return triggeredCount > 0;
       } catch (error) {
@@ -506,7 +508,7 @@ function MonitoringTask({
     };
 
     scheduleNextEvent();
-    
+
     // Notify options of EPM change
     onOptionsUpdate?.({ eventsPerMinute });
 
@@ -584,7 +586,7 @@ function MonitoringTask({
   const resetTask = useCallback(() => {
     setItems([
       { label: 'F1', colorNormal: 'green', colorEvent: 'gray', eventActive: false },
-      { label: 'F2', colorNormal: 'gray',  colorEvent: 'red',  eventActive: false },
+      { label: 'F2', colorNormal: 'gray', colorEvent: 'red', eventActive: false },
       { label: 'F3', level: 5, eventActive: false, eventSide: null },
       { label: 'F4', level: 5, eventActive: false, eventSide: null },
       { label: 'F5', level: 5, eventActive: false, eventSide: null },
@@ -602,7 +604,7 @@ function MonitoringTask({
       misses: 0,
       falseAlarms: 0
     });
-    
+
     if (eventTimeoutRef.current) {
       clearTimeout(eventTimeoutRef.current);
       eventTimeoutRef.current = null;
@@ -632,7 +634,7 @@ function MonitoringTask({
               // Lock to side range with stronger bias toward the target state
               let newLevel = level;
               const randomFactor = Math.random();
-              
+
               if (eventSide === 'low') {
                 // Target range is [0..2]
                 if (randomFactor < 0.6) {
@@ -643,7 +645,7 @@ function MonitoringTask({
                   newLevel = Math.min(2, level + 1);
                 }
                 // 20% chance to stay the same
-                
+
                 // Ensure we stay in the event range
                 newLevel = Math.min(2, Math.max(0, newLevel));
               } else {
@@ -656,11 +658,11 @@ function MonitoringTask({
                   newLevel = Math.max(8, level - 1);
                 }
                 // 20% chance to stay the same
-                
+
                 // Ensure we stay in the event range
                 newLevel = Math.max(8, Math.min(10, newLevel));
               }
-              
+
               return { ...item, level: newLevel };
             } else if (eventActive) {
               // fallback 0..10 if eventSide is null
@@ -693,28 +695,28 @@ function MonitoringTask({
             // Only check for expiration if this event doesn't have a custom timeout already set
             // Events with custom durations are handled by their own timeouts
             if (!evt.hasCustomTimeout) {
-            const age = now - evt.timestamp;
+              const age = now - evt.timestamp;
               if (age >= 5000) { // Default duration of 5 seconds
-              // MISS - Set health impact
-              evt.type = 'MISS';
-              evt.responded = false;
-              evt.responseTime = null;
+                // MISS - Set health impact
+                evt.type = 'MISS';
+                evt.responded = false;
+                evt.responseTime = null;
 
-              // Set health impact for MISS
-              setHealthImpact(-5);
+                // Set health impact for MISS
+                setHealthImpact(-5);
 
-              // Turn off item's eventActive
-              setItems((prevItems) =>
-                prevItems.map((it) =>
-                    it.label === evt.label ? 
+                // Turn off item's eventActive
+                setItems((prevItems) =>
+                  prevItems.map((it) =>
+                    it.label === evt.label ?
                       it.label.startsWith('F') && parseInt(it.label[1]) > 2 ?
                         { ...it, eventActive: false, eventSide: null, level: 5 } :
-                        { ...it, eventActive: false } 
+                        { ...it, eventActive: false }
                       : it
-                )
-              );
-              completed.push(evt);
-            } else {
+                  )
+                );
+                completed.push(evt);
+              } else {
                 stillActive.push(evt);
               }
             } else {
@@ -753,7 +755,7 @@ function MonitoringTask({
 
     // Debug what key is being pressed
     console.log('Key pressed:', e.key);
-    
+
     // Handle function keys F1-F6
     if (e.key && /^F[1-6]$/.test(e.key)) {
       e.preventDefault(); // Prevent default browser behavior
@@ -778,18 +780,18 @@ function MonitoringTask({
     // Calculate load based on number of active indicators (5% each)
     const activeCount = items.filter(item => item.eventActive).length;
     const calculatedLoad = activeCount * 5;
-    
+
     setMetrics(prev => ({
       ...prev,
       systemLoad: calculatedLoad,
       healthImpact: healthImpact
     }));
 
-    onMetricsUpdate?.({ 
-      healthImpact, 
-      systemLoad: calculatedLoad 
+    onMetricsUpdate?.({
+      healthImpact,
+      systemLoad: calculatedLoad
     });
-    
+
     // Reset health impact after a delay
     if (healthImpact !== 0) {
       const timer = setTimeout(() => {
@@ -836,7 +838,7 @@ function MonitoringTask({
   }
 
   return (
-    <div style={{ 
+    <div style={{
       width: '100%',
       height: '100%',
       display: 'flex',
@@ -850,17 +852,10 @@ function MonitoringTask({
         padding: '0.5rem',
         fontWeight: 'bold',
         display: 'flex',
-        justifyContent: 'space-between',
+        justifyContent: 'center',
         alignItems: 'center'
       }}>
-        <div style={{ flex: 1, textAlign: 'left', fontSize: '0.8rem' }}>
-          Time: {String(Math.floor(taskMetrics.runTime / 60)).padStart(2, '0')}:
-                {String(taskMetrics.runTime % 60).padStart(2, '0')}
-        </div>
-        <div style={{ flex: 2 }}>SYSTEM MONITORING</div>
-        <div style={{ flex: 1, textAlign: 'right', fontSize: '0.8rem' }}>
-          Health: {taskMetrics.currentHealth}%
-        </div>
+        <div>{t('tasks.monitoring.title').toUpperCase()}</div>
       </div>
 
       {/* Debug metrics panel - can be toggled */}
@@ -895,9 +890,9 @@ function MonitoringTask({
         padding: '2%'
       }}>
         {/* F1, F2 */}
-        <div style={{ 
-          display: 'flex', 
-          justifyContent: 'center', 
+        <div style={{
+          display: 'flex',
+          justifyContent: 'center',
           gap: '10%',
           width: '100%',
           marginBottom: '5%'
@@ -930,9 +925,9 @@ function MonitoringTask({
         </div>
 
         {/* Gauges: F3-F6 */}
-        <div style={{ 
-          display: 'flex', 
-          justifyContent: 'center', 
+        <div style={{
+          display: 'flex',
+          justifyContent: 'center',
           gap: '8%',
           width: '100%'
         }}>
@@ -1026,8 +1021,9 @@ function MonitoringTask({
 
 // First define the Log component
 const Log = ({ eventLog }) => {
+  const { t } = useTranslation();
   const scrollRef = useAutoScroll();
-  
+
   const handleExport = () => {
     downloadCSV(eventLog, 'monitoring-log');
   };
@@ -1042,7 +1038,7 @@ const Log = ({ eventLog }) => {
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '0.5rem' }}>
-        <button 
+        <button
           onClick={handleExport}
           style={{
             padding: '0.25rem 0.5rem',
@@ -1060,7 +1056,7 @@ const Log = ({ eventLog }) => {
         <table style={{ width: '100%', fontSize: '0.75rem', borderCollapse: 'collapse' }}>
           <thead>
             <tr style={{ borderBottom: '1px solid #ccc' }}>
-              <th style={{ padding: '0.5rem' }}>Time</th>
+              <th style={{ padding: '0.5rem' }}>{t('scoreboard.time')}</th>
               <th style={{ padding: '0.5rem' }}>Label</th>
               <th style={{ padding: '0.5rem' }}>Type</th>
               <th style={{ padding: '0.5rem' }}>RT (ms)</th>

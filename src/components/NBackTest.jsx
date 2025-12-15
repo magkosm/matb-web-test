@@ -148,7 +148,7 @@ const NBackTest = ({
   onFinish,
   onReturn
 }) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   // Game state
   const [testStarted, setTestStarted] = useState(false);
@@ -214,23 +214,42 @@ const NBackTest = ({
       audioRef.current.pause();
       audioRef.current.currentTime = 0;
 
-      // Set the source and play
-      const audioPath = `${process.env.PUBLIC_URL}/assets/nback-sounds/${letter}.wav`;
+      // Determine current language
+      const currentLang = (i18n.language || 'en').split('-')[0];
 
+      // Try localized path first
+      const audioPath = `${process.env.PUBLIC_URL}/assets/nback-sounds/${currentLang}/${letter}.wav`;
+      const fallbackPath = `${process.env.PUBLIC_URL}/assets/nback-sounds/en/${letter}.wav`;
+
+      // Set the source 
       // Only set a new source if it's different from the current one
-      if (audioRef.current.src !== audioPath) {
+      if (audioRef.current.src !== audioPath && audioRef.current.dataset.fallback !== 'true') {
         audioRef.current.src = audioPath;
+        audioRef.current.dataset.fallback = 'false';
       }
 
-      // Add an onerror handler
+      // Add an onerror handler to try fallback
       audioRef.current.onerror = (err) => {
-        console.error(`Audio error: ${err.type}`);
+        console.warn(`Audio error for ${audioPath}, trying fallback: ${fallbackPath}`);
+
+        if (audioRef.current.dataset.fallback !== 'true') {
+          audioRef.current.src = fallbackPath;
+          audioRef.current.dataset.fallback = 'true';
+          audioRef.current.play().catch(e => console.error('Fallback audio failed:', e));
+        } else {
+          console.error(`Audio error: ${err.type}`);
+        }
       };
 
       // Use a promise with a timeout to handle playback
       const playPromise = audioRef.current.play();
       if (playPromise !== undefined) {
         playPromise.catch(err => {
+          // If the error is NotSupportedError or 404 (NetworkError), the onerror should catch it? 
+          // Re-trigger error if needed or log
+          if (err.name === 'NotSupportedError' || err.message.includes('404')) {
+            // Let onerror handle it
+          }
           console.error(`Warning: ${err.message}. This is usually normal when navigating away during playback.`);
         });
       }
@@ -347,7 +366,7 @@ const NBackTest = ({
     // Start the test
     setTestStarted(true);
 
-    // Add a 2-second delay before starting the test
+    // Start scheduler with a delay to ensure everything is initialized
     setTimeout(() => {
       // Present the first stimulus directly with the newly generated stimuli
       presentStimulusDirect(0, newStimuli);
@@ -411,51 +430,7 @@ const NBackTest = ({
     playLetterSound(letter);
   };
 
-  // Present a stimulus using state - keep function but remove audio playback to prevent double sounds
-  const presentStimulus = (stimulusIndex) => {
-    // Check if stimuli state is populated
-    if (!stimuli[0] || !stimuli[1] || !stimuli[0][stimulusIndex] || !stimuli[1][stimulusIndex]) {
-      console.error(`Invalid stimulus at index ${stimulusIndex}. Stimuli may not be loaded yet.`);
-      return;
-    }
-
-    try {
-      // Clear previous stimulus
-      setGridSquares(Array(9).fill('white'));
-      setActiveLetter('');
-
-      // Set letter (1-indexed to 0-indexed)
-      const letterIndex = stimuli[0][stimulusIndex] - 1;
-      if (letterIndex < 0 || letterIndex >= nBackLetters.length) {
-        console.error(`Invalid letter index: ${letterIndex}`);
-        return;
-      }
-
-      const letter = nBackLetters[letterIndex];
-      setActiveLetter(letter);
-
-      // Set position (1-indexed to 0-indexed, excluding center)
-      const positionIndex = stimuli[1][stimulusIndex] - 1;
-      const positionMapping = [0, 1, 2, 3, 5, 6, 7, 8]; // Skip center (4)
-      if (positionIndex < 0 || positionIndex >= positionMapping.length) {
-        console.error(`Invalid position index: ${positionIndex}`);
-        return;
-      }
-
-      const position = positionMapping[positionIndex];
-
-      // Update grid
-      setGridSquares(prev => {
-        const newGrid = [...prev];
-        newGrid[position] = 'green';
-        return newGrid;
-      });
-
-      // Remove audio playback to prevent double sounds - we already play them in presentStimulusDirect
-    } catch (error) {
-      console.error(`Error in presentStimulus: ${error.message}`);
-    }
-  };
+  // presentStimulus removed as use of presentStimulusDirect is preferred to avoid audio glitching
 
   // Do not auto-record responses for each stimulus change - this creates problems with counting
   // Instead, we'll process all metrics at the end of the test

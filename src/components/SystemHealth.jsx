@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
+import React, { useState, useEffect, useRef, forwardRef, useImperativeHandle, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 
 const SystemHealth = forwardRef(({
   monitoringMetrics,
@@ -12,6 +13,7 @@ const SystemHealth = forwardRef(({
   healthRef,
   onPerformanceUpdate
 }, ref) => {
+  const { t } = useTranslation();
   const [cumulativeHealth, setCumulativeHealth] = useState(100);
   const [systemLoad, setSystemLoad] = useState(0);
   const lastUpdateRef = useRef(Date.now());
@@ -52,7 +54,7 @@ const SystemHealth = forwardRef(({
   }, [isMonitoringActive, isCommActive, isResourceActive, isTrackingActive]);
 
   // Reset function
-  const resetHealth = () => {
+  const resetHealth = useCallback(() => {
     internalHealthRef.current = 100;
     setCumulativeHealth(100);
     pendingImpacts.current = [];
@@ -62,14 +64,14 @@ const SystemHealth = forwardRef(({
     if (healthRef) {
       healthRef.current = 100;
     }
-  };
+  }, [healthRef]);
 
   // Reset when all metrics are null/undefined
   useEffect(() => {
     if (!monitoringMetrics && !commMetrics && !resourceMetrics) {
       resetHealth();
     }
-  }, [monitoringMetrics, commMetrics, resourceMetrics]);
+  }, [monitoringMetrics, commMetrics, resourceMetrics, resetHealth]);
 
   // Add cleanup on unmount
   useEffect(() => {
@@ -79,7 +81,7 @@ const SystemHealth = forwardRef(({
       }
       resetHealth();
     };
-  }, []);
+  }, [resetHealth]);
 
   // Handle health updates with RAF and forced interval
   useEffect(() => {
@@ -232,7 +234,7 @@ const SystemHealth = forwardRef(({
         padding: '0.5rem',
         fontWeight: 'bold'
       }}>
-        SYSTEM STATUS
+        {t('systemStatus.title')}
       </div>
 
       <div style={{
@@ -248,7 +250,7 @@ const SystemHealth = forwardRef(({
           alignItems: 'center',
           height: '80%'
         }}>
-          <div>Health ({Math.round(cumulativeHealth)}%)</div>
+          <div>{t('systemStatus.health')} ({Math.round(cumulativeHealth)}%)</div>
           <div style={{
             height: '100%',
             width: '40px',
@@ -274,7 +276,7 @@ const SystemHealth = forwardRef(({
           alignItems: 'center',
           height: '80%'
         }}>
-          <div>Load ({Math.round(systemLoad)}%)</div>
+          <div>{t('systemStatus.load')} ({Math.round(systemLoad)}%)</div>
           <div style={{
             height: '100%',
             width: '40px',

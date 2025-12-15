@@ -13,7 +13,32 @@
     "settings": "Settings",
     "minutes": "minutes",
     "seconds": "seconds",
-    "returnToMenu": "Return to Main Menu"
+    "time": "Time",
+    "returnToMenu": "Return to Main Menu",
+    "status": "Status",
+    "normal": "Normal",
+    "warning": "Warning",
+    "critical": "Critical",
+    "activePumps": "Active Pumps",
+    "failedPumps": "Failed Pumps",
+    "systemStatus": "System Status",
+    "tankA": "Tank A",
+    "tankB": "Tank B"
+  },
+  "customMode": {
+    "setup": "Custom Mode Setup",
+    "intro": "Select which tasks to activate and set their initial difficulty. Once the game starts, difficulty and frequency will increase over time just like in Normal Mode.",
+    "eventsPerMinute": "Events Per Minute",
+    "taskConfiguration": "Task Configuration",
+    "commTask": "Communications Task",
+    "monitoringTask": "System Monitoring Task",
+    "trackingTask": "Tracking Task",
+    "resourceTask": "Resource Management Task"
+  },
+  "systemStatus": {
+    "title": "SYSTEM STATUS",
+    "health": "Health",
+    "load": "Load"
   },
   "mainMenu": {
     "title": "MATB-II Simulation",
@@ -27,16 +52,13 @@
     "changeBackground": "Change Background",
     "gameModeDescription": "Game Mode",
     "pressStartToBegin": "Press 'Start Simulation' to begin",
-    "pressCtrlQToReturn": "During simulation, press Ctrl+Q to return to this menu"
-  },
-  "customMode": {
-    "setup": "Custom Mode Setup",
-    "eventsPerMinute": "Events Per Minute",
-    "taskConfiguration": "Task Configuration",
-    "commTask": "Communications Task",
-    "monitoringTask": "System Monitoring Task",
-    "trackingTask": "Tracking Task",
-    "resourceTask": "Resource Management Task"
+    "pressCtrlQToReturn": "During simulation, press Ctrl+Q to return to this menu",
+    "presets": "Presets",
+    "trainingPresets": "Training Modes",
+    "2minTest": "Quick Test (2 min)",
+    "2minDesc": "Quick validation run with all tasks enabled.",
+    "standardRun": "Standard 10-Minute Run",
+    "standardDesc": "Full duration session for data collection."
   },
   "scoreboard": {
     "title": "Top Performances",
@@ -49,7 +71,8 @@
     "noScores": "No data recorded yet.",
     "finalScore": "Final Score",
     "timeSurvived": "Duration Completed",
-    "scoreSaved": "Performance data saved"
+    "scoreSaved": "Performance data saved",
+    "anonymous": "Anonymous"
   },
   "backgroundSelector": {
     "title": "Background Selection",
@@ -83,7 +106,8 @@
     "frequency": "Frequency",
     "average": "Average",
     "reactionTime": "Reaction Time (ms)",
-    "tryAgain": "Try Again"
+    "tryAgain": "Try Again",
+    "quickStart": "Quick Start Reaction Test"
   },
   "nbackTest": {
     "title": "N-Back Test",
@@ -102,6 +126,7 @@
     "pressCtrlQToReturn": "Press Ctrl+Q to return to the main menu at any time",
     "results": "N-Back Test Results",
     "accuracy": "Overall Accuracy",
+    "performanceScore": "Performance Score",
     "totalTrials": "Total Trials",
     "performance": "Performance by Category",
     "hits": "Hits",
@@ -116,7 +141,19 @@
     "position": "Position",
     "letter": "Letter",
     "memorizeFirst": "Memorize the first {{n}} items...",
-    "matchInstructions": "Press L for letter match, A for position match"
+    "memorizeFirst": "Memorize the first {{n}} items...",
+    "matchInstructions": "Press L for letter match, A for position match",
+    "quickStart": "Quick Start N-Back Test"
+  },
+  "training": {
+    "commOnly": "Communications Training",
+    "commOnlyDesc": "Practice radio communication tasks in isolation.",
+    "trackingOnly": "Tracking Training",
+    "trackingOnlyDesc": "Practice manual and automatic tracking tasks in isolation.",
+    "resourceOnly": "Resource Management Training",
+    "resourceOnlyDesc": "Practice fuel management and pump operations in isolation.",
+    "monitoringOnly": "System Monitoring Training",
+    "monitoringOnlyDesc": "Practice gauge and light monitoring in isolation."
   },
   "tasks": {
     "communications": {
@@ -124,25 +161,52 @@
       "callsign": "Callsign",
       "frequency": "Frequency",
       "respond": "Respond",
-      "ignore": "Ignore"
+      "ignore": "Ignore",
+      "radio": "Radio",
+      "selected": "Selected",
+      "log": "Comm Log"
     },
     "monitoring": {
       "title": "System Monitoring",
       "scale": "Scale",
       "warning": "Warning",
-      "reset": "Reset"
+      "reset": "Reset",
+      "log": "Monitoring Log",
+      "lights": "Lights",
+      "gauges": "Gauges"
     },
     "tracking": {
       "title": "Tracking Task",
       "auto": "AUTO",
-      "manual": "MANUAL"
+      "manual": "MANUAL",
+      "rms": "RMS Error",
+      "joystick": "Joystick",
+      "keyboard": "Keyboard",
+      "touch": "Touch/Mouse",
+      "touchActive": "Touch Controls Activated",
+      "touchHint": "Tap and drag to move the cursor to keep it within the target box.",
+      "log": "Tracking Log",
+      "event": "Event/Mode",
+      "details": "Details",
+      "position": "Position",
+      "status": "Status",
+      "error": "Error (px)"
     },
     "resource": {
       "title": "Resource Management",
       "tank": "Tank",
       "pump": "Pump",
       "on": "ON",
-      "off": "OFF"
+      "off": "OFF",
+      "failed": "FAILED",
+      "flow": "Flow",
+      "volume": "Volume",
+      "target": "Target",
+      "level": "Level",
+      "log": "Resource Log",
+      "diff": "Diff",
+      "activePumps": "Active Pumps",
+      "failedPumps": "Failed Pumps"
     }
   },
   "gameOver": {
@@ -154,6 +218,9 @@
     "mainMenu": "Main Menu",
     "finalScore": "Final Score",
     "timeSurvived": "Duration Completed",
-    "inactive": "Inactive"
+    "inactive": "Inactive",
+    "time": "Time",
+    "currentScore": "Score",
+    "quit": "Quit Game"
   }
 }

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, forwardRef, useImperativeHandle, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import Tank from './components/Tank';
 import Pump from './components/Pump';
 import Connection from './components/Connection';
@@ -37,6 +38,7 @@ const MAX_LOSS_MULTIPLIER = RESOURCE_CONFIG.DIFFICULTY.MAX_LOSS_MULTIPLIER;
 
 // Define Log component
 function ResourceManagementLog({ resourceLog }) {
+  const { t } = useTranslation();
   const scrollRef = useAutoScroll();
 
   // Ensure resourceLog is always an array
@@ -73,13 +75,13 @@ function ResourceManagementLog({ resourceLog }) {
         <table style={{ width: '100%', fontSize: '0.75rem', borderCollapse: 'collapse' }}>
           <thead>
             <tr style={{ borderBottom: '1px solid #ccc' }}>
-              <th style={{ padding: '0.5rem' }}>Time</th>
-              <th style={{ padding: '0.5rem' }}>Tank A</th>
-              <th style={{ padding: '0.5rem' }}>Tank B</th>
-              <th style={{ padding: '0.5rem' }}>Diff A</th>
-              <th style={{ padding: '0.5rem' }}>Diff B</th>
-              <th style={{ padding: '0.5rem' }}>Active Pumps</th>
-              <th style={{ padding: '0.5rem' }}>Failed Pumps</th>
+              <th style={{ padding: '0.5rem' }}>{t('scoreboard.time')}</th>
+              <th style={{ padding: '0.5rem' }}>{t('tasks.resource.tank')} A</th>
+              <th style={{ padding: '0.5rem' }}>{t('tasks.resource.tank')} B</th>
+              <th style={{ padding: '0.5rem' }}>{t('tasks.resource.diff')} A</th>
+              <th style={{ padding: '0.5rem' }}>{t('tasks.resource.diff')} B</th>
+              <th style={{ padding: '0.5rem' }}>{t('tasks.resource.activePumps')}</th>
+              <th style={{ padding: '0.5rem' }}>{t('tasks.resource.failedPumps')}</th>
               <th style={{ padding: '0.5rem' }}>Status</th>
             </tr>
           </thead>
@@ -129,6 +131,7 @@ function ResourceManagementTaskComponent({
   isEnabled = true,
   autoEvents = false
 }, ref) {
+  const { t } = useTranslation();
   const containerRef = useRef(null);
   const [tanks, setTanks] = useState(INITIAL_STATE.tanks);
   const [pumps, setPumps] = useState(INITIAL_STATE.pumps);
@@ -983,7 +986,7 @@ function ResourceManagementTaskComponent({
         fontWeight: 'bold',
         flexShrink: 0 // Prevent title from shrinking
       }}>
-        RESOURCE MANAGEMENT
+        <div>{t('tasks.resource.title').toUpperCase()}</div>
       </div>
 
 

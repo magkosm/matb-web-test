@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, useImperativeHandle, forwardRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import TrackingDisplay from './components/TrackingDisplay';
 import { useAutoScroll } from './hooks/useAutoScroll';
 import { downloadCSV } from './utils/csvExport';
@@ -25,6 +26,7 @@ const TrackingTask = forwardRef(({
   autoEvents = false,
   defaultInputMode
 }, ref) => {
+  const { t } = useTranslation();
   const [cursorPosition, setCursorPosition] = useState({ x: 0, y: 0 });
   const [targetPosition, _setTargetPosition] = useState({ x: 0, y: 0 });
 
@@ -738,7 +740,7 @@ const TrackingTask = forwardRef(({
         background: '#f5f5f5',
         color: '#666'
       }}>
-        Tracking Task Disabled
+        {t('gameOver.inactive', 'Tracking Task Disabled')}
       </div>
     );
   }
@@ -757,7 +759,7 @@ const TrackingTask = forwardRef(({
         padding: '0.5rem',
         fontWeight: 'bold'
       }}>
-        TRACKING - {isAuto ? 'AUTO' : 'MANUAL'}
+        {t('tasks.tracking.title').toUpperCase()} - {isAuto ? t('tasks.tracking.auto') : t('tasks.tracking.manual')}
       </div>
 
       <div
@@ -787,8 +789,8 @@ const TrackingTask = forwardRef(({
             textAlign: 'center',
             boxShadow: '0 0 10px rgba(0,0,0,0.5)'
           }}>
-            <p style={{ margin: '0 0 10px 0', fontWeight: 'bold' }}>Touch Controls Activated</p>
-            <p style={{ margin: '0' }}>Tap and drag to move the cursor to keep it within the target box.</p>
+            <p style={{ margin: '0 0 10px 0', fontWeight: 'bold' }}>{t('tasks.tracking.touchActive')}</p>
+            <p style={{ margin: '0' }}>{t('tasks.tracking.touchHint')}</p>
           </div>
         )}
 
@@ -834,8 +836,8 @@ const TrackingTask = forwardRef(({
                 cursor: 'pointer'
               }}
             >
-              <option value="keyboard">Keyboard (WASD)</option>
-              <option value="touch">Touch/Mouse</option>
+              <option value="keyboard">{t('tasks.tracking.keyboard')} (WASD)</option>
+              <option value="touch">{t('tasks.tracking.touch')}</option>
             </select>
           </div>
         </div>
@@ -846,6 +848,7 @@ const TrackingTask = forwardRef(({
 
 // Add this static Log component to TrackingTask
 TrackingTask.Log = function TrackingLog({ trackingLog }) {
+  const { t } = useTranslation();
   const scrollRef = useAutoScroll();
 
   const handleExport = () => {
@@ -880,12 +883,12 @@ TrackingTask.Log = function TrackingLog({ trackingLog }) {
         <table style={{ width: '100%', fontSize: '0.75rem', borderCollapse: 'collapse' }}>
           <thead>
             <tr style={{ borderBottom: '1px solid #ccc' }}>
-              <th style={{ padding: '0.5rem' }}>Time</th>
-              <th style={{ padding: '0.5rem' }}>Event/Mode</th>
-              <th style={{ padding: '0.5rem' }}>Details</th>
-              <th style={{ padding: '0.5rem' }}>Position</th>
-              <th style={{ padding: '0.5rem' }}>Status</th>
-              <th style={{ padding: '0.5rem' }}>Error (px)</th>
+              <th style={{ padding: '0.5rem' }}>{t('scoreboard.time')}</th>
+              <th style={{ padding: '0.5rem' }}>{t('tasks.tracking.event')}</th>
+              <th style={{ padding: '0.5rem' }}>{t('tasks.tracking.details')}</th>
+              <th style={{ padding: '0.5rem' }}>{t('tasks.tracking.position')}</th>
+              <th style={{ padding: '0.5rem' }}>{t('tasks.tracking.status')}</th>
+              <th style={{ padding: '0.5rem' }}>{t('tasks.tracking.error')}</th>
             </tr>
           </thead>
           <tbody>

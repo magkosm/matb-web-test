@@ -25,9 +25,9 @@ ChartJS.register(
 );
 
 const PerformancePlot = ({ data, title = "System Performance" }) => {
-    if (!data || data.length === 0) return null;
-
     const chartData = useMemo(() => {
+        if (!data || data.length === 0) return null;
+
         // No decimation - show all data points and allow scrolling
         return {
             labels: data.map(d => {
@@ -105,14 +105,7 @@ const PerformancePlot = ({ data, title = "System Performance" }) => {
         }
     };
 
-    // Calculate width based on number of points (min 20px per point)
-    // Ensure at least 100% width
-    const chartWidth = Math.max(100, data.length * 2);
-    // e.g. 1 minute (60 points) = 120% ? No, 1Hz data.
-    // 60 points * 20px = 1200px.
-    // Actually 20px is huge. Maybe 5px per point?
-    // 300 seconds * 5px = 1500px.
-    // Let's go with 10px per label, but labels are large.
+    if (!chartData) return <div style={{ color: 'white', textAlign: 'center', padding: '20px' }}>No performance data available</div>;
 
     return (
         <div style={{

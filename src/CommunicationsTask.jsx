@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useAutoScroll } from './hooks/useAutoScroll';
 import { downloadCSV } from './utils/csvExport';
 import { COMM_CONFIG } from './config/simulationConfig';
@@ -30,22 +31,24 @@ const loadAudioFilesFallback = () => {
 };
 
 try {
-  // Update to handle potential file path issues
-  const modules = require.context('./assets/sounds', false, /\.(wav|mp3)$/);
+  // Update to handle potential file path issues - enable recursive search for language subfolders
+  const modules = require.context('./assets/sounds', true, /\.(wav|mp3)$/);
   console.log('Sound files available in require.context:', modules.keys());
 
   audioFiles = modules.keys().map((filename) => {
     try {
       const fileUrl = modules(filename);
-      const { callsign, radio, frequency } = parseFilename(filename);
-      console.log(`Loaded audio file: ${filename} => ${fileUrl}`);
+      // filename is like "./en/OWN_COM1_126-450.wav" or "./el/OWN_COM1_126-450.wav"
+      const { callsign, radio, frequency, language } = parseFilename(filename);
+      console.log(`Loaded audio file: ${filename} (${language}) => ${fileUrl}`);
 
       // Ensure uppercase callsign for consistent filtering
       return {
         file: fileUrl,
         callsign: callsign.toUpperCase(), // Force uppercase for filtering
         radio,
-        frequency
+        frequency,
+        language
       };
     } catch (error) {
       console.error(`Error processing file ${filename}:`, error);
@@ -80,15 +83,31 @@ if (audioFiles.length === 0) {
   console.log('Created dummy audio files as a last resort:', audioFiles);
 }
 
-/** Parse filename like "./OWN_COM2_125-500.wav" => { callsign:'OWN', radio:'COM2', frequency:'125.500' } */
+/** Parse filename like "./en/OWN_COM2_125-500.wav" => { callsign:'OWN', radio:'COM2', frequency:'125.500', language:'en' } */
 function parseFilename(filename) {
-  const base = filename.replace('./', '').replace('.wav', '');
-  const parts = base.split('_'); // e.g., ["OWN", "COM2", "125-500"]
-  const callsign = parts[0];
-  const radio = parts[1];
-  const freqRaw = parts[2];
+  // Remove ./ prefix
+  const cleanPath = filename.replace(/^\.\//, '');
+
+  // Extract language folder if present (e.g., "en/" or "el/")
+  const parts = cleanPath.split('/');
+
+  let language = 'en'; // Default to english if no folder structure
+  let filePart = cleanPath;
+
+  if (parts.length > 1) {
+    language = parts[0];
+    filePart = parts[parts.length - 1]; // Get the actual filename
+  }
+
+  const base = filePart.replace('.wav', '').replace('.mp3', '');
+  const nameParts = base.split('_'); // e.g., ["OWN", "COM2", "125-500"]
+
+  const callsign = nameParts[0];
+  const radio = nameParts[1];
+  const freqRaw = nameParts[2];
   const frequency = freqRaw ? freqRaw.replace('-', '.') : '000.000'; // "125.500"
-  return { callsign, radio, frequency };
+
+  return { callsign, radio, frequency, language };
 }
 
 // The radios in order for up/down arrow cycling
@@ -112,6 +131,7 @@ const CommunicationsTask = forwardRef(({
   onMetricsUpdate,
   autoEvents = false
 }, ref) => {
+  const { t, i18n } = useTranslation();
   const ownCallSign = 'NASA504';
 
   // -------------------------------------------------------------------------
@@ -187,9 +207,20 @@ const CommunicationsTask = forwardRef(({
     });
 
     // Filter messages by own/other callsign
-    const eligibleFiles = audioFiles.filter(file =>
+    let eligibleFiles = audioFiles.filter(file =>
       isOwnCall ? file.callsign === 'OWN' : file.callsign !== 'OWN'
     );
+
+    // Filter by current language, fallback to English
+    const currentLang = (i18n.language || 'en').split('-')[0];
+    const languageFiles = eligibleFiles.filter(file => file.language === currentLang);
+
+    if (languageFiles.length > 0) {
+      eligibleFiles = languageFiles;
+    } else {
+      // Fallback to English if no files found for current language
+      eligibleFiles = eligibleFiles.filter(file => file.language === 'en');
+    }
 
     console.log(`Found ${eligibleFiles.length} eligible files for ${isOwnCall ? 'OWN' : 'OTHER'} callsign`);
 
@@ -1695,7 +1726,7 @@ const CommunicationsTask = forwardRef(({
         alignItems: 'center'
       }}>
         <div style={{ width: '80px' }}></div> {/* Empty div for balance */}
-        <div>COMMUNICATIONS TASK</div>
+        <div>{t('tasks.communications.title')}</div>
         <div style={{ width: '80px' }}></div> {/* Empty div for balance */}
       </div>
 
@@ -1716,7 +1747,7 @@ const CommunicationsTask = forwardRef(({
           padding: '0.5rem',
           flexShrink: 0
         }}>
-          <strong>Call Sign:</strong> {ownCallSign}
+          <strong>{t('tasks.communications.callsign')}:</strong> {ownCallSign}
         </div>
 
         {/* Radios Container */}
@@ -1865,6 +1896,7 @@ const CommunicationsTask = forwardRef(({
 
 // Add Log component as a separate component
 const Log = ({ commLog }) => {
+  const { t } = useTranslation();
   const scrollRef = useAutoScroll();
 
   const handleExport = () => {
@@ -1896,14 +1928,14 @@ const Log = ({ commLog }) => {
           <thead>
             <tr style={{ borderBottom: '1px solid #ccc' }}>
               <th style={{ padding: '0.5rem' }}>Index</th>
-              <th style={{ padding: '0.5rem' }}>Time</th>
-              <th style={{ padding: '0.5rem' }}>Ship</th>
-              <th style={{ padding: '0.5rem' }}>Radio_T</th>
-              <th style={{ padding: '0.5rem' }}>Freq_T</th>
-              <th style={{ padding: '0.5rem' }}>Radio_S</th>
-              <th style={{ padding: '0.5rem' }}>Freq_S</th>
+              <th style={{ padding: '0.5rem' }}>{t('scoreboard.time')}</th>
+              <th style={{ padding: '0.5rem' }}>{t('scoreboard.date')}</th>
+              <th style={{ padding: '0.5rem' }}>{t('tasks.communications.radio')} (T)</th>
+              <th style={{ padding: '0.5rem' }}>{t('tasks.communications.frequency')} (T)</th>
+              <th style={{ padding: '0.5rem' }}>{t('tasks.communications.radio')} (S)</th>
+              <th style={{ padding: '0.5rem' }}>{t('tasks.communications.frequency')} (S)</th>
               <th style={{ padding: '0.5rem' }}>RT</th>
-              <th style={{ padding: '0.5rem' }}>Remarks</th>
+              <th style={{ padding: '0.5rem' }}>Result</th>
             </tr>
           </thead>
           <tbody>

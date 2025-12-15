@@ -6,13 +6,13 @@ const Scoreboard = ({ mode, onClose }) => {
   const { t } = useTranslation();
   const [scores, setScores] = useState([]);
   const [selectedMode, setSelectedMode] = useState(mode || 'normal');
-  
+
   // Load scores on mount and when mode changes
   useEffect(() => {
     const loadedScores = ScoreboardService.getScores(selectedMode);
     setScores(loadedScores);
   }, [selectedMode]);
-  
+
   // Format scores for display
   const formatScore = (score, mode) => {
     if (mode === 'infinite') {
@@ -33,7 +33,7 @@ const Scoreboard = ({ mode, onClose }) => {
     // Normal mode - just show the number
     return Math.floor(score).toLocaleString();
   };
-  
+
   // Format date
   const formatDate = (dateString) => {
     const date = new Date(dateString);
@@ -43,7 +43,7 @@ const Scoreboard = ({ mode, onClose }) => {
       year: 'numeric',
     }).format(date);
   };
-  
+
   return (
     <div style={{
       backgroundColor: 'rgba(0, 0, 0, 0.85)',
@@ -73,12 +73,12 @@ const Scoreboard = ({ mode, onClose }) => {
         pointerEvents: 'auto'
       }}>
         <h2 style={{ textAlign: 'center', marginBottom: '20px' }}>{t('scoreboard.title')}</h2>
-        
+
         {/* Mode selector */}
-        <div style={{ 
-          display: 'flex', 
+        <div style={{
+          display: 'flex',
           flexWrap: 'wrap',
-          justifyContent: 'center', 
+          justifyContent: 'center',
           marginBottom: '20px',
           gap: '10px'
         }}>
@@ -139,24 +139,24 @@ const Scoreboard = ({ mode, onClose }) => {
             {t('nbackTest.title', 'N-Back Test')}
           </button>
         </div>
-        
+
         {/* Scores table */}
         <div style={{ marginBottom: '20px' }}>
-          <table style={{ 
-            width: '100%', 
+          <table style={{
+            width: '100%',
             borderCollapse: 'collapse',
             color: 'white',
-            tableLayout: 'fixed' 
+            tableLayout: 'fixed'
           }}>
             <thead>
               <tr style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.2)' }}>
                 <th style={{ padding: '10px', textAlign: 'center', width: '10%' }}>#</th>
                 <th style={{ padding: '10px', textAlign: 'left', width: '40%' }}>{t('scoreboard.playerName')}</th>
                 <th style={{ padding: '10px', textAlign: 'right', width: '25%' }}>
-                  {selectedMode === 'infinite' ? t('scoreboard.time') : 
-                   selectedMode === 'reaction' ? t('reactionTest.averageTime', 'Average Time') : 
-                   selectedMode === 'nback' ? t('nbackTest.performanceScore', 'Performance Score') :
-                   t('scoreboard.score')}
+                  {selectedMode === 'infinite' ? t('scoreboard.time') :
+                    selectedMode === 'reaction' ? t('reactionTest.averageTime', 'Average Time') :
+                      selectedMode === 'nback' ? t('nbackTest.performanceScore') :
+                        t('scoreboard.score')}
                 </th>
                 <th style={{ padding: '10px', textAlign: 'right', width: '25%' }}>{t('scoreboard.date')}</th>
               </tr>
@@ -164,21 +164,21 @@ const Scoreboard = ({ mode, onClose }) => {
             <tbody>
               {scores.length > 0 ? (
                 scores.map((score, index) => (
-                  <tr 
+                  <tr
                     key={index}
-                    style={{ 
+                    style={{
                       backgroundColor: index % 2 === 0 ? 'rgba(0, 0, 0, 0.2)' : 'transparent',
                       borderBottom: '1px solid rgba(255, 255, 255, 0.05)'
                     }}
                   >
                     <td style={{ padding: '8px', textAlign: 'center' }}>{index + 1}</td>
-                    <td style={{ padding: '8px', textAlign: 'left' }}>{score.name || 'Anonymous'}</td>
+                    <td style={{ padding: '8px', textAlign: 'left' }}>{score.name || t('scoreboard.anonymous')}</td>
                     <td style={{ padding: '8px', textAlign: 'right' }}>
                       {formatScore(score.score, selectedMode)}
                       {selectedMode === 'nback' ? '%' : ''}
-                      {selectedMode === 'reaction' && score.stimuliCount && 
+                      {selectedMode === 'reaction' && score.stimuliCount &&
                         ` (${score.stimuliCount} ${t('reactionTest.stimuli', 'stimuli')})`}
-                      {selectedMode === 'nback' && score.nValue && 
+                      {selectedMode === 'nback' && score.nValue &&
                         ` (${score.nValue}-back)`}
                     </td>
                     <td style={{ padding: '8px', textAlign: 'right' }}>
@@ -196,7 +196,7 @@ const Scoreboard = ({ mode, onClose }) => {
             </tbody>
           </table>
         </div>
-        
+
         {/* Close button */}
         <div style={{ textAlign: 'center' }}>
           <button
