@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, BarElement, Title, Tooltip, Legend } from 'chart.js';
 import { Line, Bar } from 'react-chartjs-2';
 import { useTranslation } from 'react-i18next';
+import ScoreboardService from '../services/ScoreboardService';
 
 // Register ChartJS components
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, Title, Tooltip, Legend);
@@ -11,7 +12,7 @@ const DEBUG_MODE = false;
 
 // Helper component for showing keyboard shortcuts
 const KeyboardShortcut = ({ keys, description, onClick }) => (
-  <div 
+  <div
     style={{
       display: 'inline-flex',
       alignItems: 'center',
@@ -38,7 +39,7 @@ const KeyboardShortcut = ({ keys, description, onClick }) => (
   </div>
 );
 
-const ReactionTimeTest = ({ 
+const ReactionTimeTest = ({
   duration = 30000, // 30 seconds default
   maxStimuli = 10,
   minDelay = 1500, // 1.5 seconds
@@ -59,7 +60,7 @@ const ReactionTimeTest = ({
   const [averageReactionTime, setAverageReactionTime] = useState(0);
   const [debugMessage, setDebugMessage] = useState('Ready');
   const [debug, setDebug] = useState([]);
-  
+
   // Score saving state - moved to top level to fix conditional hooks issue
   const [playerName, setPlayerName] = useState('');
   const [scoreSaved, setScoreSaved] = useState(false);
@@ -73,7 +74,7 @@ const ReactionTimeTest = ({
   const currentStimulusIndexRef = useRef(0); // Keep a ref to current index for timeout callbacks
   const timersRef = useRef([]); // Track all timers for better cleanup
   const isActiveRef = useRef(false); // Track active state for callbacks
-  
+
   // Update ref when state changes
   useEffect(() => {
     isActiveRef.current = isActive;
@@ -83,10 +84,10 @@ const ReactionTimeTest = ({
   const debugLog = (message) => {
     const timestamp = new Date().toLocaleTimeString();
     const logMessage = `[${timestamp}] ${message}`;
-    
+
     console.log(`ReactionTimeTest: ${message}`);
     setDebugMessage(message);
-    
+
     if (DEBUG_MODE) {
       setDebug(prev => {
         const newDebug = [`${logMessage}`, ...prev];
@@ -112,7 +113,7 @@ const ReactionTimeTest = ({
         }
       }
     };
-    
+
     window.addEventListener('keydown', handleKeyDown);
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
@@ -122,7 +123,7 @@ const ReactionTimeTest = ({
   // Generate time buckets for histogram
   const generateHistogramData = (times) => {
     if (!times.length) return { labels: [], data: [] };
-    
+
     // Define buckets in ms (0-100, 100-200, etc.)
     const bucketSize = 50;
     const maxTime = Math.ceil(Math.max(...times) / bucketSize) * bucketSize;
@@ -185,19 +186,19 @@ const ReactionTimeTest = ({
   // Clear all timers
   const clearAllTimers = () => {
     debugLog('Clearing all timers');
-    
+
     // Clear game timer
     if (gameTimerRef.current) {
       clearInterval(gameTimerRef.current);
       gameTimerRef.current = null;
     }
-    
+
     // Clear next stimulus timeout
     if (nextStimulusTimeoutRef.current) {
       clearTimeout(nextStimulusTimeoutRef.current);
       nextStimulusTimeoutRef.current = null;
     }
-    
+
     // Clear all tracked timers
     timersRef.current.forEach(timer => {
       if (timer) clearTimeout(timer);
@@ -208,13 +209,13 @@ const ReactionTimeTest = ({
   // End the game
   const endGame = () => {
     debugLog('Ending game and calculating results');
-    
+
     setIsActive(false);
     setIsFinished(true);
-    
+
     // Clear all timers
     clearAllTimers();
-    
+
     // Calculate average reaction time
     if (reactionTimes.length > 0) {
       const avg = reactionTimes.reduce((a, b) => a + b, 0) / reactionTimes.length;
@@ -239,7 +240,7 @@ const ReactionTimeTest = ({
       debugLog('Not showing stimulus - component unmounted');
       return;
     }
-    
+
     if (!isActiveRef.current) {
       debugLog('Not showing stimulus - game not active');
       return;
@@ -262,12 +263,12 @@ const ReactionTimeTest = ({
       debugLog('Not scheduling stimulus - component unmounted');
       return;
     }
-    
+
     if (!isActiveRef.current) {
       debugLog('Not scheduling stimulus - game not active');
       return;
     }
-    
+
     if (currentStimulusIndexRef.current >= maxStimuli) {
       debugLog('All stimuli presented, ending game');
       endGame();
@@ -277,13 +278,13 @@ const ReactionTimeTest = ({
     // Random delay between minDelay and maxDelay
     const delay = Math.floor(Math.random() * (maxDelay - minDelay + 1)) + minDelay;
     debugLog(`Scheduling stimulus ${currentStimulusIndexRef.current + 1} with delay ${delay}ms`);
-    
+
     // Clear any existing timeout
     if (nextStimulusTimeoutRef.current) {
       clearTimeout(nextStimulusTimeoutRef.current);
       nextStimulusTimeoutRef.current = null;
     }
-    
+
     // Schedule next stimulus and track the timer ID
     const timerId = setTimeout(() => {
       debugLog(`Timeout fired for stimulus ${currentStimulusIndexRef.current + 1}`);
@@ -293,7 +294,7 @@ const ReactionTimeTest = ({
         debugLog(`Stimulus ${currentStimulusIndexRef.current + 1} not shown - component unmounted or game inactive`);
       }
     }, delay);
-    
+
     nextStimulusTimeoutRef.current = timerId;
     timersRef.current.push(timerId);
   };
@@ -304,39 +305,39 @@ const ReactionTimeTest = ({
       debugLog('Reaction ignored - component unmounted');
       return;
     }
-    
+
     if (!isActiveRef.current) {
       debugLog('Reaction ignored - game not active');
       return;
     }
-    
+
     if (!showStimulus) {
       debugLog('Reaction ignored - no stimulus shown');
       return;
     }
-    
+
     const reactionTime = Date.now() - stimulusStartTime.current;
     debugLog(`User reacted to stimulus ${currentStimulusIndexRef.current + 1} in ${reactionTime}ms`);
-    
+
     setReactionTimes(prev => [...prev, reactionTime]);
     setShowStimulus(false);
-    
+
     // Show fixation cross
     setShowFixation(true);
-    
+
     // Increment index
     currentStimulusIndexRef.current += 1;
     setCurrentStimulusIndex(currentStimulusIndexRef.current);
-    
+
     // Set a timeout for showing the fixation cross before next stimulus
     const fixationTimer = setTimeout(() => {
       if (!isComponentMounted.current) {
         debugLog('Fixation timeout ignored - component unmounted');
         return;
       }
-      
+
       setShowFixation(false);
-      
+
       // Schedule next stimulus if game is still active
       if (isActiveRef.current && currentStimulusIndexRef.current < maxStimuli) {
         debugLog(`Fixation timeout complete, scheduling next stimulus ${currentStimulusIndexRef.current + 1}`);
@@ -348,7 +349,7 @@ const ReactionTimeTest = ({
         debugLog('Game no longer active, not scheduling next stimulus');
       }
     }, 500); // Fixation cross shows for 0.5 seconds
-    
+
     timersRef.current.push(fixationTimer);
   };
 
@@ -356,7 +357,7 @@ const ReactionTimeTest = ({
   const handleKeyPress = (e) => {
     if (e.code === 'Space') {
       debugLog(`Space key pressed, stimulus shown: ${showStimulus}, game active: ${isActive}`);
-      
+
       if (showStimulus && isActive) {
         debugLog('Spacebar pressed for stimulus response');
         handleReaction();
@@ -369,27 +370,27 @@ const ReactionTimeTest = ({
     debugLog('Setting up spacebar listener');
     const keyListener = (e) => handleKeyPress(e);
     window.addEventListener('keydown', keyListener);
-    
+
     return () => {
       debugLog('Removing spacebar listener');
       window.removeEventListener('keydown', keyListener);
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showStimulus, isActive]); // Adding dependencies but disabling the lint rule
-  
+
   // Track currentState in effect for debugging
   useEffect(() => {
     if (showStimulus) {
       debugLog(`State updated: stimulus ${currentStimulusIndexRef.current + 1} is now visible`);
     }
   }, [showStimulus]);
-  
+
   // Force trigger a stimulus for debugging purposes
   const forceTriggerStimulus = () => {
     debugLog("Forcing stimulus to appear...");
     showNextStimulus();
   };
-  
+
   // Manually schedule the first stimulus again
   const forceScheduleFirstStimulus = () => {
     debugLog("Forcing stimulus schedule...");
@@ -399,14 +400,14 @@ const ReactionTimeTest = ({
   // Handle starting the game
   const startGame = () => {
     debugLog(`Starting game with settings: duration=${duration}, maxStimuli=${maxStimuli}, minDelay=${minDelay}, maxDelay=${maxDelay}`);
-    
+
     // Reset game state
     clearAllTimers();
-    
+
     // Set active state first to ensure it's true when the timeout fires
     setIsActive(true);
     isActiveRef.current = true; // Update ref immediately to avoid race condition
-    
+
     // Then set other states
     setIsStarted(true);
     setTimeRemaining(duration);
@@ -415,11 +416,11 @@ const ReactionTimeTest = ({
     setShowStimulus(false);
     setShowFixation(false);
     currentStimulusIndexRef.current = 0;
-    
+
     // Start the game timer - only for displaying a countdown, game ends when all stimuli complete
     gameTimerRef.current = setInterval(() => {
       if (!isComponentMounted.current) return;
-      
+
       setTimeRemaining(prev => {
         const newTime = prev - 100;
         if (newTime <= 0) {
@@ -430,28 +431,28 @@ const ReactionTimeTest = ({
         return newTime;
       });
     }, 100);
-    
+
     // Use a smaller delay to ensure isActive has been applied before scheduling
     setTimeout(() => {
       // Schedule the first stimulus - directly invoke the function to avoid race conditions
       debugLog('Scheduling first stimulus soon...');
-      
+
       const firstStimulusTimer = setTimeout(() => {
         if (!isComponentMounted.current) {
           debugLog('First stimulus timeout ignored - component unmounted');
           return;
         }
-        
+
         // Use isActiveRef which is updated immediately, not isActive which depends on React render cycle
         if (!isActiveRef.current) {
           debugLog('First stimulus timeout ignored - game not active (using ref)');
           return;
         }
-        
+
         debugLog('First stimulus timeout fired, calling scheduleNextStimulus()');
         scheduleNextStimulus();
       }, 1000); // Reduced from 2000ms to 1000ms
-      
+
       timersRef.current.push(firstStimulusTimer);
     }, 100); // Short delay to ensure state update has been processed
   };
@@ -468,7 +469,7 @@ const ReactionTimeTest = ({
       });
     }
   };
-  
+
   // Handle direct return to main menu
   const handleMainMenuReturn = () => {
     debugLog('Returning to main menu');
@@ -481,23 +482,23 @@ const ReactionTimeTest = ({
   useEffect(() => {
     debugLog('Component mounted');
     isComponentMounted.current = true;
-    
+
     // Return cleanup function
     return () => {
       debugLog('Component unmounting, cleaning up timers');
       isComponentMounted.current = false;
-      
+
       // Immediately clear all timers on unmount
       if (gameTimerRef.current) {
         clearInterval(gameTimerRef.current);
         gameTimerRef.current = null;
       }
-      
+
       if (nextStimulusTimeoutRef.current) {
         clearTimeout(nextStimulusTimeoutRef.current);
         nextStimulusTimeoutRef.current = null;
       }
-      
+
       timersRef.current.forEach(timer => {
         if (timer) clearTimeout(timer);
       });
@@ -528,8 +529,8 @@ const ReactionTimeTest = ({
         }}>
           <h1>{t('reactionTest.title', 'Reaction Time Test')}</h1>
           <p>{t('reactionTest.instructions', 'Test your reaction time by clicking or pressing SPACE as quickly as possible when you see a red dot.')}</p>
-          <p>{t('reactionTest.testDetails', 'The test will last up to {{duration}} seconds with a maximum of {{maxStimuli}} stimuli.', {duration: duration/1000, maxStimuli})}</p>
-          <button 
+          <p>{t('reactionTest.testDetails', 'The test will last up to {{duration}} seconds with a maximum of {{maxStimuli}} stimuli.', { duration: duration / 1000, maxStimuli })}</p>
+          <button
             onClick={startGame}
             style={{
               backgroundColor: '#4CAF50',
@@ -544,8 +545,8 @@ const ReactionTimeTest = ({
           >
             {t('reactionTest.startTest', 'Start Test')}
           </button>
-          
-          <button 
+
+          <button
             onClick={handleMainMenuReturn}
             style={{
               backgroundColor: '#6c757d',
@@ -560,12 +561,12 @@ const ReactionTimeTest = ({
           >
             {t('common.returnToMenu', 'Return to Main Menu')}
           </button>
-          
+
           <div style={{ marginTop: '20px', fontSize: '14px', opacity: 0.7 }}>
-            <KeyboardShortcut 
-              keys={['Ctrl', 'Q']} 
-              description={t('reactionTest.returnToMenu', 'Return to main menu')} 
-              onClick={handleMainMenuReturn} 
+            <KeyboardShortcut
+              keys={['Ctrl', 'Q']}
+              description={t('reactionTest.returnToMenu', 'Return to main menu')}
+              onClick={handleMainMenuReturn}
             />
           </div>
         </div>
@@ -577,12 +578,11 @@ const ReactionTimeTest = ({
   if (isFinished) {
     // Only show save option if there are valid reaction times
     const canSaveScore = reactionTimes.length > 0;
-    
+
     // Handle saving the score
     const handleSaveScore = () => {
-      // Import at function level to avoid circular dependencies
-      const ScoreboardService = require('../services/ScoreboardService').default;
-      
+      // Use the imported service directly
+
       // Save the average reaction time as the score
       ScoreboardService.saveScore('reaction', averageReactionTime, playerName, {
         stimuliCount: reactionTimes.length,
@@ -590,18 +590,18 @@ const ReactionTimeTest = ({
         slowestTime: Math.max(...reactionTimes),
         totalTime: duration - timeRemaining
       });
-      
+
       setScoreSaved(true);
       setShowSaveForm(false);
     };
-    
+
     return (
       <div style={{
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
         padding: '20px',
-        minHeight: '100vh',
+        height: '100vh',
         backgroundColor: 'rgba(26, 42, 58, 0.85)', // Semi-transparent background
         color: 'white',
         overflow: 'auto'
@@ -615,10 +615,10 @@ const ReactionTimeTest = ({
           marginBottom: '30px'
         }}>
           <h1 style={{ textAlign: 'center' }}>{t('reactionTest.results', 'Reaction Time Results')}</h1>
-          
-          <div style={{ 
-            background: 'rgba(255,255,255,0.1)', 
-            padding: '20px', 
+
+          <div style={{
+            background: 'rgba(255,255,255,0.1)',
+            padding: '20px',
             borderRadius: '8px',
             marginBottom: '20px',
             width: '100%',
@@ -633,7 +633,7 @@ const ReactionTimeTest = ({
               </>
             )}
           </div>
-          
+
           {reactionTimes.length > 0 ? (
             <>
               <div style={{ width: '100%', marginBottom: '30px' }}>
@@ -667,7 +667,7 @@ const ReactionTimeTest = ({
                   />
                 </div>
               </div>
-              
+
               <div style={{ width: '100%', marginBottom: '30px' }}>
                 <h3 style={{ textAlign: 'center' }}>{t('reactionTest.timeDistribution', 'Reaction Time Distribution')}</h3>
                 <div style={{ height: '300px', background: 'rgba(255,255,255,0.05)', padding: '10px', borderRadius: '8px' }}>
@@ -704,12 +704,12 @@ const ReactionTimeTest = ({
                   />
                 </div>
               </div>
-              
+
               {/* Score saving section */}
               {canSaveScore && !scoreSaved && !showSaveForm && (
-                <div style={{ 
-                  textAlign: 'center', 
-                  marginBottom: '20px', 
+                <div style={{
+                  textAlign: 'center',
+                  marginBottom: '20px',
                   padding: '15px',
                   background: 'rgba(255,255,255,0.05)',
                   borderRadius: '8px'
@@ -730,11 +730,11 @@ const ReactionTimeTest = ({
                   </button>
                 </div>
               )}
-              
+
               {canSaveScore && showSaveForm && (
-                <div style={{ 
-                  textAlign: 'center', 
-                  marginBottom: '20px', 
+                <div style={{
+                  textAlign: 'center',
+                  marginBottom: '20px',
                   padding: '15px',
                   background: 'rgba(255,255,255,0.05)',
                   borderRadius: '8px'
@@ -756,7 +756,7 @@ const ReactionTimeTest = ({
                       }}
                     />
                   </div>
-                  
+
                   <div style={{ display: 'flex', justifyContent: 'center', gap: '10px' }}>
                     <button
                       onClick={handleSaveScore}
@@ -773,7 +773,7 @@ const ReactionTimeTest = ({
                     >
                       {t('gameOver.submit', 'Submit')}
                     </button>
-                    
+
                     <button
                       onClick={() => setShowSaveForm(false)}
                       style={{
@@ -791,11 +791,11 @@ const ReactionTimeTest = ({
                   </div>
                 </div>
               )}
-              
+
               {canSaveScore && scoreSaved && (
-                <div style={{ 
-                  textAlign: 'center', 
-                  marginBottom: '20px', 
+                <div style={{
+                  textAlign: 'center',
+                  marginBottom: '20px',
                   padding: '15px',
                   background: 'rgba(75, 192, 192, 0.2)',
                   borderRadius: '8px',
@@ -806,21 +806,21 @@ const ReactionTimeTest = ({
               )}
             </>
           ) : (
-            <div style={{ 
-              background: 'rgba(255,255,255,0.05)', 
-              padding: '20px', 
+            <div style={{
+              background: 'rgba(255,255,255,0.05)',
+              padding: '20px',
               borderRadius: '8px',
               marginBottom: '20px',
               width: '100%',
-              textAlign: 'center' 
+              textAlign: 'center'
             }}>
               <h3>No reaction times recorded</h3>
               <p>Try again to test your reaction time.</p>
             </div>
           )}
-          
+
           <div style={{ display: 'flex', gap: '15px', justifyContent: 'center', marginTop: '20px' }}>
-            <button 
+            <button
               onClick={handleReturn}
               style={{
                 backgroundColor: '#4CAF50',
@@ -834,8 +834,8 @@ const ReactionTimeTest = ({
             >
               {t('reactionTest.tryAgain', 'Try Again')}
             </button>
-            
-            <button 
+
+            <button
               onClick={handleMainMenuReturn}
               style={{
                 backgroundColor: '#007BFF',
@@ -850,12 +850,12 @@ const ReactionTimeTest = ({
               {t('common.returnToMenu', 'Return to Main Menu')}
             </button>
           </div>
-          
+
           <div style={{ marginTop: '20px', fontSize: '14px', opacity: 0.7, textAlign: 'center' }}>
-            <KeyboardShortcut 
-              keys={['Ctrl', 'Q']} 
-              description={t('reactionTest.returnToMenu', 'Return to main menu')} 
-              onClick={handleMainMenuReturn} 
+            <KeyboardShortcut
+              keys={['Ctrl', 'Q']}
+              description={t('reactionTest.returnToMenu', 'Return to main menu')}
+              onClick={handleMainMenuReturn}
             />
           </div>
         </div>
@@ -886,7 +886,7 @@ const ReactionTimeTest = ({
         <p style={{ margin: '0' }}>{t('reactionTest.timeRemaining', 'Time')}: {formatTime(timeRemaining)}</p>
         <p style={{ margin: '0' }}>{t('reactionTest.stimuliProgress', 'Stimuli')}: {currentStimulusIndex}/{maxStimuli}</p>
       </div>
-      
+
       {/* Debug info - only shown when DEBUG_MODE is true */}
       {DEBUG_MODE && (
         <div style={{
@@ -906,7 +906,7 @@ const ReactionTimeTest = ({
           <p style={{ margin: '0' }}>Active: {isActive ? 'Yes' : 'No'}</p>
           <p style={{ margin: '0' }}>Stimulus Visible: {showStimulus ? 'Yes' : 'No'}</p>
           <div style={{ display: 'flex', gap: '5px', marginTop: '5px' }}>
-            <button 
+            <button
               onClick={forceTriggerStimulus}
               style={{
                 backgroundColor: '#007BFF',
@@ -920,7 +920,7 @@ const ReactionTimeTest = ({
             >
               Force Stimulus
             </button>
-            <button 
+            <button
               onClick={forceScheduleFirstStimulus}
               style={{
                 backgroundColor: '#28a745',
@@ -935,10 +935,10 @@ const ReactionTimeTest = ({
               Schedule Next
             </button>
           </div>
-          
-          <div style={{ 
-            marginTop: '10px', 
-            maxHeight: '150px', 
+
+          <div style={{
+            marginTop: '10px',
+            maxHeight: '150px',
             overflowY: 'auto',
             background: 'rgba(0,0,0,0.5)',
             padding: '5px',
@@ -947,8 +947,8 @@ const ReactionTimeTest = ({
           }}>
             <p style={{ margin: '0', borderBottom: '1px solid #333', paddingBottom: '3px' }}>Debug Log:</p>
             {debug.map((message, index) => (
-              <div key={index} style={{ 
-                padding: '2px 0', 
+              <div key={index} style={{
+                padding: '2px 0',
                 borderBottom: index < debug.length - 1 ? '1px solid #222' : 'none',
                 wordBreak: 'break-word'
               }}>
@@ -958,7 +958,7 @@ const ReactionTimeTest = ({
           </div>
         </div>
       )}
-      
+
       <div style={{
         width: '80%',
         height: '60%',
@@ -973,7 +973,7 @@ const ReactionTimeTest = ({
         position: 'relative'
       }}>
         {showStimulus && (
-          <div 
+          <div
             onClick={handleReaction}
             style={{
               width: '80px',
@@ -984,7 +984,7 @@ const ReactionTimeTest = ({
             }}
           />
         )}
-        
+
         {showFixation && (
           <div style={{
             fontSize: '40px',
@@ -993,21 +993,21 @@ const ReactionTimeTest = ({
             +
           </div>
         )}
-        
+
         {!showStimulus && !showFixation && (
           <p>{t('reactionTest.getReady', 'Get ready for the next stimulus...')}</p>
         )}
       </div>
-      
+
       <p style={{ marginTop: '20px' }}>
         {t('reactionTest.actionInstructions', 'Press SPACE or click the red dot when it appears')}
       </p>
-      
+
       <div style={{ marginTop: '20px', fontSize: '14px', opacity: 0.7 }}>
-        <KeyboardShortcut 
-          keys={['Ctrl', 'Q']} 
-          description={t('reactionTest.returnToMenu', 'Return to main menu')} 
-          onClick={handleMainMenuReturn} 
+        <KeyboardShortcut
+          keys={['Ctrl', 'Q']}
+          description={t('reactionTest.returnToMenu', 'Return to main menu')}
+          onClick={handleMainMenuReturn}
         />
       </div>
     </div>

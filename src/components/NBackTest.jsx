@@ -19,7 +19,7 @@ function generateDesign(n, dim1targs, dim2targs, bothtargs, trials) {
   // Ensure we don't have more targets than possible positions
   // And make sure the sum of all target types doesn't exceed available trials
   const totalTargetSpace = maxPossibleTargets;
-  
+
   // Adjust target counts if they exceed available space
   if (dim1targs + dim2targs + bothtargs > totalTargetSpace) {
     // Scale down proportionally
@@ -27,7 +27,7 @@ function generateDesign(n, dim1targs, dim2targs, bothtargs, trials) {
     dim1targs = Math.floor(dim1targs * scale);
     dim2targs = Math.floor(dim2targs * scale);
     bothtargs = Math.floor(bothtargs * scale);
-    
+
     // If we're short after rounding, prioritize dual targets, then distribute evenly
     let remaining = totalTargetSpace - (dim1targs + dim2targs + bothtargs);
     while (remaining > 0) {
@@ -45,11 +45,11 @@ function generateDesign(n, dim1targs, dim2targs, bothtargs, trials) {
   // Create empty slots for the remaining trials
   const remainingTrials = trials - n;
   const restOfDesign = Array(remainingTrials).fill(null);
-  
+
   if (DEBUG_MODE) {
     console.log(`Generating design with: ${dim1targs} letter targets, ${dim2targs} position targets, ${bothtargs} dual targets`);
   }
-  
+
   // First, assign positions for dual targets (both dimensions)
   const bothPositions = [];
   for (let i = 0; i < bothtargs; i++) {
@@ -60,7 +60,7 @@ function generateDesign(n, dim1targs, dim2targs, bothtargs, trials) {
     bothPositions.push(pos);
     restOfDesign[pos] = [1, 1];
   }
-  
+
   // Next, assign positions for dimension 1 (letter) targets
   const dim1Positions = [];
   for (let i = 0; i < dim1targs; i++) {
@@ -71,7 +71,7 @@ function generateDesign(n, dim1targs, dim2targs, bothtargs, trials) {
     dim1Positions.push(pos);
     restOfDesign[pos] = [1, 0];
   }
-  
+
   // Next, assign positions for dimension 2 (position) targets
   const dim2Positions = [];
   for (let i = 0; i < dim2targs; i++) {
@@ -82,24 +82,24 @@ function generateDesign(n, dim1targs, dim2targs, bothtargs, trials) {
     dim2Positions.push(pos);
     restOfDesign[pos] = [0, 1];
   }
-  
+
   // Fill remaining positions with non-targets
   for (let i = 0; i < remainingTrials; i++) {
     if (!restOfDesign[i]) {
       restOfDesign[i] = [0, 0];
     }
   }
-  
+
   // Log the final counts for verification
   if (DEBUG_MODE) {
     const finalDesign = baseDesign.concat(restOfDesign);
     const letterTargets = finalDesign.filter(d => d[0] === 1).length;
     const positionTargets = finalDesign.filter(d => d[1] === 1).length;
     const dualTargets = finalDesign.filter(d => d[0] === 1 && d[1] === 1).length;
-    
+
     console.log(`Final design has: ${letterTargets} letter targets, ${positionTargets} position targets, ${dualTargets} dual targets`);
   }
-  
+
   return baseDesign.concat(restOfDesign);
 }
 
@@ -138,18 +138,18 @@ function generateStimuliSequence(design, n) {
   return [dim1stim, dim2stim];
 }
 
-const NBackTest = ({ 
-  trials = 20, 
+const NBackTest = ({
+  trials = 20,
   n = 2,
   dim1targets = 4,
-  dim2targets = 4, 
+  dim2targets = 4,
   bothTargets = 2,
   tickTime = 3000, // 3 seconds per stimulus
   onFinish,
   onReturn
 }) => {
   const { t } = useTranslation();
-  
+
   // Game state
   const [testStarted, setTestStarted] = useState(false);
   const [isFinished, setIsFinished] = useState(false);
@@ -157,41 +157,41 @@ const NBackTest = ({
   const [design, setDesign] = useState([]);
   const [stimuli, setStimuli] = useState([[], []]);
   const [responses, setResponses] = useState([]);
-  
+
   // Grid state
   const [gridSquares, setGridSquares] = useState(Array(9).fill('white'));
   const [activeLetter, setActiveLetter] = useState('');
-  
+
   // Response feedback
   const [buttonClassA, setButtonClassA] = useState('');
   const [buttonClassL, setButtonClassL] = useState('');
-  
+
   // Results
   const [results, setResults] = useState({
     dim1: { hits: 0, misses: 0, correctRejections: 0, falseAlarms: 0 },
     dim2: { hits: 0, misses: 0, correctRejections: 0, falseAlarms: 0 }
   });
-  
+
   // Score saving state
   const [playerName, setPlayerName] = useState('');
   const [scoreSaved, setScoreSaved] = useState(false);
   const [showSaveForm, setShowSaveForm] = useState(false);
-  
+
   // Refs
   const timerRef = useRef(null);
   const isMountedRef = useRef(true);
   const stimuliRef = useRef([[], []]);
   const audioRef = useRef(null);
-  
+
   // Available letters for nBack
   const nBackLetters = ['C', 'H', 'K', 'N', 'R', 'W', 'X', 'Y'];
-  
+
   // Clean up on unmount
   useEffect(() => {
     isMountedRef.current = true;
     // Create a single shared audio element
     audioRef.current = new Audio();
-    
+
     return () => {
       isMountedRef.current = false;
       if (timerRef.current) {
@@ -208,25 +208,25 @@ const NBackTest = ({
   // Play a letter sound using the shared audio element
   const playLetterSound = (letter) => {
     if (!audioRef.current) return;
-    
+
     try {
       // Reset the audio element
       audioRef.current.pause();
       audioRef.current.currentTime = 0;
-      
+
       // Set the source and play
       const audioPath = `${process.env.PUBLIC_URL}/assets/nback-sounds/${letter}.wav`;
-      
+
       // Only set a new source if it's different from the current one
       if (audioRef.current.src !== audioPath) {
         audioRef.current.src = audioPath;
       }
-      
+
       // Add an onerror handler
       audioRef.current.onerror = (err) => {
         console.error(`Audio error: ${err.type}`);
       };
-      
+
       // Use a promise with a timeout to handle playback
       const playPromise = audioRef.current.play();
       if (playPromise !== undefined) {
@@ -245,7 +245,7 @@ const NBackTest = ({
       clearInterval(timerRef.current);
       timerRef.current = null;
     }
-    
+
     if (onReturn) {
       onReturn();
     }
@@ -254,16 +254,16 @@ const NBackTest = ({
   // Handle response to stimulus (memoized)
   const handleNBackResponse = useCallback((dimension) => {
     if (!testStarted || currentStimulus < n) return;
-    
+
     const currentDesign = design[currentStimulus];
     if (!currentDesign) return;
 
     const isMatch = currentDesign[dimension] === 1;
-    
+
     if (DEBUG_MODE) {
       console.log(`User response: dimension ${dimension}, stimulus ${currentStimulus}, isMatch: ${isMatch}`);
     }
-    
+
     // Visual feedback
     if (dimension === 0) {
       setButtonClassL(isMatch ? 'correct' : 'incorrect');
@@ -272,7 +272,7 @@ const NBackTest = ({
       setButtonClassA(isMatch ? 'correct' : 'incorrect');
       setTimeout(() => setButtonClassA(''), 500);
     }
-    
+
     // Record response only - actual metrics are calculated at the end
     setResponses(prev => [
       ...prev,
@@ -293,8 +293,8 @@ const NBackTest = ({
         if (DEBUG_MODE) console.log('Ctrl+Q pressed - returning to main menu');
         handleMainMenuReturn();
         return; // Make sure to return early after handling Ctrl+Q
-      } 
-      
+      }
+
       // Only process other keys if test is started and past memorization phase
       if (testStarted && currentStimulus >= n) {
         if (e.key === 'l' || e.key === 'L') {
@@ -304,7 +304,7 @@ const NBackTest = ({
         }
       }
     };
-    
+
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [testStarted, currentStimulus, n, handleNBackResponse, handleMainMenuReturn]);
@@ -314,11 +314,11 @@ const NBackTest = ({
     // Generate design and stimuli
     const newDesign = generateDesign(n, dim1targets, dim2targets, bothTargets, trials);
     const newStimuli = generateStimuliSequence(newDesign, n);
-    
+
     // Clear all state for a fresh start
     // Store in ref for immediate access
     stimuliRef.current = newStimuli;
-    
+
     // Reset state
     setDesign(newDesign);
     setStimuli(newStimuli);
@@ -327,31 +327,31 @@ const NBackTest = ({
     setIsFinished(false);
     setScoreSaved(false);
     setShowSaveForm(false);
-    
+
     // Reset results - explicitly set every counter to zero
     setResults({
-      dim1: { 
-        hits: 0, 
-        misses: 0, 
-        correctRejections: 0, 
-        falseAlarms: 0 
+      dim1: {
+        hits: 0,
+        misses: 0,
+        correctRejections: 0,
+        falseAlarms: 0
       },
-      dim2: { 
-        hits: 0, 
-        misses: 0, 
-        correctRejections: 0, 
-        falseAlarms: 0 
+      dim2: {
+        hits: 0,
+        misses: 0,
+        correctRejections: 0,
+        falseAlarms: 0
       }
     });
-    
+
     // Start the test
     setTestStarted(true);
-    
+
     // Add a 2-second delay before starting the test
     setTimeout(() => {
       // Present the first stimulus directly with the newly generated stimuli
       presentStimulusDirect(0, newStimuli);
-      
+
       // Set up interval for subsequent stimuli
       timerRef.current = setInterval(() => {
         setCurrentStimulus(prev => {
@@ -375,21 +375,21 @@ const NBackTest = ({
       console.error(`Invalid stimulus at index ${stimulusIndex}`);
       return;
     }
-    
+
     // Clear previous stimulus
     setGridSquares(Array(9).fill('white'));
     setActiveLetter('');
-    
+
     // Set letter (1-indexed to 0-indexed)
     const letterIndex = stimuliData[0][stimulusIndex] - 1;
     if (letterIndex < 0 || letterIndex >= nBackLetters.length) {
       console.error(`Invalid letter index: ${letterIndex}`);
       return;
     }
-    
+
     const letter = nBackLetters[letterIndex];
     setActiveLetter(letter);
-    
+
     // Set position (1-indexed to 0-indexed, excluding center)
     const positionIndex = stimuliData[1][stimulusIndex] - 1;
     const positionMapping = [0, 1, 2, 3, 5, 6, 7, 8]; // Skip center (4)
@@ -397,16 +397,16 @@ const NBackTest = ({
       console.error(`Invalid position index: ${positionIndex}`);
       return;
     }
-    
+
     const position = positionMapping[positionIndex];
-    
+
     // Update grid
     setGridSquares(prev => {
       const newGrid = [...prev];
       newGrid[position] = 'green';
       return newGrid;
     });
-    
+
     // Play letter sound using the shared function
     playLetterSound(letter);
   };
@@ -418,22 +418,22 @@ const NBackTest = ({
       console.error(`Invalid stimulus at index ${stimulusIndex}. Stimuli may not be loaded yet.`);
       return;
     }
-    
+
     try {
       // Clear previous stimulus
       setGridSquares(Array(9).fill('white'));
       setActiveLetter('');
-      
+
       // Set letter (1-indexed to 0-indexed)
       const letterIndex = stimuli[0][stimulusIndex] - 1;
       if (letterIndex < 0 || letterIndex >= nBackLetters.length) {
         console.error(`Invalid letter index: ${letterIndex}`);
         return;
       }
-      
+
       const letter = nBackLetters[letterIndex];
       setActiveLetter(letter);
-      
+
       // Set position (1-indexed to 0-indexed, excluding center)
       const positionIndex = stimuli[1][stimulusIndex] - 1;
       const positionMapping = [0, 1, 2, 3, 5, 6, 7, 8]; // Skip center (4)
@@ -441,16 +441,16 @@ const NBackTest = ({
         console.error(`Invalid position index: ${positionIndex}`);
         return;
       }
-      
+
       const position = positionMapping[positionIndex];
-      
+
       // Update grid
       setGridSquares(prev => {
         const newGrid = [...prev];
         newGrid[position] = 'green';
         return newGrid;
       });
-      
+
       // Remove audio playback to prevent double sounds - we already play them in presentStimulusDirect
     } catch (error) {
       console.error(`Error in presentStimulus: ${error.message}`);
@@ -461,12 +461,12 @@ const NBackTest = ({
   // Instead, we'll process all metrics at the end of the test
   useEffect(() => {
     if (!testStarted || currentStimulus < n) return;
-    
+
     // Process the PREVIOUS stimulus (currentStimulus-1) when a new stimulus appears
     // This prevents race conditions with responses
     if (currentStimulus > n) {
       const previousIndex = currentStimulus - 1;
-      
+
       if (DEBUG_MODE) {
         console.log(`Processing response for stimulus ${previousIndex}`);
       }
@@ -479,23 +479,23 @@ const NBackTest = ({
       clearInterval(timerRef.current);
       timerRef.current = null;
     }
-    
+
     // Process all results when the test ends
     if (DEBUG_MODE) {
       console.log("Test ended, calculating final results");
       console.log("Current responses:", responses);
       console.log("Current design:", design);
     }
-    
+
     // Move to the finished state immediately, the results will be calculated in render
     setTestStarted(false);
     setIsFinished(true);
-    
+
     if (onFinish) {
       onFinish();
     }
   };
-  
+
   // Calculate final results directly when needed (not using state updates)
   const calculateFinalResults = () => {
     if (DEBUG_MODE) {
@@ -505,38 +505,38 @@ const NBackTest = ({
         trials
       });
     }
-    
+
     // Create a fresh results object
     const newResults = {
       dim1: { hits: 0, misses: 0, correctRejections: 0, falseAlarms: 0 },
       dim2: { hits: 0, misses: 0, correctRejections: 0, falseAlarms: 0 }
     };
-    
+
     // Counters for design targets
     let dim1TargetCount = 0;
     let dim2TargetCount = 0;
-    
+
     // Process each effective trial (after memorization phase)
     for (let i = n; i < trials; i++) {
       if (!design[i]) {
         if (DEBUG_MODE) console.log(`Missing design for trial ${i}`);
         continue;
       }
-      
+
       // Get the design for this trial
       const [dim1Target, dim2Target] = design[i];
-      
+
       if (DEBUG_MODE) {
         console.log(`Processing trial ${i}: Letter target=${dim1Target}, Position target=${dim2Target}`);
       }
-      
+
       // Keep track of targets in design
       if (dim1Target === 1) dim1TargetCount++;
       if (dim2Target === 1) dim2TargetCount++;
-      
+
       // Process letter dimension
       const dim1Response = responses.find(r => r.dimension === 0 && r.stimulusIndex === i);
-      
+
       if (dim1Target === 1) {
         // Target was present for letter dimension
         if (dim1Response) {
@@ -560,10 +560,10 @@ const NBackTest = ({
           if (DEBUG_MODE) console.log(`Letter CORRECT REJECTION at trial ${i}`);
         }
       }
-      
+
       // Process position dimension
       const dim2Response = responses.find(r => r.dimension === 1 && r.stimulusIndex === i);
-      
+
       if (dim2Target === 1) {
         // Target was present for position dimension
         if (dim2Response) {
@@ -588,14 +588,14 @@ const NBackTest = ({
         }
       }
     }
-    
+
     if (DEBUG_MODE) {
       console.log('Final metrics:');
       console.log('Letter dimension:', newResults.dim1);
       console.log('Position dimension:', newResults.dim2);
       console.log(`Design targets: Letter=${dim1TargetCount}, Position=${dim2TargetCount}`);
     }
-    
+
     // Return the calculated results directly instead of using setState
     return newResults;
   };
@@ -603,14 +603,14 @@ const NBackTest = ({
   // Save score to scoreboard
   const handleSaveScore = (calculatedResults) => {
     if (!playerName.trim()) return;
-    
+
     // Get performance metrics including d'
     const metrics = calculatePerformanceMetrics(calculatedResults);
-    
+
     // Use the scaled d-prime as the primary score
     // This provides a more standardized cognitive measure than simple accuracy
     const overallScore = parseFloat(metrics.overallDPrimeScaled);
-    
+
     const scoreDetails = {
       n: n,
       // Include traditional accuracy measures
@@ -632,7 +632,7 @@ const NBackTest = ({
       dim2CorrectRejections: calculatedResults.dim2.correctRejections,
       nValue: n // Make sure n is included in a consistent format
     };
-    
+
     // Save to scoreboard with correct parameter order: (mode, score, playerName, details)
     ScoreboardService.saveScore('nback', overallScore, playerName, scoreDetails);
     setScoreSaved(true);
@@ -643,25 +643,25 @@ const NBackTest = ({
   const calculatePerformanceMetrics = (calculatedResults) => {
     // Use provided results or fall back to the state if not provided
     const resultsToUse = calculatedResults || results;
-    
+
     // Calculate traditional accuracy
-    const dim1Total = resultsToUse.dim1.hits + resultsToUse.dim1.misses + 
-                    resultsToUse.dim1.correctRejections + resultsToUse.dim1.falseAlarms;
-    const dim2Total = resultsToUse.dim2.hits + resultsToUse.dim2.misses + 
-                    resultsToUse.dim2.correctRejections + resultsToUse.dim2.falseAlarms;
-    
+    const dim1Total = resultsToUse.dim1.hits + resultsToUse.dim1.misses +
+      resultsToUse.dim1.correctRejections + resultsToUse.dim1.falseAlarms;
+    const dim2Total = resultsToUse.dim2.hits + resultsToUse.dim2.misses +
+      resultsToUse.dim2.correctRejections + resultsToUse.dim2.falseAlarms;
+
     const dim1Correct = resultsToUse.dim1.hits + resultsToUse.dim1.correctRejections;
     const dim2Correct = resultsToUse.dim2.hits + resultsToUse.dim2.correctRejections;
-    
+
     const dim1Accuracy = dim1Total > 0 ? (dim1Correct / dim1Total) * 100 : 0;
     const dim2Accuracy = dim2Total > 0 ? (dim2Correct / dim2Total) * 100 : 0;
-    
+
     // Traditional overall accuracy
     const overallAccuracy = parseFloat(((dim1Accuracy + dim2Accuracy) / 2).toFixed(2));
-    
+
     // Calculate d-prime for each dimension
     // d' = Z(hit rate) - Z(false alarm rate)
-    
+
     // Helper function to calculate Z-score (Normal inverse cumulative distribution function)
     const calculateZ = (p) => {
       // Handle undefined or invalid probabilities
@@ -669,12 +669,12 @@ const NBackTest = ({
         if (DEBUG_MODE) console.log(`Invalid probability for Z-score: ${p}`);
         return 0;
       }
-      
+
       // Adjust extreme values to prevent Infinity
       // These adjustments are standard in signal detection theory
       if (p <= 0.01) p = 0.01; // floor
       if (p >= 0.99) p = 0.99; // ceiling
-      
+
       try {
         // Approximation of the normal inverse CDF
         // Source: Numerical Recipes in C (2nd ed.)
@@ -691,41 +691,41 @@ const NBackTest = ({
         return 0;
       }
     };
-    
+
     // Calculate target and non-target trials directly from the results
     // This is more reliable than trying to count from the design after the fact
     const dim1Targets = resultsToUse.dim1.hits + resultsToUse.dim1.misses;
     const dim1NonTargets = resultsToUse.dim1.correctRejections + resultsToUse.dim1.falseAlarms;
     const dim2Targets = resultsToUse.dim2.hits + resultsToUse.dim2.misses;
     const dim2NonTargets = resultsToUse.dim2.correctRejections + resultsToUse.dim2.falseAlarms;
-    
+
     // Calculate hit rates and false alarm rates
     // Use default values if no targets/non-targets to avoid division by zero
     // A hit rate is the proportion of targets correctly identified (hits / total targets)
     // When no targets, use 0.5 (chance level)
     // When no non-targets, use 0.01 (very low false alarm rate)
     let dim1HitRate = 0.5;
-    let dim1FaRate = 0.01; 
+    let dim1FaRate = 0.01;
     let dim2HitRate = 0.5;
     let dim2FaRate = 0.01;
-    
+
     // Only calculate rates if we have data
     if (dim1Targets > 0) {
       dim1HitRate = resultsToUse.dim1.hits / dim1Targets;
     }
-    
+
     if (dim1NonTargets > 0) {
       dim1FaRate = resultsToUse.dim1.falseAlarms / dim1NonTargets;
     }
-    
+
     if (dim2Targets > 0) {
       dim2HitRate = resultsToUse.dim2.hits / dim2Targets;
     }
-    
+
     if (dim2NonTargets > 0) {
       dim2FaRate = resultsToUse.dim2.falseAlarms / dim2NonTargets;
     }
-    
+
     if (DEBUG_MODE) {
       console.log('Performance calculation:');
       console.log(`Letter: ${dim1Targets} targets, ${dim1NonTargets} non-targets`);
@@ -733,53 +733,53 @@ const NBackTest = ({
       console.log(`Position: ${dim2Targets} targets, ${dim2NonTargets} non-targets`);
       console.log(`Position hit rate: ${dim2HitRate}, FA rate: ${dim2FaRate}`);
     }
-    
+
     // Calculate d' for each dimension
     // If there are no targets or responses, use a default value
     let dim1DPrime = 0;
     let dim2DPrime = 0;
-    
+
     // Only calculate d' if we have valid data
     if (dim1Targets > 0 || dim1NonTargets > 0) {
       dim1DPrime = calculateZ(dim1HitRate) - calculateZ(dim1FaRate);
     }
-    
+
     if (dim2Targets > 0 || dim2NonTargets > 0) {
       dim2DPrime = calculateZ(dim2HitRate) - calculateZ(dim2FaRate);
     }
-    
+
     // Average d' across dimensions
     const overallDPrime = (dim1DPrime + dim2DPrime) / 2;
-    
+
     // Scale d' to a more user-friendly range (typically d' ranges from 0 to 4-5)
     // We'll scale it to 0-100 similar to traditional accuracy
     // d' of 4 is considered excellent performance, so map 4 to 100
     const dim1DPrimeScaled = Math.max(0, Math.min(100, (dim1DPrime / 4) * 100)).toFixed(2);
     const dim2DPrimeScaled = Math.max(0, Math.min(100, (dim2DPrime / 4) * 100)).toFixed(2);
     const overallDPrimeScaled = Math.max(0, Math.min(100, (overallDPrime / 4) * 100)).toFixed(2);
-    
+
     return {
       // Trial counts (for debugging)
       dim1Targets,
       dim1NonTargets,
       dim2Targets,
       dim2NonTargets,
-      
+
       // Traditional accuracy
       dim1Accuracy: dim1Accuracy.toFixed(2),
       dim2Accuracy: dim2Accuracy.toFixed(2),
       overallAccuracy: overallAccuracy.toFixed(2),
-      
+
       // Raw d' values
       dim1DPrime: dim1DPrime.toFixed(2),
       dim2DPrime: dim2DPrime.toFixed(2),
       overallDPrime: overallDPrime.toFixed(2),
-      
+
       // Scaled d' values (0-100)
       dim1DPrimeScaled: dim1DPrimeScaled,
       dim2DPrimeScaled: dim2DPrimeScaled,
       overallDPrimeScaled: overallDPrimeScaled,
-      
+
       // Hit rates and false alarm rates
       dim1HitRate: dim1HitRate.toFixed(2),
       dim1FaRate: dim1FaRate.toFixed(2),
@@ -792,7 +792,7 @@ const NBackTest = ({
   function getBarData(calculatedResults) {
     // Use provided results or fall back to the state if not provided
     const resultsToUse = calculatedResults || results;
-    
+
     return {
       labels: [
         t('nbackTest.hits', 'Hits'),
@@ -1016,43 +1016,43 @@ const NBackTest = ({
     // Calculate results directly instead of using the results state
     const calculatedResults = calculateFinalResults();
     const metrics = calculatePerformanceMetrics(calculatedResults);
-    
+
     // Debug validation for metrics
     const debugMetrics = () => {
       if (!DEBUG_MODE) return null;
-      
+
       // Calculate expected totals
       const totalTrials = trials;
       const effectiveTrials = totalTrials - n; // Trials where responses could be made
-      
+
       // Each dimension should have a consistent number of events
-      const dim1Total = calculatedResults.dim1.hits + calculatedResults.dim1.misses + 
-                       calculatedResults.dim1.correctRejections + calculatedResults.dim1.falseAlarms;
-      const dim2Total = calculatedResults.dim2.hits + calculatedResults.dim2.misses + 
-                       calculatedResults.dim2.correctRejections + calculatedResults.dim2.falseAlarms;
-      
+      const dim1Total = calculatedResults.dim1.hits + calculatedResults.dim1.misses +
+        calculatedResults.dim1.correctRejections + calculatedResults.dim1.falseAlarms;
+      const dim2Total = calculatedResults.dim2.hits + calculatedResults.dim2.misses +
+        calculatedResults.dim2.correctRejections + calculatedResults.dim2.falseAlarms;
+
       // Each dimension should have a consistent number of targets
       const dim1Targets = calculatedResults.dim1.hits + calculatedResults.dim1.misses;
       const dim2Targets = calculatedResults.dim2.hits + calculatedResults.dim2.misses;
-      
+
       // Count expected number of targets from design
       let expectedDim1Targets = 0;
       let expectedDim2Targets = 0;
-      
+
       // Only count trials after n (the first n trials are memorization)
       for (let i = n; i < design.length; i++) {
         if (design[i] && design[i][0] === 1) expectedDim1Targets++;
         if (design[i] && design[i][1] === 1) expectedDim2Targets++;
       }
-      
+
       // Verify all recorded responses are within valid range
-      const validResponses = responses.filter(r => 
+      const validResponses = responses.filter(r =>
         r.stimulusIndex >= n && r.stimulusIndex < trials
       );
-      
+
       const allEventsValid = dim1Total === effectiveTrials && dim2Total === effectiveTrials;
       const targetsValid = dim1Targets === expectedDim1Targets && dim2Targets === expectedDim2Targets;
-      
+
       return (
         <div style={{
           backgroundColor: allEventsValid && targetsValid ? 'rgba(0, 255, 0, 0.1)' : 'rgba(255, 0, 0, 0.1)',
@@ -1063,19 +1063,19 @@ const NBackTest = ({
           textAlign: 'left'
         }}>
           <h3>Metrics Validation {allEventsValid && targetsValid ? '✓' : '✗'}</h3>
-          
+
           <h4>Trial Counts</h4>
           <p>Total Trials: {totalTrials}</p>
           <p>Effective Trials (excluding memorization): {effectiveTrials}</p>
-          
+
           <h4>Dimension Events {dim1Total === effectiveTrials && dim2Total === effectiveTrials ? '✓' : '✗'}</h4>
           <p>Letter Dimension Total Events: {dim1Total} {dim1Total === effectiveTrials ? '✓' : `(Expected: ${effectiveTrials})`}</p>
           <p>Position Dimension Total Events: {dim2Total} {dim2Total === effectiveTrials ? '✓' : `(Expected: ${effectiveTrials})`}</p>
-          
+
           <h4>Target Counts {targetsValid ? '✓' : '✗'}</h4>
           <p>Letter Targets: {dim1Targets} {dim1Targets === expectedDim1Targets ? '✓' : `(Expected: ${expectedDim1Targets})`}</p>
           <p>Position Targets: {dim2Targets} {dim2Targets === expectedDim2Targets ? '✓' : `(Expected: ${expectedDim2Targets})`}</p>
-          
+
           <h4>Detailed Event Distribution</h4>
           <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '10px' }}>
             <thead>
@@ -1108,7 +1108,7 @@ const NBackTest = ({
               </tr>
             </tbody>
           </table>
-          
+
           <h4>Response Distribution</h4>
           <p>Total Responses Recorded: {responses.length} (Valid: {validResponses.length})</p>
           <p>Letter Responses: {responses.filter(r => r.dimension === 0).length}</p>
@@ -1116,12 +1116,12 @@ const NBackTest = ({
         </div>
       );
     };
-    
+
     return (
       <div style={styles.nbackResults}>
         <h2>N-Back Test Results</h2>
         <p>Test completed with N = {n}</p>
-        
+
         <div style={styles.resultsSection}>
           <h3>Traditional Accuracy</h3>
           <table style={styles.resultsTable}>
@@ -1134,14 +1134,14 @@ const NBackTest = ({
                 <td style={styles.tableCell}>Position Accuracy:</td>
                 <td style={styles.tableCell}>{metrics.dim2Accuracy}%</td>
               </tr>
-              <tr style={{...styles.tableRow, ...styles.overallScore}}>
+              <tr style={{ ...styles.tableRow, ...styles.overallScore }}>
                 <td style={styles.tableCell}>Overall Accuracy:</td>
                 <td style={styles.tableCell}>{metrics.overallAccuracy}%</td>
               </tr>
             </tbody>
           </table>
         </div>
-        
+
         <div style={styles.resultsSection}>
           <h3>Signal Detection (d')</h3>
           <p style={styles.dPrimeExplanation}>d' is a more sensitive measure of performance that accounts for response bias</p>
@@ -1155,18 +1155,18 @@ const NBackTest = ({
                 <td style={styles.tableCell}>Position d':</td>
                 <td style={styles.tableCell}>{metrics.dim2DPrime} (scaled: {metrics.dim2DPrimeScaled})</td>
               </tr>
-              <tr style={{...styles.tableRow, ...styles.overallScore}}>
+              <tr style={{ ...styles.tableRow, ...styles.overallScore }}>
                 <td style={styles.tableCell}>Overall d':</td>
                 <td style={styles.tableCell}>{metrics.overallDPrime} (scaled: {metrics.overallDPrimeScaled})</td>
               </tr>
             </tbody>
           </table>
         </div>
-        
+
         <div style={styles.chartContainer}>
           <Bar data={getBarData(calculatedResults)} options={getBarOptions()} />
         </div>
-        
+
         <div style={styles.resultsSection}>
           <h3>Detailed Statistics</h3>
           <div style={styles.statsContainer}>
@@ -1189,14 +1189,14 @@ const NBackTest = ({
               <p>False Alarm Rate: {metrics.dim2FaRate}</p>
             </div>
           </div>
-          
+
           {/* Add debug validation when DEBUG_MODE is true */}
           {debugMetrics()}
         </div>
-        
+
         {!scoreSaved && (
           <div style={styles.saveScoreSection}>
-            <button 
+            <button
               style={styles.button}
               onClick={() => setShowSaveForm(true)}
             >
@@ -1204,7 +1204,7 @@ const NBackTest = ({
             </button>
           </div>
         )}
-        
+
         {showSaveForm && (
           <div style={styles.saveForm}>
             <h3>Save Your Score</h3>
@@ -1215,43 +1215,43 @@ const NBackTest = ({
               onChange={(e) => setPlayerName(e.target.value)}
               placeholder="Enter your name"
             />
-            <button 
+            <button
               style={styles.button}
               onClick={() => handleSaveScore(calculatedResults)}
             >
               Submit
             </button>
-            <button 
-              style={{...styles.button, ...styles.cancelButton}}
+            <button
+              style={{ ...styles.button, ...styles.cancelButton }}
               onClick={() => setShowSaveForm(false)}
             >
               Cancel
             </button>
           </div>
         )}
-        
+
         {scoreSaved && (
           <div style={styles.scoreSavedMessage}>
             <p>Score saved!</p>
           </div>
         )}
-        
+
         <div style={styles.resultsActions}>
-          <button 
+          <button
             style={styles.button}
             onClick={startNBackTest}
           >
             Restart Test
           </button>
-          <button 
-            style={{...styles.button, backgroundColor: '#007BFF'}}
+          <button
+            style={{ ...styles.button, backgroundColor: '#007BFF' }}
             onClick={handleMainMenuReturn}
           >
             Return to Menu
           </button>
         </div>
-        
-        <div style={{ 
+
+        <div style={{
           marginTop: '20px',
           background: 'rgba(255,255,255,0.1)',
           padding: '10px',
@@ -1314,9 +1314,9 @@ const NBackTest = ({
           <p style={{ margin: '0' }}>{t('nbackTest.progress', 'Progress')}: {currentStimulus + 1}/{trials}</p>
           <p style={{ margin: '0' }}>{t('nbackTest.level', 'Level')}: {n}-back</p>
         </div>
-        
+
         <h2>{t('nbackTest.title', 'N-Back Test')}</h2>
-        
+
         <div style={{
           background: 'rgba(0,0,0,0.7)',
           padding: '30px',
@@ -1325,10 +1325,10 @@ const NBackTest = ({
         }}>
           {renderGrid()}
         </div>
-        
+
         <div style={{ marginTop: '20px', textAlign: 'center' }}>
           <p>{t('nbackTest.matchInstructions', 'Press L for letter match, A for position match')}</p>
-          
+
           {/* Always show buttons, but with different message if still in memorization phase */}
           <div style={{ display: 'flex', justifyContent: 'center', marginTop: '20px' }}>
             <button
@@ -1338,8 +1338,8 @@ const NBackTest = ({
                 padding: '15px 30px',
                 margin: '0 10px',
                 fontSize: '18px',
-                backgroundColor: buttonClassA === 'correct' ? '#4CAF50' : 
-                               buttonClassA === 'incorrect' ? '#f44336' : '#007bff',
+                backgroundColor: buttonClassA === 'correct' ? '#4CAF50' :
+                  buttonClassA === 'incorrect' ? '#f44336' : '#007bff',
                 color: 'white',
                 border: 'none',
                 borderRadius: '4px',
@@ -1356,8 +1356,8 @@ const NBackTest = ({
                 padding: '15px 30px',
                 margin: '0 10px',
                 fontSize: '18px',
-                backgroundColor: buttonClassL === 'correct' ? '#4CAF50' : 
-                               buttonClassL === 'incorrect' ? '#f44336' : '#007bff',
+                backgroundColor: buttonClassL === 'correct' ? '#4CAF50' :
+                  buttonClassL === 'incorrect' ? '#f44336' : '#007bff',
                 color: 'white',
                 border: 'none',
                 borderRadius: '4px',
@@ -1368,16 +1368,16 @@ const NBackTest = ({
               L - {t('nbackTest.letter', 'Letter')}
             </button>
           </div>
-          
+
           {currentStimulus < n && (
             <p style={{ marginTop: '10px' }}>
-              {t('nbackTest.memorizeFirst', 'Memorize the first {{n}} items...', {n})}
+              {t('nbackTest.memorizeFirst', 'Memorize the first {{n}} items...', { n })}
             </p>
           )}
         </div>
-        
-        <div style={{ 
-          marginTop: '20px', 
+
+        <div style={{
+          marginTop: '20px',
           background: 'rgba(0,0,0,0.5)',
           padding: '10px',
           borderRadius: '5px'
@@ -1396,6 +1396,7 @@ const NBackTest = ({
       alignItems: 'center',
       justifyContent: 'center',
       height: '100vh',
+      overflow: 'auto',
       padding: '20px',
       textAlign: 'center',
       backgroundColor: 'rgba(26, 42, 58, 0.85)', // Match the app's background
@@ -1409,12 +1410,12 @@ const NBackTest = ({
         width: '80%'
       }}>
         <h1>{t('nbackTest.title', 'N-Back Test')}</h1>
-        
+
         <p>{t('nbackTest.instructions', 'This is a dual n-back test with audio-visual and visuospatial components.')}</p>
-        <p>{t('nbackTest.letterInstructions', 'Press L if the current letter matches the letter from {{n}} steps ago.', {n})}</p>
-        <p>{t('nbackTest.positionInstructions', 'Press A if the current square position matches the position from {{n}} steps ago.', {n})}</p>
-        <p>{t('nbackTest.testDetails', 'The test will consist of {{trials}} stimuli presented for {{time}} seconds each.', {trials, time: tickTime/1000})}</p>
-        
+        <p>{t('nbackTest.letterInstructions', 'Press L if the current letter matches the letter from {{n}} steps ago.', { n })}</p>
+        <p>{t('nbackTest.positionInstructions', 'Press A if the current square position matches the position from {{n}} steps ago.', { n })}</p>
+        <p>{t('nbackTest.testDetails', 'The test will consist of {{trials}} stimuli presented for {{time}} seconds each.', { trials, time: tickTime / 1000 })}</p>
+
         <button
           onClick={startNBackTest}
           style={{
@@ -1430,7 +1431,7 @@ const NBackTest = ({
         >
           {t('nbackTest.startTest', 'Start Test')}
         </button>
-        
+
         <button
           onClick={handleMainMenuReturn}
           style={{
@@ -1446,8 +1447,8 @@ const NBackTest = ({
         >
           {t('common.returnToMenu', 'Return to Main Menu')}
         </button>
-        
-        <div style={{ 
+
+        <div style={{
           marginTop: '20px',
           background: 'rgba(255,255,255,0.1)',
           padding: '10px',
@@ -1462,7 +1463,7 @@ const NBackTest = ({
 
 // Helper component for showing keyboard shortcuts
 const KeyboardShortcut = ({ keys, description, onClick }) => (
-  <div 
+  <div
     style={{
       display: 'inline-flex',
       alignItems: 'center',

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import ScoreSaveForm from './ScoreSaveForm';
+import PerformancePlot from './PerformancePlot';
 import ScoreboardService from '../services/ScoreboardService';
 import { downloadCSV } from '../utils/csvExport';
 
@@ -312,6 +313,10 @@ const NormalModeGame = ({
         }}>
           <h2>Game Over</h2>
           <p>Final Score: {Math.floor(score)}</p>
+
+          <div style={{ width: '90%', maxWidth: '800px', marginBottom: '20px' }}>
+            <PerformancePlot data={logs?.performance} />
+          </div>
 
           <div style={{ display: 'flex', gap: '10px', marginBottom: '20px', pointerEvents: 'auto' }}>
             <button onClick={handleExportData} style={{ padding: '8px', cursor: 'pointer' }}>
