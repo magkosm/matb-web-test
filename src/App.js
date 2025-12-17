@@ -149,6 +149,22 @@ function App() {
     setResourceMetrics(metrics);
   }, []);
 
+  // Handle discrete penalties (one-time deductions)
+  const handlePenalty = useCallback((amount) => {
+    console.log(`App: Processing penalty of ${amount}`);
+    if (systemHealthRef.current) {
+      if (typeof systemHealthRef.current.applyDiscretePenalty === 'function') {
+        console.log('App: Calling systemHealthRef.applyDiscretePenalty');
+        systemHealthRef.current.applyDiscretePenalty(amount);
+      } else {
+        // Fallback or legacy support
+        console.warn('SystemHealth does not support applyDiscretePenalty');
+      }
+    } else {
+      console.warn('App: systemHealthRef is null');
+    }
+  }, []);
+
   // Register task refs with the event service when they change
   useEffect(() => {
     // Don't try registering more than once if we've already succeeded
@@ -158,11 +174,13 @@ function App() {
     if (showMainMenu) return;
 
     // Check if all refs have current values
+    // Check if required refs have current values
+    // Only check for refs that correspond to enabled tasks
     const allRefsAvailable =
-      commTaskRef?.current &&
-      monitoringTaskRef?.current &&
-      trackingTaskRef?.current &&
-      resourceTaskRef?.current;
+      (!isCommTaskEnabled || commTaskRef?.current) &&
+      (!isMonitoringTaskEnabled || monitoringTaskRef?.current) &&
+      (!isTrackingTaskEnabled || trackingTaskRef?.current) &&
+      (!isResourceTaskEnabled || resourceTaskRef?.current);
 
     if (allRefsAvailable) {
       console.log('All task refs are available, registering with EventService...');
@@ -198,7 +216,12 @@ function App() {
     commTaskRef,
     monitoringTaskRef,
     trackingTaskRef,
-    resourceTaskRef
+    resourceTaskRef,
+    // Add enabled flags to dependencies
+    isCommTaskEnabled,
+    isMonitoringTaskEnabled,
+    isTrackingTaskEnabled,
+    isResourceTaskEnabled
     // These refs need to be in the dependency array to ensure registration happens when they're available
   ]);
 
@@ -656,11 +679,14 @@ function App() {
                       <MonitoringTask
                         ref={monitoringTaskRef}
                         eventsPerMinute={monitoringEPM}
+                        setEventsPerMinute={setMonitoringEPM}
                         showLog={showMonitoringLog}
+                        setShowLog={_setShowMonitoringLog} // Using prefixed setter
                         onLogUpdate={setMonitoringEventLog}
-                        onMetricsUpdate={setMonitoringMetrics}
                         isEnabled={isMonitoringTaskEnabled}
+                        onMetricsUpdate={setMonitoringMetrics}
                         autoEvents={monitoringAutoEvents}
+                        onPenalty={handlePenalty}
                       />
                     ) : (
                       <div style={{
@@ -791,8 +817,10 @@ function App() {
                         eventsPerMinute={commEPM}
                         showLog={showCommLog}
                         onLogUpdate={setCommEventLog}
+                        isEnabled={isCommTaskEnabled}
                         onMetricsUpdate={setCommMetrics}
                         autoEvents={commAutoEvents}
+                        onPenalty={handlePenalty}
                       />
                     ) : (
                       <div style={{

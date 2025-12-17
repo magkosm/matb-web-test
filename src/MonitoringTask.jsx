@@ -31,6 +31,7 @@ function MonitoringTask({
   onMetricsUpdate,
   onOptionsUpdate,
   autoEvents = false,
+  onPenalty
 }, ref) {
   const { t } = useTranslation();
   // ---------------------
@@ -262,7 +263,7 @@ function MonitoringTask({
         ...prev,
         falseAlarms: prev.falseAlarms + 1
       }));
-      setHealthImpact(-2); // Smaller negative impact for false alarm
+      if (onPenalty) onPenalty(-2); // Smaller negative impact for false alarm
 
       // Add to event log
       const falseAlarmEvent = {
@@ -300,7 +301,8 @@ function MonitoringTask({
             hits: prevMetrics.hits + 1,
             activeEvents: prevMetrics.activeEvents - 1
           }));
-          setHealthImpact(5); // Positive impact for hit
+
+          if (onPenalty) onPenalty(5); // Positive impact for hit
         } else {
           updatedEvents.push(evt);
         }
@@ -329,7 +331,7 @@ function MonitoringTask({
     setItems(updatedItems);
 
     return true;
-  }, [items, setItems, setActiveEvents, setEventLog, setTaskMetrics, setHealthImpact]);
+  }, [items, setItems, setActiveEvents, setEventLog, setTaskMetrics, onPenalty]);
 
   // Expose methods via ref
   useImperativeHandle(ref, () => ({
@@ -436,7 +438,8 @@ function MonitoringTask({
                     misses: prev.misses + 1,
                     activeEvents: prev.activeEvents - 1
                   }));
-                  setHealthImpact(-5); // Negative impact for miss
+
+                  if (onPenalty) onPenalty(-5); // Negative impact for miss
 
                   // Deactivate the indicator
                   setItems(items =>
@@ -548,7 +551,7 @@ function MonitoringTask({
             evt.type = 'MISS';
             evt.responded = false;
             evt.responseTime = null;
-            setHealthImpact(-5);
+            if (onPenalty) onPenalty(-5);
             setTaskMetrics(prev => ({
               ...prev,
               misses: prev.misses + 1,
@@ -703,7 +706,7 @@ function MonitoringTask({
                 evt.responseTime = null;
 
                 // Set health impact for MISS
-                setHealthImpact(-5);
+                if (onPenalty) onPenalty(-5);
 
                 // Turn off item's eventActive
                 setItems((prevItems) =>

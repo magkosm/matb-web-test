@@ -338,12 +338,13 @@ const MainMenu = ({ onStartGame, onExitApp, gameResults }) => {
             onClick={() => {
               onStartGame({
                 mode: 'custom',
-                duration: 5 * 60 * 1000,
+                duration: 3 * 60 * 1000,
                 taskConfig: {
-                  comm: { isActive: true, difficulty: 3 },
-                  monitoring: { isActive: false, difficulty: 1 },
-                  tracking: { isActive: false, difficulty: 1 },
-                  resource: { isActive: false, difficulty: 1 }
+                  instructionKey: 'comm',
+                  comm: { isActive: true, difficulty: 6, eventsPerMinute: 6 }, // Higher difficulty and explicitly enabled events
+                  monitoring: { isActive: false, difficulty: 1, eventsPerMinute: 0 },
+                  tracking: { isActive: false, difficulty: 1, eventsPerMinute: 0 },
+                  resource: { isActive: false, difficulty: 1, eventsPerMinute: 0 }
                 }
               });
               setShowPresetsModal(false);
@@ -368,12 +369,13 @@ const MainMenu = ({ onStartGame, onExitApp, gameResults }) => {
             onClick={() => {
               onStartGame({
                 mode: 'custom',
-                duration: 5 * 60 * 1000,
+                duration: 3 * 60 * 1000,
                 taskConfig: {
-                  comm: { isActive: false, difficulty: 1 },
-                  monitoring: { isActive: false, difficulty: 1 },
-                  tracking: { isActive: true, difficulty: 3 },
-                  resource: { isActive: false, difficulty: 1 }
+                  instructionKey: 'track',
+                  comm: { isActive: false, difficulty: 1, eventsPerMinute: 0 },
+                  monitoring: { isActive: false, difficulty: 1, eventsPerMinute: 0 },
+                  tracking: { isActive: true, difficulty: 6, eventsPerMinute: 6 },
+                  resource: { isActive: false, difficulty: 1, eventsPerMinute: 0 }
                 }
               });
               setShowPresetsModal(false);
@@ -398,12 +400,13 @@ const MainMenu = ({ onStartGame, onExitApp, gameResults }) => {
             onClick={() => {
               onStartGame({
                 mode: 'custom',
-                duration: 5 * 60 * 1000,
+                duration: 3 * 60 * 1000,
                 taskConfig: {
-                  comm: { isActive: false, difficulty: 1 },
-                  monitoring: { isActive: true, difficulty: 3 },
-                  tracking: { isActive: false, difficulty: 1 },
-                  resource: { isActive: false, difficulty: 1 }
+                  instructionKey: 'sysMon',
+                  comm: { isActive: false, difficulty: 1, eventsPerMinute: 0 },
+                  monitoring: { isActive: true, difficulty: 6, eventsPerMinute: 6 },
+                  tracking: { isActive: false, difficulty: 1, eventsPerMinute: 0 },
+                  resource: { isActive: false, difficulty: 1, eventsPerMinute: 0 }
                 }
               });
               setShowPresetsModal(false);
@@ -423,17 +426,18 @@ const MainMenu = ({ onStartGame, onExitApp, gameResults }) => {
             <div style={{ fontSize: '10px', marginTop: '3px' }}>{t('training.monitoringOnlyDesc')}</div>
           </button>
 
-          {/* Resource Training */}
+          {/* Resource Management Training */}
           <button
             onClick={() => {
               onStartGame({
                 mode: 'custom',
-                duration: 5 * 60 * 1000,
+                duration: 3 * 60 * 1000,
                 taskConfig: {
-                  comm: { isActive: false, difficulty: 1 },
-                  monitoring: { isActive: false, difficulty: 1 },
-                  tracking: { isActive: false, difficulty: 1 },
-                  resource: { isActive: true, difficulty: 3 }
+                  instructionKey: 'resMan',
+                  comm: { isActive: false, difficulty: 1, eventsPerMinute: 0 },
+                  monitoring: { isActive: false, difficulty: 1, eventsPerMinute: 0 },
+                  tracking: { isActive: false, difficulty: 1, eventsPerMinute: 0 },
+                  resource: { isActive: true, difficulty: 6, eventsPerMinute: 6 }
                 }
               });
               setShowPresetsModal(false);

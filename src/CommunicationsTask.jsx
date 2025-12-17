@@ -129,7 +129,8 @@ const CommunicationsTask = forwardRef(({
   showLog = false,
   onLogUpdate,
   onMetricsUpdate,
-  autoEvents = false
+  autoEvents = false,
+  onPenalty
 }, ref) => {
   const { t, i18n } = useTranslation();
   const ownCallSign = 'NASA504';
@@ -818,9 +819,14 @@ const CommunicationsTask = forwardRef(({
     };
 
     // Update health impact using the next state pattern to avoid React warnings
-    const newHealthImpact = impact;
-    setHealthImpact(newHealthImpact);
-    console.log(`Setting health impact: ${newHealthImpact} for response type: ${responseType}`);
+    // Apply discrete penalty/bonus via parent callback
+    if (impact !== 0 && typeof onPenalty === 'function') {
+      console.log(`Applying discrete penalty/bonus: ${impact} for response type: ${responseType}`);
+      onPenalty(impact);
+    }
+
+    // We no longer rely on continuous healthImpact for discrete events
+    // setHealthImpact(impact);
 
     // Use the callback version of setState to update the commLog
     setCommLog(prev => {
@@ -851,14 +857,96 @@ const CommunicationsTask = forwardRef(({
   // 7) Handling Radio and Frequency Changes
   //    (Immediate snapshots upon changes)
   // -------------------------------------------------------------------------
+
+  // Helper to check for immediate success on OWN call
+  const checkImmediateSuccess = (currentRadio, currentFreqs) => {
+    if (!activeMessage || activeMessage.finalized || !activeMessage.ownCallsign) return;
+
+    // Check if current settings match the target
+    if (currentRadio === activeMessage.radio &&
+      currentFreqs[currentRadio] === activeMessage.frequency) {
+
+      console.log(`[IMMEDIATE SUCCESS] Correct frequency dialed for ${activeMessage.id}`);
+
+      // Initial success logic
+      const dt = Date.now() - activeMessage.startTime;
+
+      // Update message status
+      /* 
+       We use a specific standardized structure for the log entry:
+       - index: message sequence number
+       - Time: ISO timestamp
+       - Ship: Call sign (OWN or OTHER)
+       - Radio_T: Target Radio
+       - Freq_T: Target Frequency
+       - Radio_S: Selected Radio
+       - Freq_S: Selected Frequency
+       - RT: Response Time in seconds
+       - Remarks: HIT, MISS, FA, etc.
+       - Deadline: Time when response window would have closed
+       - MessageID: Internal ID
+      */
+
+      const logEntry = {
+        index: activeMessage.index || messageIndexRef.current++,
+        Time: new Date().toISOString(),
+        Ship: activeMessage.callsign || 'Unknown',
+        Radio_T: activeMessage.radio || 'Unknown',
+        Freq_T: activeMessage.frequency || 'Unknown',
+        Radio_S: currentRadio,
+        Freq_S: currentFreqs[currentRadio],
+        RT: dt / 1000,
+        Remarks: 'HIT',
+        Deadline: activeMessage.responseDeadline ? new Date(activeMessage.responseDeadline).toISOString().substring(11, 19) : 'Unknown',
+        MessageID: activeMessage.id || 'unknown'
+      };
+
+      // Mark message as finalized
+      activeMessage.finalized = true;
+
+      // Clear timers
+      if (activeMessage.postAudioTimer) {
+        clearTimeout(activeMessage.postAudioTimer);
+        activeMessage.postAudioTimer = null;
+      }
+
+      // Apply immediate bonus
+      if (typeof onPenalty === 'function') {
+        console.log('Applying immediate bonus: +10');
+        onPenalty(10);
+      }
+
+      // Update logs
+      setCommLog(prev => {
+        const newLog = [...prev, logEntry];
+        setTimeout(() => {
+          if (onLogUpdate) onLogUpdate(newLog);
+        }, 0);
+        return newLog;
+      });
+
+      // Clear active message after short delay
+      setTimeout(() => {
+        setActiveMessage(null);
+        setSystemLoad(0);
+        onMetricsUpdate?.({ healthImpact: 0, systemLoad: 0 });
+      }, 500);
+    }
+  };
+
   const handleRadioSelect = (r) => {
     // Stop any ongoing frequency ramps
     stopArrowFreqRamp();
     stopFreqButtonRamp();
 
     setSelectedRadio(r);
+    // Use the NEW value for check, but existing refs/state might be one step behind if we don't pass it explicitly
+    // So passing 'r' as currentRadio
     if (activeMessage && !activeMessage.finalized) {
-      recordSnapshot(activeMessage);
+      recordSnapshot(activeMessage); // This uses ref, which is updated via effect, so wait... actually recordSnapshot uses refs.
+      // We need to update refs manually or rely on state update cycle. 
+      // safer to pass explicit values to checkImmediateSuccess
+      checkImmediateSuccess(r, frequencies);
     }
   };
 
@@ -867,6 +955,7 @@ const CommunicationsTask = forwardRef(({
       const updated = { ...prev, [r]: newVal };
       if (activeMessage && !activeMessage.finalized) {
         recordSnapshot(activeMessage);
+        checkImmediateSuccess(selectedRadio, updated);
       }
       return updated;
     });
@@ -978,10 +1067,34 @@ const CommunicationsTask = forwardRef(({
         }
       }
 
-      return {
+      const newFreqStr = newFreq.toFixed(3);
+      const updated = {
         ...prev,
-        [radio]: newFreq.toFixed(3)
+        [radio]: newFreqStr
       };
+
+      // Check for success on initial change
+      // Note: we can't reliably check here because we don't have the updated state yet in the outer scope
+      // But we can check inside the setter or after
+      // However, checkImmediateSuccess needs the full frequencies object.
+      // So we do it here conceptually, but we can't call checking logic inside the state setter easily if it depends on other state.
+      // Actually checkImmediateSuccess depends on activeMessage which is in scope.
+
+      // We'll trust the effect hooks or subsequent updates, OR pass the constructed object.
+      // But since this is inside a stat setter, we must be careful not to trigger side effects that set state synchronously.
+      // checkImmediateSuccess calls setCommLog and onPenalty. onPenalty is safe. setCommLog is safe.
+      // But finalizeMessage modifies activeMessage object properties directly (mutation) then sets state.
+
+      // Better approach: use a ref for the latest frequencies to avoid these issues, OR
+      // just rely on the fact that the interval will catch it quickly, OR
+      // call checkImmediateSuccess outside.
+
+      // Let's call it via a timeout to break the cycle
+      setTimeout(() => {
+        checkImmediateSuccess(selectedRadioRef.current, updated);
+      }, 0);
+
+      return updated;
     });
 
     // Set initial timeout
@@ -1002,10 +1115,16 @@ const CommunicationsTask = forwardRef(({
             }
           }
 
-          return {
+          const newFreqStr = newFreq.toFixed(3);
+          const updated = {
             ...prev,
-            [radio]: newFreq.toFixed(3)
+            [radio]: newFreqStr
           };
+
+          // Check for success during ramp
+          checkImmediateSuccess(selectedRadioRef.current, updated);
+
+          return updated;
         });
       }, rampUpDelay);
     }, initialDelay);
@@ -1162,7 +1281,12 @@ const CommunicationsTask = forwardRef(({
 
       // Create a proper message object
       const messageId = `msg-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
-      const responseWindow = config.responseWindow ? config.responseWindow * 1000 : 10000; // Convert to ms if provided
+      // Handle response window: check if it's already in ms (large value) or seconds (small value)
+      // If config.responseWindow is undefined/null, default to 10000ms
+      // If < 1000, assume seconds and multiply
+      // If >= 1000, assume milliseconds and use as is
+      const rawWindow = config.responseWindow !== undefined ? config.responseWindow : 10000;
+      const responseWindow = rawWindow < 1000 ? rawWindow * 1000 : rawWindow;
 
       const msg = {
         id: messageId,

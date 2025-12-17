@@ -35,6 +35,10 @@ const SystemHealth = forwardRef(({
     resetHealth: () => {
       internalHealthRef.current = 100;
       setCumulativeHealth(100);
+    },
+    // Allow external components to apply a one-time penalty/bonus
+    applyDiscretePenalty: (amount) => {
+      pendingImpacts.current.push({ impact: amount, time: Date.now() });
     }
   }));
 

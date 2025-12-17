@@ -4,6 +4,7 @@ import ScoreSaveForm from './ScoreSaveForm';
 import PerformancePlot from './PerformancePlot';
 import ScoreboardService from '../services/ScoreboardService';
 import { downloadCSV } from '../utils/csvExport';
+import InstructionOverlay from './InstructionOverlay';
 
 const NormalModeGame = ({
   duration,
@@ -18,6 +19,9 @@ const NormalModeGame = ({
   const [score, setScore] = useState(0);
   const [isGameActive, setIsGameActive] = useState(true);
   const [showScoreSaveForm, setShowScoreSaveForm] = useState(false);
+  // Add instruction state
+  const [showInstructions, setShowInstructions] = useState(true);
+
   const [currentSettings, setCurrentSettings] = useState({
     comm: { eventsPerMinute: 2.1, difficulty: 4 },
     monitoring: { eventsPerMinute: 3, difficulty: 4 },
@@ -30,10 +34,13 @@ const NormalModeGame = ({
   const scoreTimerRef = useRef(null);
   const epmIntervalRef = useRef(null);
   const difficultyIntervalRef = useRef(null);
-  const gameStartTimeRef = useRef(Date.now());
+  const gameStartTimeRef = useRef(null);
 
   // Initialize game
   useEffect(() => {
+    // Wait for instructions
+    if (showInstructions) return;
+
     // Apply initial settings to the event service
     eventService.updateSchedulerSettings({
       comm: {
@@ -59,10 +66,15 @@ const NormalModeGame = ({
     });
 
     // Start scheduler with a delay to ensure everything is initialized
-    setTimeout(() => {
+    const startTimeout = setTimeout(() => {
       console.log('Starting scheduler after init delay...');
       eventService.startScheduler();
     }, 1000);
+
+    // Set start time
+    if (!gameStartTimeRef.current) {
+      gameStartTimeRef.current = Date.now();
+    }
 
     // Start game timer
     gameTimerRef.current = setInterval(() => {
@@ -185,12 +197,13 @@ const NormalModeGame = ({
 
     // Cleanup function
     return () => {
+      clearTimeout(startTimeout);
       clearAllTimers();
       eventService.stopScheduler();
       eventService.pauseAllTasks();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [duration, eventService, healthRef]);
+  }, [duration, eventService, healthRef, showInstructions]);
 
   // Helper to clear all timers
   const clearAllTimers = () => {
@@ -268,6 +281,17 @@ const NormalModeGame = ({
       pointerEvents: 'none',
       zIndex: 1000
     }}>
+      {showInstructions && (
+        <InstructionOverlay
+          show={showInstructions}
+          title={t('instructionsOverlay.multiTitle')}
+          content={t('instructionsOverlay.intro') + "\n\n" + t('instructionsOverlay.multi')}
+          onStart={() => {
+            setShowInstructions(false);
+            gameStartTimeRef.current = Date.now();
+          }}
+        />
+      )}
       <div style={{
         display: 'flex',
         justifyContent: 'space-between',

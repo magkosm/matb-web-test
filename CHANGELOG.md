@@ -4,6 +4,19 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.2.1] - 2025-12-16
+### Fixed
+- **Communications Task Scoring**: Fixed issue where correct inputs resulted in no score or prolonged delay.
+  - Implemented immediate "HIT" detection upon dialing correct frequency for OWN calls.
+  - Fixed valid response window timeouts (was wrongly calculating 2.7 hours, effectively disabling "MISS" penalties). 
+- **System Health**: 
+  - Fixed wiring for discrete health penalties in Communications and Monitoring tasks.
+  - Verified negative health impact for Misses (-5) and False Alarms (-10) in Communications task.
+- **Training Mode**:
+  - Fixed event generation in training presets.
+  - Fixed issue where partial task sets would fail to register events.
+  - Fixed "I Understand" button interactions.
+
 ## [1.2.0] - 2024-XX-XX
 ### Changed
 - `f43888b`: further minor fixes
