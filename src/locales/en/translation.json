@@ -35,7 +35,7 @@
     "trackTitle": "Tracking – Auto",
     "track": "In this task, you must correct the cursor drift so it stays within the small square in the center.\nWhen the green box with 'AUTO' turns blue with the text 'MANUAL', you need to manually correct the cursor position to keep it within the central square.\nYou control the cursor position with the WASD keys (W=up; A=left; S=down; D=right).",
     "commTitle": "Communication Task",
-    "comm": "In this task you must respond to audio instructions about changing radio frequencies. Some messages are addressed to you (your callsign), but you must ignore others (addressed to other callsigns).\nYour callsign is written at the top of the task (NASA504).\n\nControls:\n1. To select the radio to change, use [UP] and [DOWN] arrow keys.\n2. To change the frequency (number) for the selected radio, use [RIGHT] and [LEFT] arrow keys.",
+    "comm": "In this task you must respond to audio instructions about changing radio frequencies. Some messages are addressed to you (your callsign), but you must ignore others (addressed to other callsigns).\nYour callsign is written at the top of the task (ESA504).\n\nControls:\n1. To select the radio to change, use [UP] and [DOWN] arrow keys.\n2. To change the frequency (number) for the selected radio, use [RIGHT] and [LEFT] arrow keys.",
     "resManTitle": "Resource Management",
     "resMan": "In this task you must maintain levels in the two main tanks (A and B) by using a set of reserve tanks and pumps, each with specific flow rates.\nYour task is to toggle numbered pumps on and off to get tanks A and B as close to their normal levels as possible.\nNormal levels for A and B tanks are indicated by the red line through the tank.\nPumps can sometimes fail, indicated by turning red.\nFlow rates for different pumps are shown below the respective pump (when active).\n\nControls:\nTo turn pumps on or off, use the number keys corresponding to the pump number.",
     "multiTitle": "Multitasking",
@@ -155,7 +155,6 @@
     "stimulus": "Stimulus",
     "position": "Position",
     "letter": "Letter",
-    "memorizeFirst": "Memorize the first {{n}} items...",
     "memorizeFirst": "Memorize the first {{n}} items...",
     "matchInstructions": "Press L for letter match, A for position match",
     "quickStart": "Quick Start N-Back Test"

@@ -133,7 +133,7 @@ const CommunicationsTask = forwardRef(({
   onPenalty
 }, ref) => {
   const { t, i18n } = useTranslation();
-  const ownCallSign = 'NASA504';
+  const ownCallSign = 'ESA504';
 
   // -------------------------------------------------------------------------
   // 2) States and Refs

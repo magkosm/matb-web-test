@@ -40,9 +40,9 @@ export const COMM_CONFIG = {
 
     // Message Content Probabilities
     CONTENT: {
-        // Probability of "OWN" ship call (NASA504)
+        // Probability of "OWN" ship call (ESA504)
         // Formula: BASE - (Difficulty * SCALER)
-        // User requested "not only NASA504, but rather other calls as well"
+        // User requested "not only ESA504, but rather other calls as well"
         // We will reduce the base chance of OWN calls to increase OTHER calls.
         OWN_CALL_BASE_CHANCE: 0.35, // Was 0.4. Reduced to increase variety.
         OWN_CALL_DIFF_SCALER: 0.02, // Was 0.03

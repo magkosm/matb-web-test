@@ -1,0 +1,80 @@
+OTHER_COM1_118-325.wav: A 3 3 3 9 5, A 3 3 3 9 5, ställ in din Comm 1-radio, på frekvens, 1 1 8, punkt, 3 2 5
+OTHER_COM1_120-825.wav: Citrus 2 1 1, Citrus 2 1 1, ställ in din Comm 1-radio, på frekvens, 1 2 0, punkt, 8 2 5
+OTHER_COM1_124-350.wav: AC 5 1 7 1, AC 5 1 7 1, ställ in din Comm 1-radio, på frekvens, 1 2 4, punkt, 3 5 0
+OTHER_COM1_126-175.wav: SK 5 8 0, SK 5 8 0, ställ in din Comm 1-radio, på frekvens, 1 2 6, punkt, 1 7 5
+OTHER_COM1_127-725.wav: A 3 3 3 9 5, A 3 3 3 9 5, ställ in din Comm 1-radio, på frekvens, 1 2 7, punkt, 7 2 5
+OTHER_COM1_128-525.wav: Citrus 2 1 1, Citrus 2 1 1, ställ in din Comm 1-radio, på frekvens, 1 2 8, punkt, 5 2 5
+OTHER_COM1_130-875.wav: AC 5 1 7 1, AC 5 1 7 1, ställ in din Comm 1-radio, på frekvens, 1 3 0, punkt, 8 7 5
+OTHER_COM1_132-950.wav: SK 5 8 0, SK 5 8 0, ställ in din Comm 1-radio, på frekvens, 1 3 2, punkt, 9 5 0
+OTHER_COM1_134-175.wav: A 3 3 3 9 5, A 3 3 3 9 5, ställ in din Comm 1-radio, på frekvens, 1 3 4, punkt, 1 7 5
+OTHER_COM1_135-225.wav: Citrus 2 1 1, Citrus 2 1 1, ställ in din Comm 1-radio, på frekvens, 1 3 5, punkt, 2 2 5
+OTHER_COM2_118-275.wav: AC 5 1 7 1, AC 5 1 7 1, ställ in din Comm 2-radio, på frekvens, 1 1 8, punkt, 2 7 5
+OTHER_COM2_120-775.wav: SK 5 8 0, SK 5 8 0, ställ in din Comm 2-radio, på frekvens, 1 2 0, punkt, 7 7 5
+OTHER_COM2_124-500.wav: A 3 3 3 9 5, A 3 3 3 9 5, ställ in din Comm 2-radio, på frekvens, 1 2 4, punkt, 5 0 0
+OTHER_COM2_126-025.wav: Citrus 2 1 1, Citrus 2 1 1, ställ in din Comm 2-radio, på frekvens, 1 2 6, punkt, 0 2 5
+OTHER_COM2_127-675.wav: AC 5 1 7 1, AC 5 1 7 1, ställ in din Comm 2-radio, på frekvens, 1 2 7, punkt, 6 7 5
+OTHER_COM2_128-475.wav: SK 5 8 0, SK 5 8 0, ställ in din Comm 2-radio, på frekvens, 1 2 8, punkt, 4 7 5
+OTHER_COM2_130-725.wav: A 3 3 3 9 5, A 3 3 3 9 5, ställ in din Comm 2-radio, på frekvens, 1 3 0, punkt, 7 2 5
+OTHER_COM2_132-800.wav: Citrus 2 1 1, Citrus 2 1 1, ställ in din Comm 2-radio, på frekvens, 1 3 2, punkt, 8 0 0
+OTHER_COM2_134-025.wav: AC 5 1 7 1, AC 5 1 7 1, ställ in din Comm 2-radio, på frekvens, 1 3 4, punkt, 0 2 5
+OTHER_COM2_135-175.wav: SK 5 8 0, SK 5 8 0, ställ in din Comm 2-radio, på frekvens, 1 3 5, punkt, 1 7 5
+OTHER_NAV1_108-350.wav: A 3 3 3 9 5, A 3 3 3 9 5, ställ in din Nav 1-radio, på frekvens, 1 0 8, punkt, 3 5 0
+OTHER_NAV1_109-250.wav: Citrus 2 1 1, Citrus 2 1 1, ställ in din Nav 1-radio, på frekvens, 1 0 9, punkt, 2 5 0
+OTHER_NAV1_110-400.wav: AC 5 1 7 1, AC 5 1 7 1, ställ in din Nav 1-radio, på frekvens, 1 1 0, punkt, 4 0 0
+OTHER_NAV1_111-950.wav: SK 5 8 0, SK 5 8 0, ställ in din Nav 1-radio, på frekvens, 1 1 1, punkt, 9 5 0
+OTHER_NAV1_112-150.wav: A 3 3 3 9 5, A 3 3 3 9 5, ställ in din Nav 1-radio, på frekvens, 1 1 2, punkt, 1 5 0
+OTHER_NAV1_113-000.wav: Citrus 2 1 1, Citrus 2 1 1, ställ in din Nav 1-radio, på frekvens, 1 1 3, punkt, 0 0 0
+OTHER_NAV1_114-500.wav: AC 5 1 7 1, AC 5 1 7 1, ställ in din Nav 1-radio, på frekvens, 1 1 4, punkt, 5 0 0
+OTHER_NAV1_115-750.wav: SK 5 8 0, SK 5 8 0, ställ in din Nav 1-radio, på frekvens, 1 1 5, punkt, 7 5 0
+OTHER_NAV1_116-450.wav: A 3 3 3 9 5, A 3 3 3 9 5, ställ in din Nav 1-radio, på frekvens, 1 1 6, punkt, 4 5 0
+OTHER_NAV1_117-650.wav: Citrus 2 1 1, Citrus 2 1 1, ställ in din Nav 1-radio, på frekvens, 1 1 7, punkt, 6 5 0
+OTHER_NAV2_108-750.wav: AC 5 1 7 1, AC 5 1 7 1, ställ in din Nav 2-radio, på frekvens, 1 0 8, punkt, 7 5 0
+OTHER_NAV2_109-650.wav: SK 5 8 0, SK 5 8 0, ställ in din Nav 2-radio, på frekvens, 1 0 9, punkt, 6 5 0
+OTHER_NAV2_110-800.wav: A 3 3 3 9 5, A 3 3 3 9 5, ställ in din Nav 2-radio, på frekvens, 1 1 0, punkt, 8 0 0
+OTHER_NAV2_111-350.wav: Citrus 2 1 1, Citrus 2 1 1, ställ in din Nav 2-radio, på frekvens, 1 1 1, punkt, 3 5 0
+OTHER_NAV2_112-550.wav: AC 5 1 7 1, AC 5 1 7 1, ställ in din Nav 2-radio, på frekvens, 1 1 2, punkt, 5 5 0
+OTHER_NAV2_113-400.wav: SK 5 8 0, SK 5 8 0, ställ in din Nav 2-radio, på frekvens, 1 1 3, punkt, 4 0 0
+OTHER_NAV2_114-900.wav: A 3 3 3 9 5, A 3 3 3 9 5, ställ in din Nav 2-radio, på frekvens, 1 1 4, punkt, 9 0 0
+OTHER_NAV2_115-050.wav: Citrus 2 1 1, Citrus 2 1 1, ställ in din Nav 2-radio, på frekvens, 1 1 5, punkt, 0 5 0
+OTHER_NAV2_116-850.wav: AC 5 1 7 1, AC 5 1 7 1, ställ in din Nav 2-radio, på frekvens, 1 1 6, punkt, 8 5 0
+OTHER_NAV2_117-950.wav: SK 5 8 0, SK 5 8 0, ställ in din Nav 2-radio, på frekvens, 1 1 7, punkt, 9 5 0
+OWN_COM1_124-575.wav: eesah 5 0 4, eesah 5 0 4, ställ in din Comm 1-radio, på frekvens, 1 2 4, punkt, 5 7 5
+OWN_COM1_125-500.wav: eesah 5 0 4, eesah 5 0 4, ställ in din Comm 1-radio, på frekvens, 1 2 5, punkt, 5 0 0
+OWN_COM1_125-550.wav: eesah 5 0 4, eesah 5 0 4, ställ in din Comm 1-radio, på frekvens, 1 2 5, punkt, 5 5 0
+OWN_COM1_126-450.wav: eesah 5 0 4, eesah 5 0 4, ställ in din Comm 1-radio, på frekvens, 1 2 6, punkt, 4 5 0
+OWN_COM1_126-525.wav: eesah 5 0 4, eesah 5 0 4, ställ in din Comm 1-radio, på frekvens, 1 2 6, punkt, 5 2 5
+OWN_COM1_127-500.wav: eesah 5 0 4, eesah 5 0 4, ställ in din Comm 1-radio, på frekvens, 1 2 7, punkt, 5 0 0
+OWN_COM1_127-550.wav: eesah 5 0 4, eesah 5 0 4, ställ in din Comm 1-radio, på frekvens, 1 2 7, punkt, 5 5 0
+OWN_COM1_128-475.wav: eesah 5 0 4, eesah 5 0 4, ställ in din Comm 1-radio, på frekvens, 1 2 8, punkt, 4 7 5
+OWN_COM1_128-575.wav: eesah 5 0 4, eesah 5 0 4, ställ in din Comm 1-radio, på frekvens, 1 2 8, punkt, 5 7 5
+OWN_COM1_129-450.wav: eesah 5 0 4, eesah 5 0 4, ställ in din Comm 1-radio, på frekvens, 1 2 9, punkt, 4 5 0
+OWN_COM2_124-450.wav: eesah 5 0 4, eesah 5 0 4, ställ in din Comm 2-radio, på frekvens, 1 2 4, punkt, 4 5 0
+OWN_COM2_125-500.wav: eesah 5 0 4, eesah 5 0 4, ställ in din Comm 2-radio, på frekvens, 1 2 5, punkt, 5 0 0
+OWN_COM2_125-575.wav: eesah 5 0 4, eesah 5 0 4, ställ in din Comm 2-radio, på frekvens, 1 2 5, punkt, 5 7 5
+OWN_COM2_126-475.wav: eesah 5 0 4, eesah 5 0 4, ställ in din Comm 2-radio, på frekvens, 1 2 6, punkt, 4 7 5
+OWN_COM2_126-550.wav: eesah 5 0 4, eesah 5 0 4, ställ in din Comm 2-radio, på frekvens, 1 2 6, punkt, 5 5 0
+OWN_COM2_127-500.wav: eesah 5 0 4, eesah 5 0 4, ställ in din Comm 2-radio, på frekvens, 1 2 7, punkt, 5 0 0
+OWN_COM2_127-525.wav: eesah 5 0 4, eesah 5 0 4, ställ in din Comm 2-radio, på frekvens, 1 2 7, punkt, 5 2 5
+OWN_COM2_128-525.wav: eesah 5 0 4, eesah 5 0 4, ställ in din Comm 2-radio, på frekvens, 1 2 8, punkt, 5 2 5
+OWN_COM2_128-550.wav: eesah 5 0 4, eesah 5 0 4, ställ in din Comm 2-radio, på frekvens, 1 2 8, punkt, 5 5 0
+OWN_COM2_129-575.wav: eesah 5 0 4, eesah 5 0 4, ställ in din Comm 2-radio, på frekvens, 1 2 9, punkt, 5 7 5
+OWN_NAV1_110-650.wav: eesah 5 0 4, eesah 5 0 4, ställ in din Nav 1-radio, på frekvens, 1 1 0, punkt, 6 5 0
+OWN_NAV1_111-500.wav: eesah 5 0 4, eesah 5 0 4, ställ in din Nav 1-radio, på frekvens, 1 1 1, punkt, 5 0 0
+OWN_NAV1_111-600.wav: eesah 5 0 4, eesah 5 0 4, ställ in din Nav 1-radio, på frekvens, 1 1 1, punkt, 6 0 0
+OWN_NAV1_112-450.wav: eesah 5 0 4, eesah 5 0 4, ställ in din Nav 1-radio, på frekvens, 1 1 2, punkt, 4 5 0
+OWN_NAV1_112-550.wav: eesah 5 0 4, eesah 5 0 4, ställ in din Nav 1-radio, på frekvens, 1 1 2, punkt, 5 5 0
+OWN_NAV1_113-500.wav: eesah 5 0 4, eesah 5 0 4, ställ in din Nav 1-radio, på frekvens, 1 1 3, punkt, 5 0 0
+OWN_NAV1_113-600.wav: eesah 5 0 4, eesah 5 0 4, ställ in din Nav 1-radio, på frekvens, 1 1 3, punkt, 6 0 0
+OWN_NAV1_114-450.wav: eesah 5 0 4, eesah 5 0 4, ställ in din Nav 1-radio, på frekvens, 1 1 4, punkt, 4 5 0
+OWN_NAV1_114-650.wav: eesah 5 0 4, eesah 5 0 4, ställ in din Nav 1-radio, på frekvens, 1 1 4, punkt, 6 5 0
+OWN_NAV1_115-400.wav: eesah 5 0 4, eesah 5 0 4, ställ in din Nav 1-radio, på frekvens, 1 1 5, punkt, 4 0 0
+OWN_NAV2_110-500.wav: eesah 5 0 4, eesah 5 0 4, ställ in din Nav 2-radio, på frekvens, 1 1 0, punkt, 5 0 0
+OWN_NAV2_111-400.wav: eesah 5 0 4, eesah 5 0 4, ställ in din Nav 2-radio, på frekvens, 1 1 1, punkt, 4 0 0
+OWN_NAV2_111-650.wav: eesah 5 0 4, eesah 5 0 4, ställ in din Nav 2-radio, på frekvens, 1 1 1, punkt, 6 5 0
+OWN_NAV2_112-450.wav: eesah 5 0 4, eesah 5 0 4, ställ in din Nav 2-radio, på frekvens, 1 1 2, punkt, 4 5 0
+OWN_NAV2_112-600.wav: eesah 5 0 4, eesah 5 0 4, ställ in din Nav 2-radio, på frekvens, 1 1 2, punkt, 6 0 0
+OWN_NAV2_113-500.wav: eesah 5 0 4, eesah 5 0 4, ställ in din Nav 2-radio, på frekvens, 1 1 3, punkt, 5 0 0
+OWN_NAV2_113-550.wav: eesah 5 0 4, eesah 5 0 4, ställ in din Nav 2-radio, på frekvens, 1 1 3, punkt, 5 5 0
+OWN_NAV2_114-450.wav: eesah 5 0 4, eesah 5 0 4, ställ in din Nav 2-radio, på frekvens, 1 1 4, punkt, 4 5 0
+OWN_NAV2_114-600.wav: eesah 5 0 4, eesah 5 0 4, ställ in din Nav 2-radio, på frekvens, 1 1 4, punkt, 6 0 0
+OWN_NAV2_115-650.wav: eesah 5 0 4, eesah 5 0 4, ställ in din Nav 2-radio, på frekvens, 1 1 5, punkt, 6 5 0

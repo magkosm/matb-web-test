@@ -10,6 +10,7 @@ All notable changes to this project will be documented in this file.
   - Communications task now automatically selects audio from the folder matching the current UI language.
   - Implemented language-aware filtering for both automated events and manual triggers.
   - Added fallback logic to English if the selected language is missing specific files.
+- **Rebranding**: Changed own callsign from `NASA504` to `ESA504` across UI, instructions, and simulation logic.
 
 
 ## [1.2.1] - 2025-12-16

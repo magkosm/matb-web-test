@@ -21,7 +21,7 @@ class EventService {
     this.eventConfigs = {
       comm: {
         responseTimeWindow: 10000, // 10 seconds for response
-        ownCallsign: 'NASA504'
+        ownCallsign: 'ESA504'
       },
       monitoring: {
         defaultDuration: 15000, // 15 seconds

@@ -136,14 +136,19 @@ def main():
         global callout_cycle
         callout_cycle = itertools.cycle(OTHER_CALLOUTS)
         
+        transcript_path = os.path.join(lang_dir, "transcript.txt")
+        transcripts = []
+
         for f in files:
             output_wav = os.path.join(lang_dir, f)
-            if os.path.exists(output_wav):
-                # print(f"Skipping: {output_wav}")
-                continue
-            
             text = generate_text(f, lang)
             if not text:
+                continue
+            
+            transcripts.append(f"{f}: {text}")
+            
+            if os.path.exists(output_wav):
+                # print(f"Skipping: {output_wav}")
                 continue
                 
             temp_mp3 = output_wav.replace(".wav", ".mp3")
@@ -178,6 +183,11 @@ def main():
                 os.remove(temp_aiff)
             
             print(f"[{lang}] Generated: {f}")
+
+        # Save transcript
+        with open(transcript_path, "w", encoding="utf-8") as tf:
+            tf.write("\n".join(transcripts) + "\n")
+        print(f"Transcript updated for {lang}")
 
     print("All files generated successfully using Hybrid TTS.")
 
