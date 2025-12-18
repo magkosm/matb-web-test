@@ -1598,43 +1598,32 @@ const CommunicationsTask = forwardRef(({
       return [];
     }
 
-    // Log all available audio files for debugging
-    console.log(`CommunicationsTask: Searching for ${callType} files among ${audioFiles.length} available files`);
-    // Display sample of first few files for debugging
-    console.log('First few audioFiles:', audioFiles.slice(0, 3).map(file => ({
-      file: file.file,
-      callsign: file.callsign,
-      radio: file.radio,
-      frequency: file.frequency
-    })));
+    const normalizedCallType = callType.toLowerCase();
+    const isOwnCall = normalizedCallType === 'own';
 
-    // Filter files based on callType
-    let eligible = [];
+    // Filter files based on callType (OWN or OTHER)
+    let eligible = audioFiles.filter(file =>
+      isOwnCall ? file.callsign === 'OWN' : file.callsign !== 'OWN'
+    );
 
-    if (callType.toLowerCase() === 'own') {
-      eligible = audioFiles.filter(file => file.callsign === 'OWN');
+    // Filter by current language, fallback to English
+    // i18n.language might be "en-US", so we take the base "en"
+    const currentLang = (i18n.language || 'en').split('-')[0];
+    let languageFiles = eligible.filter(file => file.language === currentLang);
+
+    if (languageFiles.length > 0) {
+      eligible = languageFiles;
     } else {
-      eligible = audioFiles.filter(file => file.callsign !== 'OWN');
+      // Fallback to English if no files found for current language
+      console.log(`CommunicationsTask: No ${currentLang} files found for ${callType}, falling back to English`);
+      eligible = eligible.filter(file => file.language === 'en');
     }
 
-    // Add additional logging about the filtering
-    console.log(`CommunicationsTask: Found ${eligible.length} eligible files of type ${callType} from ${audioFiles.length} total files`);
+    console.log(`CommunicationsTask: Found ${eligible.length} eligible ${callType} files in language: ${eligible[0]?.language || 'unknown'}`);
 
-    // If we have no eligible files, log details for debugging
+    // If we still have no eligible files, log details for debugging
     if (eligible.length === 0 && audioFiles.length > 0) {
-      console.log('CommunicationsTask: Audio file details:', audioFiles.map(file => ({
-        callsign: file.callsign,
-        file: file.file,
-        radio: file.radio
-      })));
-    } else if (eligible.length > 0) {
-      // Show some of the eligible files
-      console.log('Sample of eligible files:', eligible.slice(0, 3).map(file => ({
-        file: file.file,
-        callsign: file.callsign,
-        radio: file.radio,
-        frequency: file.frequency
-      })));
+      console.warn(`CommunicationsTask: No eligible files found for type ${callType} and language ${currentLang} (even after fallback)`);
     }
 
     return eligible;

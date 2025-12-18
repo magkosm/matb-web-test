@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.2.2] - 2025-12-18
+### Added
+- **Multi-language Audio**: Integrated new Greek (el) and Swedish (sv) audio files.
+  - Communications task now automatically selects audio from the folder matching the current UI language.
+  - Implemented language-aware filtering for both automated events and manual triggers.
+  - Added fallback logic to English if the selected language is missing specific files.
+
+
 ## [1.2.1] - 2025-12-16
 ### Fixed
 - **Communications Task Scoring**: Fixed issue where correct inputs resulted in no score or prolonged delay.
