@@ -23,7 +23,11 @@
     "failedPumps": "Failed Pumps",
     "systemStatus": "System Status",
     "tankA": "Tank A",
-    "tankB": "Tank B"
+    "tankB": "Tank B",
+    "background": "Background",
+    "hideControls": "Hide Controls",
+    "showControls": "Show Controls",
+    "close": "Close"
   },
   "instructionsOverlay": {
     "title": "Orbital Architecture – Multitasking",
@@ -61,9 +65,11 @@
     "title": "MATB-II Simulation",
     "subtitle": "Multi-Attribute Task Battery for Human-Automation Interaction Research",
     "normalMode": "Normal Mode",
-    "testingMode": "Testing Mode",
     "infiniteMode": "Infinite Mode",
+    "infiniteDesc": "In Infinite Mode, you play until your health reaches zero. The difficulty increases faster than in Normal Mode. Your score is the time you survive.",
     "customMode": "Custom Mode",
+    "testingMode": "Testing Mode",
+    "testingDesc": "Testing Mode allows you to freely experiment with all game components. You can enable/disable different tasks and adjust their difficulty.",
     "otherModes": "Other Simulation Modes",
     "scoreboard": "Performance History",
     "changeBackground": "Change Background",
@@ -71,6 +77,7 @@
     "pressStartToBegin": "Press 'Start Simulation' to begin",
     "pressCtrlQToReturn": "During simulation, press Ctrl+Q to return to this menu",
     "presets": "Presets",
+    "cognitiveTests": "Cognitive Tests",
     "trainingPresets": "Training Modes",
     "2minTest": "Quick Test (2 min)",
     "2minDesc": "Quick validation run with all tasks enabled.",
@@ -122,7 +129,13 @@
     "milliseconds": "Milliseconds (ms)",
     "frequency": "Frequency",
     "average": "Average",
-    "quickStart": "Quick Start Reaction Test"
+    "quickStart": "Quick Start Reaction Test",
+    "tryAgain": "Try Again",
+    "noReactionTimes": "No reaction times recorded",
+    "tryAgainToTest": "Try again to test your reaction time.",
+    "returnToMenu": "Return to main menu",
+    "forceStimulus": "Force Stimulus",
+    "scheduleNext": "Schedule Next"
   },
   "nbackTest": {
     "title": "N-Back Test",
@@ -157,7 +170,19 @@
     "letter": "Letter",
     "memorizeFirst": "Memorize the first {{n}} items...",
     "matchInstructions": "Press L for letter match, A for position match",
-    "quickStart": "Quick Start N-Back Test"
+    "quickStart": "Quick Start N-Back Test",
+    "traditionalAccuracy": "Traditional Accuracy",
+    "letterAccuracy": "Letter Accuracy",
+    "positionAccuracy": "Position Accuracy",
+    "overallAccuracy": "Overall Accuracy",
+    "signalDetection": "Signal Detection (d')",
+    "dPrimeExplanation": "d' is a more sensitive measure of performance that accounts for response bias",
+    "letterDPrime": "Letter d'",
+    "positionDPrime": "Position d'",
+    "overallDPrime": "Overall d'",
+    "detailedStats": "Detailed Statistics",
+    "restartTest": "Restart Test",
+    "returnToMenu": "Return to main menu"
   },
   "training": {
     "commOnly": "Communications Training",
@@ -167,7 +192,11 @@
     "resourceOnly": "Resource Management Training",
     "resourceOnlyDesc": "Practice fuel management and pump operations in isolation.",
     "monitoringOnly": "System Monitoring Training",
-    "monitoringOnlyDesc": "Practice gauge and light monitoring in isolation."
+    "monitoringOnlyDesc": "Practice gauge and light monitoring in isolation.",
+    "reactionOnly": "Reaction Time Training",
+    "reactionOnlyDesc": "Practice your reaction time and speed in isolation.",
+    "nbackOnly": "N-Back Training",
+    "nbackOnlyDesc": "Practice working memory and cognitive control in isolation."
   },
   "tasks": {
     "communications": {

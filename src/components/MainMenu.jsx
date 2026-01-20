@@ -206,9 +206,7 @@ const MainMenu = ({ onStartGame, onExitApp, gameResults }) => {
           {selectedMode === 'infinite' && (
             <div style={{ padding: '10px', backgroundColor: 'rgba(0,0,0,0.3)', borderRadius: '5px' }}>
               <p style={{ margin: 0, textAlign: 'left' }}>
-                In Infinite Mode, you play until your health reaches zero.
-                The difficulty increases faster than in Normal Mode.
-                Your score is the time you survive.
+                {t('mainMenu.infiniteDesc')}
               </p>
             </div>
           )}
@@ -216,8 +214,7 @@ const MainMenu = ({ onStartGame, onExitApp, gameResults }) => {
           {selectedMode === 'testing' && (
             <div style={{ padding: '10px', backgroundColor: 'rgba(0,0,0,0.3)', borderRadius: '5px' }}>
               <p style={{ margin: 0, textAlign: 'left' }}>
-                Testing Mode allows you to freely experiment with all game components.
-                You can enable/disable different tasks and adjust their difficulty.
+                {t('mainMenu.testingDesc')}
               </p>
             </div>
           )}
@@ -225,9 +222,7 @@ const MainMenu = ({ onStartGame, onExitApp, gameResults }) => {
           {selectedMode === 'custom' && (
             <div style={{ padding: '10px', backgroundColor: 'rgba(0,0,0,0.3)', borderRadius: '5px' }}>
               <p style={{ margin: 0, textAlign: 'left' }}>
-                Custom Mode lets you select which tasks are active and set initial difficulty.
-                Once started, difficulty increases over time just like in Normal Mode.
-                No leaderboard for custom games.
+                {t('customMode.intro')}
               </p>
             </div>
           )}
@@ -456,6 +451,78 @@ const MainMenu = ({ onStartGame, onExitApp, gameResults }) => {
             <strong>{t('training.resourceOnly')}</strong>
             <div style={{ fontSize: '10px', marginTop: '3px' }}>{t('training.resourceOnlyDesc')}</div>
           </button>
+
+          <h3 style={{ margin: '15px 0 5px 0' }}>{t('mainMenu.cognitiveTests', 'Cognitive Tests')}</h3>
+
+          {/* Reaction Time Test */}
+          <div style={{ display: 'flex', gap: '5px' }}>
+            <button
+              onClick={handleStartReactionTest}
+              style={{
+                padding: '12px',
+                backgroundColor: '#9c27b0',
+                color: 'white',
+                border: 'none',
+                borderRadius: '5px',
+                cursor: 'pointer',
+                fontSize: '14px',
+                flex: 1
+              }}
+            >
+              <strong>{t('reactionTest.title')}</strong>
+              <div style={{ fontSize: '10px', marginTop: '3px' }}>{t('training.reactionOnlyDesc')}</div>
+            </button>
+            <button
+              onClick={() => window.location.href = `${process.env.PUBLIC_URL}/reaction-default`}
+              style={{
+                padding: '12px',
+                backgroundColor: '#7B1FA2',
+                color: 'white',
+                border: 'none',
+                borderRadius: '5px',
+                cursor: 'pointer',
+                fontSize: '14px',
+                minWidth: '100px'
+              }}
+            >
+              {t('reactionTest.quickStart')}
+            </button>
+          </div>
+
+          {/* N-Back Test */}
+          <div style={{ display: 'flex', gap: '5px' }}>
+            <button
+              onClick={handleStartNbackTest}
+              style={{
+                padding: '12px',
+                backgroundColor: '#FF9800',
+                color: 'white',
+                border: 'none',
+                borderRadius: '5px',
+                cursor: 'pointer',
+                fontSize: '14px',
+                flex: 1
+              }}
+            >
+              <strong>{t('nbackTest.title')}</strong>
+              <div style={{ fontSize: '10px', marginTop: '3px' }}>{t('training.nbackOnlyDesc')}</div>
+            </button>
+            <button
+              onClick={() => window.location.href = `${process.env.PUBLIC_URL}/nbackdefault`}
+              style={{
+                padding: '12px',
+                backgroundColor: '#F57C00',
+                color: 'white',
+                border: 'none',
+                borderRadius: '5px',
+                cursor: 'pointer',
+                fontSize: '14px',
+                minWidth: '100px'
+              }}
+            >
+              {t('nbackTest.quickStart')}
+            </button>
+          </div>
         </div>
 
         <button
@@ -618,226 +685,147 @@ const MainMenu = ({ onStartGame, onExitApp, gameResults }) => {
               border: 'none',
               borderRadius: '5px',
               cursor: 'pointer',
-              transition: 'background-color 0.3s'
+              transition: 'background-color 0.3s',
+              marginTop: '10px'
             }}
             onMouseOver={(e) => e.target.style.backgroundColor = '#0069d9'}
             onMouseOut={(e) => e.target.style.backgroundColor = '#007bff'}
           >
             {t('common.start')}
           </button>
+        </div>
 
-          {/* Add Reaction Time Test button */}
+        <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap' }}>
           <button
-            onClick={handleStartReactionTest}
-            style={{
-              padding: '15px 30px',
-              fontSize: '18px',
-              backgroundColor: '#9c27b0', // Purple color for distinction
-              color: 'white',
-              border: 'none',
-              borderRadius: '5px',
-              cursor: 'pointer',
-              transition: 'background-color 0.3s'
-            }}
-            onMouseOver={(e) => e.target.style.backgroundColor = '#7B1FA2'}
-            onMouseOut={(e) => e.target.style.backgroundColor = '#9c27b0'}
-          >
-            {t('reactionTest.title', 'Reaction Time Test')}
-          </button>
-
-          {/* Quick Launch button for Reaction Time Test */}
-          <button
-            onClick={() => window.location.href = `${process.env.PUBLIC_URL}/reaction-default`}
-            style={{
-              padding: '15px 30px',
-              fontSize: '18px',
-              backgroundColor: '#7B1FA2', // Darker purple for quick launch
-              color: 'white',
-              border: 'none',
-              borderRadius: '5px',
-              cursor: 'pointer',
-              transition: 'background-color 0.3s',
-              marginTop: '5px'
-            }}
-            onMouseOver={(e) => e.target.style.backgroundColor = '#6A1B9A'}
-            onMouseOut={(e) => e.target.style.backgroundColor = '#7B1FA2'}
-          >
-            {t('reactionTest.quickStart', 'Quick Start Reaction Test')}
-          </button>
-
-          {/* Add N-Back Test button */}
-          <button
-            onClick={handleStartNbackTest}
-            style={{
-              padding: '15px 30px',
-              fontSize: '18px',
-              backgroundColor: '#FF9800', // Orange color for distinction
-              color: 'white',
-              border: 'none',
-              borderRadius: '5px',
-              cursor: 'pointer',
-              transition: 'background-color 0.3s',
-              marginTop: '10px'
-            }}
-            onMouseOver={(e) => e.target.style.backgroundColor = '#F57C00'}
-            onMouseOut={(e) => e.target.style.backgroundColor = '#FF9800'}
-          >
-            {t('nbackTest.title', 'N-Back Test')}
-          </button>
-
-          {/* Quick Launch button for N-Back Test */}
-          <button
-            onClick={() => window.location.href = `${process.env.PUBLIC_URL}/nbackdefault`}
-            style={{
-              padding: '15px 30px',
-              fontSize: '18px',
-              backgroundColor: '#F57C00', // Darker orange for quick launch
-              color: 'white',
-              border: 'none',
-              borderRadius: '5px',
-              cursor: 'pointer',
-              transition: 'background-color 0.3s',
-              marginTop: '5px'
-            }}
-            onMouseOver={(e) => e.target.style.backgroundColor = '#EF6C00'}
-            onMouseOut={(e) => e.target.style.backgroundColor = '#F57C00'}
-          >
-            {t('nbackTest.quickStart', 'Quick Start N-Back Test')}
-          </button>
-
-          <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap' }}>
-            <button
-              onClick={() => setShowScoreboard(true)}
-              style={{
-                padding: '10px 20px',
-                fontSize: '16px',
-                backgroundColor: '#17a2b8',
-                color: 'white',
-                border: 'none',
-                borderRadius: '5px',
-                cursor: 'pointer',
-                transition: 'background-color 0.3s',
-                zIndex: 1500,
-                flex: 1,
-                minWidth: '120px'
-              }}
-              onMouseOver={(e) => e.target.style.backgroundColor = '#138496'}
-              onMouseOut={(e) => e.target.style.backgroundColor = '#17a2b8'}
-            >
-              {t('mainMenu.scoreboard')}
-            </button>
-
-            <button
-              onClick={() => setShowOtherModes(true)}
-              style={{
-                padding: '10px 20px',
-                fontSize: '16px',
-                backgroundColor: '#6c757d',
-                color: 'white',
-                border: 'none',
-                borderRadius: '5px',
-                cursor: 'pointer',
-                transition: 'background-color 0.3s',
-                zIndex: 1500,
-                flex: 1,
-                minWidth: '120px'
-              }}
-              onMouseOver={(e) => e.target.style.backgroundColor = '#5a6268'}
-              onMouseOut={(e) => e.target.style.backgroundColor = '#6c757d'}
-            >
-              {t('mainMenu.otherModes')}
-            </button>
-
-            <button
-              onClick={() => setShowPresetsModal(true)}
-              style={{
-                padding: '10px 20px',
-                fontSize: '16px',
-                backgroundColor: '#fd7e14',
-                color: 'white',
-                border: 'none',
-                borderRadius: '5px',
-                cursor: 'pointer',
-                transition: 'background-color 0.3s',
-                zIndex: 1500,
-                flex: 1,
-                minWidth: '120px'
-              }}
-              onMouseOver={(e) => e.target.style.backgroundColor = '#e36209'}
-              onMouseOut={(e) => e.target.style.backgroundColor = '#fd7e14'}
-            >
-              {t('mainMenu.presets', 'Presets')}
-            </button>
-          </div>
-
-          <button
-            onClick={() => setShowBackgroundSelector(true)}
+            onClick={() => setShowScoreboard(true)}
             style={{
               padding: '10px 20px',
               fontSize: '16px',
-              backgroundColor: '#28a745',
+              backgroundColor: '#17a2b8',
               color: 'white',
               border: 'none',
               borderRadius: '5px',
               cursor: 'pointer',
-              transition: 'background-color 0.3s'
+              transition: 'background-color 0.3s',
+              zIndex: 1500,
+              flex: 1,
+              minWidth: '120px'
             }}
-            onMouseOver={(e) => e.target.style.backgroundColor = '#218838'}
-            onMouseOut={(e) => e.target.style.backgroundColor = '#28a745'}
+            onMouseOver={(e) => e.target.style.backgroundColor = '#138496'}
+            onMouseOut={(e) => e.target.style.backgroundColor = '#17a2b8'}
           >
-            {t('mainMenu.changeBackground')}
+            {t('mainMenu.scoreboard')}
           </button>
 
           <button
-            onClick={onExitApp}
+            onClick={() => setShowOtherModes(true)}
             style={{
               padding: '10px 20px',
               fontSize: '16px',
-              backgroundColor: 'transparent',
+              backgroundColor: '#6c757d',
               color: 'white',
-              border: '1px solid #6c757d',
+              border: 'none',
               borderRadius: '5px',
               cursor: 'pointer',
-              transition: 'background-color 0.3s'
+              transition: 'background-color 0.3s',
+              zIndex: 1500,
+              flex: 1,
+              minWidth: '120px'
             }}
-            onMouseOver={(e) => {
-              e.target.style.backgroundColor = 'rgba(108, 117, 125, 0.2)';
-            }}
-            onMouseOut={(e) => {
-              e.target.style.backgroundColor = 'transparent';
-            }}
+            onMouseOver={(e) => e.target.style.backgroundColor = '#5a6268'}
+            onMouseOut={(e) => e.target.style.backgroundColor = '#6c757d'}
           >
-            {t('common.exit')}
+            {t('mainMenu.otherModes')}
+          </button>
+
+          <button
+            onClick={() => setShowPresetsModal(true)}
+            style={{
+              padding: '10px 20px',
+              fontSize: '16px',
+              backgroundColor: '#fd7e14',
+              color: 'white',
+              border: 'none',
+              borderRadius: '5px',
+              cursor: 'pointer',
+              transition: 'background-color 0.3s',
+              zIndex: 1500,
+              flex: 1,
+              minWidth: '120px'
+            }}
+            onMouseOver={(e) => e.target.style.backgroundColor = '#e36209'}
+            onMouseOut={(e) => e.target.style.backgroundColor = '#fd7e14'}
+          >
+            {t('mainMenu.presets', 'Presets')}
           </button>
         </div>
 
-        <div style={{ marginTop: '30px', fontSize: '14px', opacity: 0.7 }}>
-          <p>{t('mainMenu.pressStartToBegin')}</p>
-          <p>{t('mainMenu.pressCtrlQToReturn')}</p>
-        </div>
+        <button
+          onClick={() => setShowBackgroundSelector(true)}
+          style={{
+            padding: '10px 20px',
+            fontSize: '16px',
+            backgroundColor: '#28a745',
+            color: 'white',
+            border: 'none',
+            borderRadius: '5px',
+            cursor: 'pointer',
+            transition: 'background-color 0.3s'
+          }}
+          onMouseOver={(e) => e.target.style.backgroundColor = '#218838'}
+          onMouseOut={(e) => e.target.style.backgroundColor = '#28a745'}
+        >
+          {t('mainMenu.changeBackground')}
+        </button>
 
-        {/* Mini background selector at the bottom */}
-        <div style={{ marginTop: '20px' }}>
-          <BackgroundSelector small={true} />
-        </div>
-
-        {gameResults && (
-          <div style={{
-            marginTop: '30px',
-            backgroundColor: 'rgba(0,100,0,0.3)',
-            padding: '15px',
-            borderRadius: '5px'
-          }}>
-            <h3 style={{ margin: '0 0 10px 0' }}>{t('gameOver.score')}</h3>
-            {gameResults.gameMode === 'infinite' ? (
-              <p>{t('scoreboard.timeSurvived')}: {Math.floor(gameResults.finalScore / 60)}:{(gameResults.finalScore % 60).toString().padStart(2, '0')}</p>
-            ) : (
-              <p>{t('scoreboard.finalScore')}: {Math.floor(gameResults.finalScore)}</p>
-            )}
-          </div>
-        )}
+        <button
+          onClick={onExitApp}
+          style={{
+            padding: '10px 20px',
+            fontSize: '16px',
+            backgroundColor: 'transparent',
+            color: 'white',
+            border: '1px solid #6c757d',
+            borderRadius: '5px',
+            cursor: 'pointer',
+            transition: 'background-color 0.3s'
+          }}
+          onMouseOver={(e) => {
+            e.target.style.backgroundColor = 'rgba(108, 117, 125, 0.2)';
+          }}
+          onMouseOut={(e) => {
+            e.target.style.backgroundColor = 'transparent';
+          }}
+        >
+          {t('common.exit')}
+        </button>
       </div>
 
+      <div style={{ marginTop: '30px', fontSize: '14px', opacity: 0.7 }}>
+        <p>{t('mainMenu.pressStartToBegin')}</p>
+        <p>{t('mainMenu.pressCtrlQToReturn')}</p>
+      </div>
+
+      {/* Mini background selector at the bottom */}
+      <div style={{ marginTop: '20px' }}>
+        <BackgroundSelector small={true} />
+      </div>
+
+      {gameResults && (
+        <div style={{
+          marginTop: '30px',
+          backgroundColor: 'rgba(0,100,0,0.3)',
+          padding: '15px',
+          borderRadius: '5px'
+        }}>
+          <h3 style={{ margin: '0 0 10px 0' }}>{t('gameOver.score')}</h3>
+          {gameResults.gameMode === 'infinite' ? (
+            <p>{t('scoreboard.timeSurvived')}: {Math.floor(gameResults.finalScore / 60)}:{(gameResults.finalScore % 60).toString().padStart(2, '0')}</p>
+          ) : (
+            <p>{t('scoreboard.finalScore')}: {Math.floor(gameResults.finalScore)}</p>
+          )}
+        </div>
+      )}
       {/* Scoreboard modal */}
       {showScoreboard &&
         ReactDOM.createPortal(
@@ -846,38 +834,26 @@ const MainMenu = ({ onStartGame, onExitApp, gameResults }) => {
             onClose={() => setShowScoreboard(false)}
           />,
           document.body
-        )
-      }
+        )}
 
       {/* Other Game Modes modal */}
       {showOtherModes &&
-        ReactDOM.createPortal(
-          <OtherGameModesModal />,
-          document.body
-        )
-      }
+        ReactDOM.createPortal(<OtherGameModesModal />, document.body)}
 
       {/* Background Selector modal */}
       {showBackgroundSelector &&
-        ReactDOM.createPortal(
-          <BackgroundSelectorModal />,
-          document.body
-        )
-      }
+        ReactDOM.createPortal(<BackgroundSelectorModal />, document.body)}
 
+      {/* Presets modal */}
       {showPresetsModal &&
-        ReactDOM.createPortal(
-          <PresetsModal />,
-          document.body
-        )
-      }
+        ReactDOM.createPortal(<PresetsModal />, document.body)}
 
-      {showCustomModeSetup &&
+      {showCustomModeSetup && (
         <CustomModeSetup
           onSave={handleCustomModeStart}
           onCancel={() => setShowCustomModeSetup(false)}
         />
-      }
+      )}
     </div>
   );
 };

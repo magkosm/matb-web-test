@@ -8,19 +8,19 @@ import CommunicationsTask from '../CommunicationsTask';
 import TrackingTask from '../TrackingTask';
 import ResourceManagementTask from '../ResourceManagementTask';
 
-const EnhancedSidebar = ({ 
+const EnhancedSidebar = ({
   // Settings for each task
   commSettings,
   monitoringSettings,
   trackingSettings,
   resourceSettings,
-  
+
   // Logs for each task
   monitoringLog,
   commLog,
   trackingLog,
   resourceLog,
-  
+
   // Callback functions
   onCommConfigChange,
   onMonitoringConfigChange,
@@ -30,30 +30,30 @@ const EnhancedSidebar = ({
 }) => {
   const eventService = useEventService();
   const [activeTab, setActiveTab] = useState('scheduler'); // 'scheduler', 'controls', 'logs'
-  
+
   // State for each task's event configuration
   const [commConfig, setCommConfig] = useState({
     callType: 'other',
     responseWindow: eventService.eventConfigs.comm.responseTimeWindow / 1000 // Convert to seconds for display
   });
-  
+
   const [monitoringConfig, setMonitoringConfig] = useState({
     triggerCount: eventService.eventConfigs.monitoring.defaultTriggerCount,
     duration: eventService.eventConfigs.monitoring.defaultDuration / 1000 // Convert to seconds for display
   });
-  
+
   const [trackingConfig, setTrackingConfig] = useState({
     duration: eventService.eventConfigs.tracking.defaultDuration / 1000, // Convert to seconds for display
     difficulty: eventService.eventConfigs.tracking.defaultDifficulty
   });
-  
+
   const [resourceConfig, setResourceConfig] = useState({
     eventType: 'pumpFailure',
     fuelLossMultiplier: eventService.eventConfigs.resource.defaultFuelLossMultiplier,
     pumpFailureCount: eventService.eventConfigs.resource.defaultPumpFailureCount,
     duration: eventService.eventConfigs.resource.defaultFailureDuration / 1000 // Convert to seconds for display
   });
-  
+
   // Event status displays
   const [eventStatus, setEventStatus] = useState({
     comm: false,
@@ -97,24 +97,24 @@ const EnhancedSidebar = ({
       }, duration);
     }
   };
-  
+
   // Handler functions for event triggers
   const triggerCommEvent = () => {
     const responseWindowInSeconds = commConfig.responseWindow; // This is already in seconds in the UI
     console.log(`EventSidebar: Triggering comm event with ${responseWindowInSeconds} seconds response window`);
-    
+
     const result = eventService.triggerCommEvent({
       callType: commConfig.callType,
       responseWindow: responseWindowInSeconds // EventService will convert to ms as needed
     });
-    
+
     if (result) {
       updateEventStatus('comm', true);
     } else {
       console.error('Failed to trigger communications event');
     }
   };
-  
+
   const triggerMonitoringEvent = () => {
     const result = eventService.triggerMonitoringEvent({
       triggerCount: monitoringConfig.triggerCount,
@@ -124,20 +124,20 @@ const EnhancedSidebar = ({
       updateEventStatus('monitoring', true);
     }
   };
-  
+
   const triggerTrackingEvent = () => {
     // Make sure we have valid values
     const durationInSeconds = Math.max(5, Math.min(120, trackingConfig.duration));
     const durationInMs = durationInSeconds * 1000;
     const difficultyLevel = Math.max(1, Math.min(10, trackingConfig.difficulty));
-    
+
     console.log(`EventSidebar: Triggering tracking event with ${durationInSeconds}s duration (${durationInMs}ms) and difficulty ${difficultyLevel}`);
-    
+
     const result = eventService.triggerTrackingEvent({
       duration: durationInMs, // Convert to ms
       difficulty: difficultyLevel
     });
-    
+
     if (result) {
       updateEventStatus('tracking', true);
       console.log(`EventSidebar: Successfully triggered tracking event. Auto control will resume in ${durationInSeconds}s.`);
@@ -145,21 +145,21 @@ const EnhancedSidebar = ({
       console.error('Failed to trigger tracking event');
     }
   };
-  
+
   const triggerResourceEvent = () => {
     console.log('EventSidebar: Triggering resource event with config:', {
       eventType: resourceConfig.eventType,
       pumpFailureCount: resourceConfig.pumpFailureCount,
       duration: resourceConfig.duration * 1000
     });
-    
+
     const result = eventService.triggerResourceEvent({
       eventType: resourceConfig.eventType,
       fuelLossMultiplier: resourceConfig.fuelLossMultiplier,
       pumpFailureCount: resourceConfig.pumpFailureCount,
       duration: resourceConfig.duration * 1000 // Convert to ms
     });
-    
+
     if (result) {
       updateEventStatus('resource', true);
       console.log(`EventSidebar: Successfully triggered resource event with ${resourceConfig.pumpFailureCount} pump failures`);
@@ -167,7 +167,7 @@ const EnhancedSidebar = ({
       console.error('Failed to trigger resource event');
     }
   };
-  
+
   // Styles
   const sidebarStyle = {
     width: '100%',
@@ -178,14 +178,14 @@ const EnhancedSidebar = ({
     flexDirection: 'column',
     overflow: 'false'
   };
-  
+
   const tabsStyle = {
     display: 'flex',
     marginBottom: '1.5rem',
     borderBottom: '1px solid #ddd',
     gap: '1rem'
   };
-  
+
   const tabStyle = (isActive) => ({
     padding: '0.75rem 1.5rem',
     cursor: 'pointer',
@@ -194,14 +194,14 @@ const EnhancedSidebar = ({
     fontWeight: isActive ? 'bold' : 'normal',
     fontSize: '1.1rem'
   });
-  
+
   const contentStyle = {
     flex: 1,
     overflowY: 'auto',
     padding: '0.5rem',
     marginBottom: '1rem'
   };
-  
+
   const sectionStyle = {
     marginBottom: '2rem',
     padding: '1.5rem',
@@ -209,7 +209,7 @@ const EnhancedSidebar = ({
     borderRadius: '5px',
     boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'
   };
-  
+
   const headerStyle = {
     fontWeight: 'bold',
     marginBottom: '1rem',
@@ -217,19 +217,19 @@ const EnhancedSidebar = ({
     borderBottom: '1px solid #eee',
     fontSize: '1.1rem'
   };
-  
+
   const inputGroupStyle = {
     display: 'flex',
     flexDirection: 'column',
     marginBottom: '1rem'
   };
-  
+
   const labelStyle = {
     fontSize: '0.9rem',
     marginBottom: '0.5rem',
     color: '#333'
   };
-  
+
   const inputStyle = {
     padding: '0.5rem',
     fontSize: '1rem',
@@ -237,7 +237,7 @@ const EnhancedSidebar = ({
     borderRadius: '4px',
     width: '100%'
   };
-  
+
   const buttonStyle = {
     padding: '0.5rem',
     backgroundColor: '#007bff',
@@ -248,13 +248,13 @@ const EnhancedSidebar = ({
     marginTop: '0.5rem',
     width: '100%'
   };
-  
+
   const disabledButtonStyle = {
     ...buttonStyle,
     backgroundColor: '#cccccc',
     cursor: 'not-allowed'
   };
-  
+
   const statusIndicatorStyle = (isActive) => ({
     display: 'inline-block',
     width: '12px',
@@ -263,10 +263,10 @@ const EnhancedSidebar = ({
     backgroundColor: isActive ? '#28a745' : '#dc3545',
     marginRight: '0.5rem'
   });
-  
+
   const renderSchedulerTab = () => (
     <div>
-      <EventScheduler 
+      <EventScheduler
         commSettings={{
           ...commSettings,
           eventsPerMinute: commSettings.eventsPerMinute || 0,
@@ -296,7 +296,7 @@ const EnhancedSidebar = ({
       />
     </div>
   );
-  
+
   const renderControlsTab = () => (
     <div>
       {/* Communications Task Events */}
@@ -305,32 +305,32 @@ const EnhancedSidebar = ({
           <span style={statusIndicatorStyle(eventStatus.comm)}></span>
           Communications Events
         </div>
-        
+
         <div style={inputGroupStyle}>
           <label style={labelStyle}>Call Type</label>
-          <select 
+          <select
             value={commConfig.callType}
-            onChange={(e) => setCommConfig({...commConfig, callType: e.target.value})}
+            onChange={(e) => setCommConfig({ ...commConfig, callType: e.target.value })}
             style={inputStyle}
           >
             <option value="own">Own Call</option>
             <option value="other">Other Call</option>
           </select>
         </div>
-        
+
         <div style={inputGroupStyle}>
           <label style={labelStyle}>Response Window (seconds)</label>
-          <input 
-            type="number" 
-            min="1" 
+          <input
+            type="number"
+            min="1"
             max="60"
-            value={commConfig.responseWindow} 
-            onChange={(e) => setCommConfig({...commConfig, responseWindow: parseInt(e.target.value, 10)})}
+            value={commConfig.responseWindow}
+            onChange={(e) => setCommConfig({ ...commConfig, responseWindow: parseInt(e.target.value, 10) })}
             style={inputStyle}
           />
         </div>
-        
-        <button 
+
+        <button
           style={eventService.hasActiveEvents() ? disabledButtonStyle : buttonStyle}
           onClick={triggerCommEvent}
           disabled={eventService.hasActiveEvents()}
@@ -338,146 +338,146 @@ const EnhancedSidebar = ({
           Trigger Comm Event
         </button>
       </div>
-      
+
       {/* Monitoring Task Events */}
       <div style={sectionStyle}>
         <div style={headerStyle}>
           <span style={statusIndicatorStyle(eventStatus.monitoring)}></span>
           Monitoring Events
         </div>
-        
+
         <div style={inputGroupStyle}>
           <label style={labelStyle}>Number of Triggers (1-6)</label>
-          <input 
-            type="number" 
-            min="1" 
+          <input
+            type="number"
+            min="1"
             max="6"
-            value={monitoringConfig.triggerCount} 
-            onChange={(e) => setMonitoringConfig({...monitoringConfig, triggerCount: parseInt(e.target.value, 10)})}
+            value={monitoringConfig.triggerCount}
+            onChange={(e) => setMonitoringConfig({ ...monitoringConfig, triggerCount: parseInt(e.target.value, 10) })}
             style={inputStyle}
           />
         </div>
-        
+
         <div style={inputGroupStyle}>
           <label style={labelStyle}>Duration (seconds)</label>
-          <input 
-            type="number" 
-            min="1" 
+          <input
+            type="number"
+            min="1"
             max="120"
-            value={monitoringConfig.duration} 
-            onChange={(e) => setMonitoringConfig({...monitoringConfig, duration: parseInt(e.target.value, 10)})}
+            value={monitoringConfig.duration}
+            onChange={(e) => setMonitoringConfig({ ...monitoringConfig, duration: parseInt(e.target.value, 10) })}
             style={inputStyle}
           />
         </div>
-        
-        <button 
+
+        <button
           style={buttonStyle}
           onClick={triggerMonitoringEvent}
         >
           Trigger Monitoring Event
         </button>
       </div>
-      
+
       {/* Tracking Task Events */}
       <div style={sectionStyle}>
         <div style={headerStyle}>
           <span style={statusIndicatorStyle(eventStatus.tracking)}></span>
           Tracking Events
         </div>
-        
+
         <div style={inputGroupStyle}>
           <label style={labelStyle}>Duration (seconds)</label>
-          <input 
-            type="number" 
-            min="5" 
+          <input
+            type="number"
+            min="5"
             max="120"
-            value={trackingConfig.duration} 
-            onChange={(e) => setTrackingConfig({...trackingConfig, duration: parseInt(e.target.value, 10)})}
+            value={trackingConfig.duration}
+            onChange={(e) => setTrackingConfig({ ...trackingConfig, duration: parseInt(e.target.value, 10) })}
             style={inputStyle}
           />
         </div>
-        
+
         <div style={inputGroupStyle}>
           <label style={labelStyle}>Difficulty (1-10)</label>
-          <input 
-            type="number" 
-            min="1" 
+          <input
+            type="number"
+            min="1"
             max="10"
-            value={trackingConfig.difficulty} 
-            onChange={(e) => setTrackingConfig({...trackingConfig, difficulty: parseInt(e.target.value, 10)})}
+            value={trackingConfig.difficulty}
+            onChange={(e) => setTrackingConfig({ ...trackingConfig, difficulty: parseInt(e.target.value, 10) })}
             style={inputStyle}
           />
         </div>
-        
-        <button 
+
+        <button
           style={buttonStyle}
           onClick={triggerTrackingEvent}
         >
           Trigger Manual Tracking
         </button>
       </div>
-      
+
       {/* Resource Management Task Events */}
       <div style={sectionStyle}>
         <div style={headerStyle}>
           <span style={statusIndicatorStyle(eventStatus.resource)}></span>
           Resource Management Events
         </div>
-        
+
         <div style={inputGroupStyle}>
           <label style={labelStyle}>Event Type</label>
-          <select 
+          <select
             value={resourceConfig.eventType}
-            onChange={(e) => setResourceConfig({...resourceConfig, eventType: e.target.value})}
+            onChange={(e) => setResourceConfig({ ...resourceConfig, eventType: e.target.value })}
             style={inputStyle}
           >
             <option value="pumpFailure">Pump Failure</option>
             <option value="fuelLossChange">Fuel Loss Rate Change</option>
           </select>
         </div>
-        
+
         {resourceConfig.eventType === 'pumpFailure' && (
           <div style={inputGroupStyle}>
             <label style={labelStyle}>Number of Pump Failures (1-8)</label>
-            <input 
-              type="number" 
-              min="1" 
+            <input
+              type="number"
+              min="1"
               max="8"
-              value={resourceConfig.pumpFailureCount} 
-              onChange={(e) => setResourceConfig({...resourceConfig, pumpFailureCount: parseInt(e.target.value, 10)})}
+              value={resourceConfig.pumpFailureCount}
+              onChange={(e) => setResourceConfig({ ...resourceConfig, pumpFailureCount: parseInt(e.target.value, 10) })}
               style={inputStyle}
             />
           </div>
         )}
-        
+
         {resourceConfig.eventType === 'fuelLossChange' && (
           <div style={inputGroupStyle}>
             <label style={labelStyle}>Fuel Loss Multiplier</label>
-            <input 
-              type="number" 
-              min="0.5" 
+            <input
+              type="number"
+              min="0.5"
               max="3"
               step="0.1"
-              value={resourceConfig.fuelLossMultiplier} 
-              onChange={(e) => setResourceConfig({...resourceConfig, fuelLossMultiplier: parseFloat(e.target.value)})}
+              value={resourceConfig.fuelLossMultiplier}
+              onChange={(e) => setResourceConfig({ ...resourceConfig, fuelLossMultiplier: parseFloat(e.target.value) })}
               style={inputStyle}
             />
           </div>
         )}
-        
+
         <div style={inputGroupStyle}>
           <label style={labelStyle}>Duration (seconds)</label>
-          <input 
-            type="number" 
-            min="5" 
+          <input
+            type="number"
+            min="5"
             max="120"
-            value={resourceConfig.duration} 
-            onChange={(e) => setResourceConfig({...resourceConfig, duration: parseInt(e.target.value, 10)})}
+            value={resourceConfig.duration}
+            onChange={(e) => setResourceConfig({ ...resourceConfig, duration: parseInt(e.target.value, 10) })}
             style={inputStyle}
           />
         </div>
-        
-        <button 
+
+        <button
           style={buttonStyle}
           onClick={triggerResourceEvent}
         >
@@ -486,7 +486,7 @@ const EnhancedSidebar = ({
       </div>
     </div>
   );
-  
+
   const renderLogsTab = () => (
     <div>
       {/* Monitoring Log */}
@@ -496,7 +496,7 @@ const EnhancedSidebar = ({
           <MonitoringTask.Log eventLog={monitoringLog} />
         </div>
       )}
-      
+
       {/* Communications Log */}
       {commSettings.isEnabled && (
         <div style={sectionStyle}>
@@ -504,7 +504,7 @@ const EnhancedSidebar = ({
           <CommunicationsTask.Log commLog={commLog} />
         </div>
       )}
-      
+
       {/* Tracking Log */}
       {trackingSettings.isEnabled && (
         <div style={sectionStyle}>
@@ -512,7 +512,7 @@ const EnhancedSidebar = ({
           <TrackingTask.Log trackingLog={trackingLog} />
         </div>
       )}
-      
+
       {/* Resource Management Log */}
       {resourceSettings.isEnabled && (
         <div style={sectionStyle}>
@@ -536,7 +536,7 @@ const EnhancedSidebar = ({
           Logs
         </div>
       </div>
-      
+
       <div style={contentStyle}>
         {activeTab === 'scheduler' && renderSchedulerTab()}
         {activeTab === 'controls' && renderControlsTab()}
@@ -548,7 +548,7 @@ const EnhancedSidebar = ({
         borderTop: '1px solid #ddd',
         backgroundColor: '#f5f5f5'
       }}>
-        <button 
+        <button
           onClick={() => {
             console.clear();
             eventService.setLogLevel('error');

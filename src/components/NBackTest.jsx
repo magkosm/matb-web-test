@@ -1098,19 +1098,19 @@ const NBackTest = ({
         <p>Test completed with N = {n}</p>
 
         <div style={styles.resultsSection}>
-          <h3>Traditional Accuracy</h3>
+          <h3>{t('nbackTest.traditionalAccuracy', 'Traditional Accuracy')}</h3>
           <table style={styles.resultsTable}>
             <tbody>
               <tr style={styles.tableRow}>
-                <td style={styles.tableCell}>Letter Accuracy:</td>
+                <td style={styles.tableCell}>{t('nbackTest.letterAccuracy', 'Letter Accuracy')}:</td>
                 <td style={styles.tableCell}>{metrics.dim1Accuracy}%</td>
               </tr>
               <tr style={styles.tableRow}>
-                <td style={styles.tableCell}>Position Accuracy:</td>
+                <td style={styles.tableCell}>{t('nbackTest.positionAccuracy', 'Position Accuracy')}:</td>
                 <td style={styles.tableCell}>{metrics.dim2Accuracy}%</td>
               </tr>
               <tr style={{ ...styles.tableRow, ...styles.overallScore }}>
-                <td style={styles.tableCell}>Overall Accuracy:</td>
+                <td style={styles.tableCell}>{t('nbackTest.overallAccuracy', 'Overall Accuracy')}:</td>
                 <td style={styles.tableCell}>{metrics.overallAccuracy}%</td>
               </tr>
             </tbody>
@@ -1118,20 +1118,20 @@ const NBackTest = ({
         </div>
 
         <div style={styles.resultsSection}>
-          <h3>Signal Detection (d')</h3>
-          <p style={styles.dPrimeExplanation}>d' is a more sensitive measure of performance that accounts for response bias</p>
+          <h3>{t('nbackTest.signalDetection', "Signal Detection (d')")}</h3>
+          <p style={styles.dPrimeExplanation}>{t('nbackTest.dPrimeExplanation', "d' is a more sensitive measure of performance that accounts for response bias")}</p>
           <table style={styles.resultsTable}>
             <tbody>
               <tr style={styles.tableRow}>
-                <td style={styles.tableCell}>Letter d':</td>
+                <td style={styles.tableCell}>{t('nbackTest.letterDPrime', "Letter d'")}:</td>
                 <td style={styles.tableCell}>{metrics.dim1DPrime} (scaled: {metrics.dim1DPrimeScaled})</td>
               </tr>
               <tr style={styles.tableRow}>
-                <td style={styles.tableCell}>Position d':</td>
+                <td style={styles.tableCell}>{t('nbackTest.positionDPrime', "Position d'")}:</td>
                 <td style={styles.tableCell}>{metrics.dim2DPrime} (scaled: {metrics.dim2DPrimeScaled})</td>
               </tr>
               <tr style={{ ...styles.tableRow, ...styles.overallScore }}>
-                <td style={styles.tableCell}>Overall d':</td>
+                <td style={styles.tableCell}>{t('nbackTest.overallDPrime', "Overall d'")}:</td>
                 <td style={styles.tableCell}>{metrics.overallDPrime} (scaled: {metrics.overallDPrimeScaled})</td>
               </tr>
             </tbody>
@@ -1143,25 +1143,25 @@ const NBackTest = ({
         </div>
 
         <div style={styles.resultsSection}>
-          <h3>Detailed Statistics</h3>
+          <h3>{t('nbackTest.detailedStats', 'Detailed Statistics')}</h3>
           <div style={styles.statsContainer}>
             <div style={styles.dimensionStats}>
-              <h4>Letter Dimension</h4>
-              <p>Hits: {calculatedResults.dim1.hits}</p>
-              <p>Misses: {calculatedResults.dim1.misses}</p>
-              <p>Correct Rejections: {calculatedResults.dim1.correctRejections}</p>
-              <p>False Alarms: {calculatedResults.dim1.falseAlarms}</p>
-              <p>Hit Rate: {metrics.dim1HitRate}</p>
-              <p>False Alarm Rate: {metrics.dim1FaRate}</p>
+              <h4>{t('nbackTest.letterDimension', 'Letter Dimension')}</h4>
+              <p>{t('nbackTest.hits', 'Hits')}: {calculatedResults.dim1.hits}</p>
+              <p>{t('nbackTest.misses', 'Misses')}: {calculatedResults.dim1.misses}</p>
+              <p>{t('nbackTest.correctRejections', 'Correct Rejections')}: {calculatedResults.dim1.correctRejections}</p>
+              <p>{t('nbackTest.falseAlarms', 'False Alarms')}: {calculatedResults.dim1.falseAlarms}</p>
+              <p>{t('nbackTest.hitRate', 'Hit Rate')}: {metrics.dim1HitRate}</p>
+              <p>{t('nbackTest.faRate', 'False Alarm Rate')}: {metrics.dim1FaRate}</p>
             </div>
             <div style={styles.dimensionStats}>
-              <h4>Position Dimension</h4>
-              <p>Hits: {calculatedResults.dim2.hits}</p>
-              <p>Misses: {calculatedResults.dim2.misses}</p>
-              <p>Correct Rejections: {calculatedResults.dim2.correctRejections}</p>
-              <p>False Alarms: {calculatedResults.dim2.falseAlarms}</p>
-              <p>Hit Rate: {metrics.dim2HitRate}</p>
-              <p>False Alarm Rate: {metrics.dim2FaRate}</p>
+              <h4>{t('nbackTest.positionDimension', 'Position Dimension')}</h4>
+              <p>{t('nbackTest.hits', 'Hits')}: {calculatedResults.dim2.hits}</p>
+              <p>{t('nbackTest.misses', 'Misses')}: {calculatedResults.dim2.misses}</p>
+              <p>{t('nbackTest.correctRejections', 'Correct Rejections')}: {calculatedResults.dim2.correctRejections}</p>
+              <p>{t('nbackTest.falseAlarms', 'False Alarms')}: {calculatedResults.dim2.falseAlarms}</p>
+              <p>{t('nbackTest.hitRate', 'Hit Rate')}: {metrics.dim2HitRate}</p>
+              <p>{t('nbackTest.faRate', 'False Alarm Rate')}: {metrics.dim2FaRate}</p>
             </div>
           </div>
 
@@ -1175,20 +1175,20 @@ const NBackTest = ({
               style={styles.button}
               onClick={() => setShowSaveForm(true)}
             >
-              Save Score
+              {t('gameOver.submit', 'Save Score')}
             </button>
           </div>
         )}
 
         {showSaveForm && (
           <div style={styles.saveForm}>
-            <h3>Save Your Score</h3>
+            <h3>{t('reactionTest.results', 'Save Your Score')}</h3>
             <input
               style={styles.input}
               type="text"
               value={playerName}
               onChange={(e) => setPlayerName(e.target.value)}
-              placeholder="Enter your name"
+              placeholder={t('gameOver.enterName', 'Enter your name')}
             />
             <button
               style={styles.button}
@@ -1207,7 +1207,7 @@ const NBackTest = ({
 
         {scoreSaved && (
           <div style={styles.scoreSavedMessage}>
-            <p>Score saved!</p>
+            <p>{t('scoreboard.scoreSaved', 'Score saved!')}</p>
           </div>
         )}
 
@@ -1216,7 +1216,7 @@ const NBackTest = ({
             style={styles.button}
             onClick={startNBackTest}
           >
-            Restart Test
+            {t('nbackTest.restartTest', 'Restart Test')}
           </button>
           <button
             style={{ ...styles.button, backgroundColor: '#007BFF' }}

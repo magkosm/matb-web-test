@@ -814,8 +814,8 @@ const ReactionTimeTest = ({
               width: '100%',
               textAlign: 'center'
             }}>
-              <h3>No reaction times recorded</h3>
-              <p>Try again to test your reaction time.</p>
+              <h3>{t('reactionTest.noReactionTimes', 'No reaction times recorded')}</h3>
+              <p>{t('reactionTest.tryAgainToTest', 'Try again to test your reaction time.')}</p>
             </div>
           )}
 
@@ -918,7 +918,7 @@ const ReactionTimeTest = ({
                 borderRadius: '4px'
               }}
             >
-              Force Stimulus
+              {t('reactionTest.forceStimulus', 'Force Stimulus')}
             </button>
             <button
               onClick={forceScheduleFirstStimulus}
@@ -932,7 +932,7 @@ const ReactionTimeTest = ({
                 borderRadius: '4px'
               }}
             >
-              Schedule Next
+              {t('reactionTest.scheduleNext', 'Schedule Next')}
             </button>
           </div>
 

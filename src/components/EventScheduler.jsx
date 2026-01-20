@@ -15,7 +15,7 @@ const EventScheduler = ({
   const eventService = useEventService();
   const subscribedRef = useRef(false);
   const initializedRef = useRef(false);
-  
+
   // State to store formatted times
   const [formattedTimes, setFormattedTimes] = useState({
     comm: 'Not scheduled',
@@ -23,7 +23,7 @@ const EventScheduler = ({
     tracking: 'Not scheduled',
     resource: 'Not scheduled'
   });
-  
+
   // Add state to track task status
   const [taskStatus, setTaskStatus] = useState({
     comm: false,
@@ -31,13 +31,13 @@ const EventScheduler = ({
     tracking: false,
     resource: false
   });
-  
+
   // Add state for selected call type
   const [selectedCallType, setSelectedCallType] = useState('own');
-  
+
   // Add state to track global paused state
   const [isGloballyPaused, setIsGloballyPaused] = useState(false);
-  
+
   // State to track scheduler status
   const [schedulerState, setSchedulerState] = useState({
     isActive: false,
@@ -52,9 +52,9 @@ const EventScheduler = ({
   // Initialize scheduler only once on component mount
   useEffect(() => {
     if (initializedRef.current) return;
-    
+
     console.log('EventScheduler: Initializing scheduler on first render');
-    
+
     // Initialize the scheduler with settings if it's not already initialized
     const initialSettings = {
       comm: { ...commSettings },
@@ -62,43 +62,43 @@ const EventScheduler = ({
       tracking: { ...trackingSettings },
       resource: { ...resourceSettings }
     };
-    
+
     eventService.initializeScheduler(initialSettings);
     initializedRef.current = true;
-    
+
     // No cleanup - scheduler should continue running even if component unmounts
   }, []);
-  
+
   // Handle settings changes with proper dependency tracking
   useEffect(() => {
     if (!initializedRef.current) return;
-    
+
     console.log('EventScheduler: Settings changed, updating scheduler');
-    
+
     // Create a deep copy of the settings to avoid reference issues
     const updatedSettings = {
-      comm: { 
-        isEnabled: commSettings.isEnabled, 
+      comm: {
+        isEnabled: commSettings.isEnabled,
         eventsPerMinute: commSettings.eventsPerMinute || 0,
         difficulty: commSettings.difficulty || 5
       },
-      monitoring: { 
-        isEnabled: monitoringSettings.isEnabled, 
+      monitoring: {
+        isEnabled: monitoringSettings.isEnabled,
         eventsPerMinute: monitoringSettings.eventsPerMinute || 0,
         difficulty: monitoringSettings.difficulty || 5
       },
-      tracking: { 
-        isEnabled: trackingSettings.isEnabled, 
+      tracking: {
+        isEnabled: trackingSettings.isEnabled,
         eventsPerMinute: trackingSettings.eventsPerMinute || 0,
         difficulty: trackingSettings.difficulty || 5
       },
-      resource: { 
-        isEnabled: resourceSettings.isEnabled, 
+      resource: {
+        isEnabled: resourceSettings.isEnabled,
         eventsPerMinute: resourceSettings.eventsPerMinute || 0,
         difficulty: resourceSettings.difficulty || 5
       }
     };
-    
+
     // Update settings through the service (already has debouncing)
     eventService.updateSchedulerSettings(updatedSettings);
   }, [
@@ -107,17 +107,17 @@ const EventScheduler = ({
     trackingSettings.isEnabled, trackingSettings.eventsPerMinute, trackingSettings.difficulty,
     resourceSettings.isEnabled, resourceSettings.eventsPerMinute, resourceSettings.difficulty
   ]);
-  
+
   // Subscribe to scheduler state changes only once
   useEffect(() => {
     if (subscribedRef.current) return;
-    
+
     console.log('EventScheduler: Subscribing to scheduler updates');
-    
+
     const handleSchedulerUpdate = (state) => {
       console.log('EventScheduler: Received scheduler update', state);
       setSchedulerState(state);
-      
+
       // Also notify parent if needed
       if (onSchedulingChange) {
         onSchedulingChange(state);
@@ -127,26 +127,26 @@ const EventScheduler = ({
     // Subscribe to scheduler updates
     eventService.subscribeToScheduler(handleSchedulerUpdate);
     subscribedRef.current = true;
-    
+
     // Get initial state immediately
     const currentState = eventService.getSchedulerState();
     setSchedulerState(currentState);
-    
+
     // No cleanup - we want the subscription to remain active
   }, [onSchedulingChange]);
-  
+
   // Update formatted times every second
   useEffect(() => {
     const updateFormattedTimes = () => {
       const now = Date.now();
       const updated = {};
-      
+
       Object.entries(schedulerState.nextEvents).forEach(([taskType, timestamp]) => {
         if (!timestamp) {
           updated[taskType] = 'Not scheduled';
         } else {
           const timeRemaining = timestamp - now;
-          
+
           if (timeRemaining <= 0) {
             updated[taskType] = 'Due now';
             // Highlight task status when due
@@ -154,7 +154,7 @@ const EventScheduler = ({
               ...prev,
               [taskType]: true
             }));
-            
+
             // Reset status after 2 seconds
             setTimeout(() => {
               setTaskStatus(prev => ({
@@ -164,7 +164,7 @@ const EventScheduler = ({
             }, 2000);
           } else {
             const seconds = Math.floor(timeRemaining / 1000);
-            
+
             if (seconds < 60) {
               updated[taskType] = `In ${seconds}s`;
             } else {
@@ -175,20 +175,20 @@ const EventScheduler = ({
           }
         }
       });
-      
+
       setFormattedTimes(updated);
     };
-    
+
     // Initial update
     updateFormattedTimes();
-    
+
     // Set up interval to update times
     const intervalId = setInterval(updateFormattedTimes, 1000);
-    
+
     // Clean up
     return () => clearInterval(intervalId);
   }, [schedulerState.nextEvents]);
-  
+
   // Toggle global pause state
   const toggleGlobalPause = useCallback(() => {
     if (isGloballyPaused) {
@@ -201,7 +201,7 @@ const EventScheduler = ({
       const paused = eventService.pauseAllTasks();
       console.log('All tasks paused:', paused);
       setIsGloballyPaused(true);
-      
+
       // If the scheduler is active, also stop it
       if (schedulerState.isActive) {
         console.log('Also stopping scheduler due to global pause');
@@ -209,80 +209,80 @@ const EventScheduler = ({
       }
     }
   }, [isGloballyPaused, schedulerState.isActive]);
-  
+
   // Toggle scheduler active state
   const toggleScheduler = useCallback(() => {
     console.log(`EventScheduler: ${schedulerState.isActive ? 'Stopping' : 'Starting'} scheduler`);
-    
+
     if (schedulerState.isActive) {
       eventService.stopScheduler();
     } else {
       eventService.startScheduler();
     }
   }, [schedulerState.isActive]);
-  
+
   // Manual event trigger functions
   const triggerManualEvent = useCallback((taskType) => {
     console.log(`EventScheduler: Manually triggering ${taskType} event`);
-    
+
     switch (taskType) {
       case 'comm':
-        const callTypeToUse = selectedCallType === 'random' 
+        const callTypeToUse = selectedCallType === 'random'
           ? Math.random() > 0.5 ? 'own' : 'other'
           : selectedCallType;
-          
+
         eventService.triggerCommEvent({
           callType: callTypeToUse,
           responseWindow: 10 // 10 seconds
         });
         break;
-        
+
       case 'monitoring':
         eventService.triggerMonitoringEvent({
           triggerCount: Math.floor(Math.random() * 3) + 1, // 1-3 triggers
           duration: (Math.floor(Math.random() * 10) + 10) * 1000 // 10-20 seconds
         });
         break;
-        
+
       case 'tracking':
         eventService.triggerTrackingEvent({
           difficulty: trackingSettings.difficulty || 5,
           duration: (Math.floor(Math.random() * 15) + 15) * 1000 // 15-30 seconds
         });
         break;
-        
+
       case 'resource':
         const isRandomType = true; // Can make this configurable later
-        const eventType = isRandomType 
+        const eventType = isRandomType
           ? Math.random() > 0.5 ? 'pumpFailure' : 'fuelLossChange'
           : 'pumpFailure';
-          
+
         const config = {
           eventType,
           duration: (Math.floor(Math.random() * 30) + 30) * 1000 // 30-60 seconds
         };
-        
+
         if (eventType === 'pumpFailure') {
           config.pumpFailureCount = Math.floor(Math.random() * 2) + 1; // 1-2 pumps
         } else {
           config.fuelLossMultiplier = 1.2 + (Math.random() * 0.8); // 1.2-2.0
         }
-        
+
         eventService.triggerResourceEvent(config);
         break;
-        
+
       default:
         console.error(`Unknown task type: ${taskType}`);
     }
   }, [selectedCallType, trackingSettings.difficulty]);
-  
+
   // Handle setting changes
   const handleSettingChange = useCallback((task, type, value) => {
     if (onSchedulingChange) {
       onSchedulingChange({ task, type, value });
     }
   }, [onSchedulingChange]);
-  
+
   // Styles
   const containerStyle = {
     padding: '1.5rem',
@@ -290,7 +290,7 @@ const EventScheduler = ({
     borderRadius: '5px',
     boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'
   };
-  
+
   const headerStyle = {
     fontWeight: 'bold',
     marginBottom: '1rem',
@@ -298,7 +298,7 @@ const EventScheduler = ({
     justifyContent: 'space-between',
     alignItems: 'center'
   };
-  
+
   const taskRowStyle = {
     display: 'flex',
     justifyContent: 'space-between',
@@ -307,14 +307,14 @@ const EventScheduler = ({
     borderBottom: '1px solid #eee',
     gap: '0.5rem'
   };
-  
+
   const buttonContainerStyle = {
     display: 'flex',
     justifyContent: 'space-between',
     marginTop: '1rem',
     gap: '0.5rem'
   };
-  
+
   const primaryButtonStyle = {
     flex: 1,
     padding: '0.5rem',
@@ -324,7 +324,7 @@ const EventScheduler = ({
     borderRadius: '4px',
     cursor: 'pointer'
   };
-  
+
   const secondaryButtonStyle = {
     flex: 1,
     padding: '0.5rem',
@@ -334,7 +334,7 @@ const EventScheduler = ({
     borderRadius: '4px',
     cursor: 'pointer'
   };
-  
+
   const statusIndicatorStyle = (isEnabled, isActive = false) => ({
     display: 'inline-block',
     width: '10px',
@@ -343,7 +343,7 @@ const EventScheduler = ({
     backgroundColor: isActive ? '#ffc107' : (isEnabled ? '#28a745' : '#dc3545'),
     marginRight: '0.5rem'
   });
-  
+
   const manualTriggerButtonStyle = {
     padding: '0.25rem 0.5rem',
     backgroundColor: '#17a2b8',
@@ -359,7 +359,7 @@ const EventScheduler = ({
     gap: '0.5rem',
     fontSize: '0.8rem'
   };
-  
+
   const inputStyle = {
     width: '45px',
     padding: '0.2rem',
@@ -367,12 +367,12 @@ const EventScheduler = ({
     border: '1px solid #ced4da',
     borderRadius: '4px'
   };
-  
+
   const labelStyle = {
     fontSize: '0.75rem',
     marginRight: '0.2rem'
   };
-  
+
   const formatEPM = (epm) => {
     if (epm === 0) return 'Disabled';
     return `${epm}/min`;
@@ -383,7 +383,7 @@ const EventScheduler = ({
       <div style={headerStyle}>
         <div>Event Scheduler</div>
         <div style={{ display: 'flex', gap: '0.5rem' }}>
-          <button 
+          <button
             style={{
               ...secondaryButtonStyle,
               backgroundColor: isGloballyPaused ? '#28a745' : '#dc3545',
@@ -396,7 +396,7 @@ const EventScheduler = ({
           </button>
         </div>
       </div>
-      
+
       {/* Communication Events */}
       <div style={taskRowStyle}>
         <div style={{ display: 'flex', alignItems: 'center', flex: 1 }}>
@@ -432,7 +432,7 @@ const EventScheduler = ({
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
           <div>
-            <select 
+            <select
               value={selectedCallType}
               onChange={(e) => setSelectedCallType(e.target.value)}
               style={{
@@ -447,7 +447,7 @@ const EventScheduler = ({
               <option value="random">Random</option>
             </select>
           </div>
-          <button 
+          <button
             style={manualTriggerButtonStyle}
             onClick={() => triggerManualEvent('comm')}
             disabled={!commSettings.isEnabled}
@@ -457,7 +457,7 @@ const EventScheduler = ({
           <span style={{ width: '80px', textAlign: 'right' }}>{formattedTimes.comm}</span>
         </div>
       </div>
-      
+
       {/* Monitoring Events */}
       <div style={taskRowStyle}>
         <div style={{ display: 'flex', alignItems: 'center', flex: 1 }}>
@@ -492,7 +492,7 @@ const EventScheduler = ({
           </div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <button 
+          <button
             style={manualTriggerButtonStyle}
             onClick={() => triggerManualEvent('monitoring')}
             disabled={!monitoringSettings.isEnabled}
@@ -502,7 +502,7 @@ const EventScheduler = ({
           <span style={{ width: '80px', textAlign: 'right' }}>{formattedTimes.monitoring}</span>
         </div>
       </div>
-      
+
       {/* Tracking Events */}
       <div style={taskRowStyle}>
         <div style={{ display: 'flex', alignItems: 'center', flex: 1 }}>
@@ -537,7 +537,7 @@ const EventScheduler = ({
           </div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <button 
+          <button
             style={manualTriggerButtonStyle}
             onClick={() => triggerManualEvent('tracking')}
             disabled={!trackingSettings.isEnabled}
@@ -547,7 +547,7 @@ const EventScheduler = ({
           <span style={{ width: '80px', textAlign: 'right' }}>{formattedTimes.tracking}</span>
         </div>
       </div>
-      
+
       {/* Resource Events */}
       <div style={taskRowStyle}>
         <div style={{ display: 'flex', alignItems: 'center', flex: 1 }}>
@@ -583,7 +583,7 @@ const EventScheduler = ({
           </div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <button 
+          <button
             style={manualTriggerButtonStyle}
             onClick={() => triggerManualEvent('resource')}
             disabled={!resourceSettings.isEnabled}
@@ -593,13 +593,13 @@ const EventScheduler = ({
           <span style={{ width: '80px', textAlign: 'right' }}>{formattedTimes.resource}</span>
         </div>
       </div>
-      
+
       {/* Control Buttons */}
       <div style={buttonContainerStyle}>
         <button style={primaryButtonStyle} onClick={toggleScheduler}>
           {schedulerState.isActive ? 'Stop Scheduler' : 'Start Scheduler'}
         </button>
-        <button 
+        <button
           style={secondaryButtonStyle}
           onClick={() => {
             console.log('EventScheduler: Explicitly reschedule all events');

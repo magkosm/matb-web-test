@@ -920,7 +920,7 @@ function App() {
                   cursor: 'pointer'
                 }}
               >
-                Main Menu (Ctrl+Q)
+                {t('common.returnToMenu')} (Ctrl+Q)
               </button>
               <button
                 onClick={() => setShowBackgroundSelector(!showBackgroundSelector)}
@@ -933,7 +933,7 @@ function App() {
                   cursor: 'pointer'
                 }}
               >
-                Background
+                {t('common.background')}
               </button>
               <button
                 onClick={() => setIsEventSidebarOpen(!isEventSidebarOpen)}
@@ -946,7 +946,7 @@ function App() {
                   cursor: 'pointer'
                 }}
               >
-                {isEventSidebarOpen ? 'Hide Controls' : 'Show Controls'}
+                {isEventSidebarOpen ? t('common.hideControls') : t('common.showControls')}
               </button>
             </div>
             {showBackgroundSelector && (
@@ -1068,7 +1068,7 @@ function App() {
                 fontSize: '12px'
               }}
             >
-              BG
+              {t('common.background').substring(0, 2).toUpperCase()}
             </button>
             {showBackgroundSelector && (
               <div style={{
