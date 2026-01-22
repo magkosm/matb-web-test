@@ -135,21 +135,21 @@ const ReactionTimeGame = ({
             </div>
 
             {limitMode === 'stimuli' ? (
-              <div style={{ marginBottom: '20px' }}>
-                <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
-                  {t('reactionTest.stimuliCount', 'Number of Stimuli')}:
-                </label>
-                <input 
-                  type="range" 
-                  min="5" 
-                  max="30" 
-                  step="1"
-                  value={customStimuli} 
-                  onChange={(e) => setCustomStimuli(parseInt(e.target.value))}
-                  style={{ width: '100%' }}
-                />
-                <span>{customStimuli} {t('reactionTest.stimuli', 'stimuli')}</span>
-              </div>
+            <div style={{ marginBottom: '20px' }}>
+              <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
+                {t('reactionTest.stimuliCount', 'Number of Stimuli')}:
+              </label>
+              <input 
+                type="range" 
+                min="5" 
+                max="30" 
+                step="1"
+                value={customStimuli} 
+                onChange={(e) => setCustomStimuli(parseInt(e.target.value))}
+                style={{ width: '100%' }}
+              />
+              <span>{customStimuli} {t('reactionTest.stimuli', 'stimuli')}</span>
+            </div>
             ) : (
               <div style={{ marginBottom: '20px' }}>
                 <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>

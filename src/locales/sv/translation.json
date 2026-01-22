@@ -37,7 +37,7 @@
     "sysMonTitle": "Systemövervakning",
     "sysMon": "I denna uppgift ska du kontrollera 6 mätare: F1-F6.\nDu måste korrigera systemet om:\n• F1 slutar vara grön - Korrigera genom att klicka på F1\n• F2 blir röd - Korrigera genom att klicka på F2\n• F3-F6-punkten flyttas utanför det grå mittintervallet till de rosa/röda delarna - Korrigera genom att klicka på F3 – F6",
     "trackTitle": "Spårning – Auto",
-    "track": "I denna uppgift måste du korrigera markörens drift så att den stannar inom den lilla rutan i mitten.\nNär den gröna rutan med 'AUTO' blir blå med texten 'MANUELL', måste du manuellt korrigera markörens position för att hålla den inom den centrala rutan.\nDu styr markörens position med WASD-tangenterna (W=upp; A=vänster; S=ner; D=höger).",
+    "track": "I denna uppgift måste du korrigera markörens drift så att den stannar inom den lilla rutan i mitten.\nNär den gröna rutan med 'AUTO' blir blå med texten 'MANUELL', måste du manuellt korrigera markörens position för att hålla den inom den centrala rutan.\nDu styr markörens position med WASD-tangenterna (W=upp; A=vänster; S=ner; D=höger) eller genom att klicka/röra och dra.",
     "commTitle": "Kommunikationsuppgift",
     "comm": "I denna uppgift måste du svara på ljudinstruktioner om att ändra radiofrekvenser. Vissa meddelanden riktas till dig (din anropssignal), men du måste ignorera andra (som riktas till andra anropssignaler).\nDin anropssignal står högst upp i uppgiften (ESA504).\n\nKontroller:\n1. För att välja vilken radio som ska ändras, använd pilarna [UPP] och [NER].\n2. För att ändra frekvensen (nummer) för den valda radion, använd pilarna [HÖGER] och [VÄNSTER].",
     "resManTitle": "Resurshantering",
@@ -72,6 +72,7 @@
   },
   "customMode": {
     "setup": "Inställningar för Anpassat Läge",
+    "configure": "Konfigurera",
     "eventsPerMinute": "Händelser Per Minut",
     "taskConfiguration": "Uppgiftskonfiguration",
     "commTask": "Kommunikationsuppgift",

@@ -228,7 +228,7 @@ const MainMenu = ({ onStartGame, onExitApp, gameResults }) => {
           )}
         </div>
 
-        <div style={{ textAlign: 'center' }}>
+        <div style={{ textAlign: 'center', display: 'flex', justifyContent: 'center', gap: '15px' }}>
           <button
             onClick={() => setShowOtherModes(false)}
             style={{
@@ -242,6 +242,24 @@ const MainMenu = ({ onStartGame, onExitApp, gameResults }) => {
             }}
           >
             {t('common.cancel')}
+          </button>
+
+          <button
+            onClick={() => {
+              setShowOtherModes(false);
+              handleStartGame();
+            }}
+            style={{
+              padding: '10px 20px',
+              backgroundColor: '#28a745',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: 'pointer',
+              pointerEvents: 'auto'
+            }}
+          >
+            {selectedMode === 'custom' ? t('customMode.setup') : t('common.start')}
           </button>
         </div>
       </div>

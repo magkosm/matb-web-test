@@ -76,7 +76,8 @@ const TrackingTask = forwardRef(({
     }
   }, [defaultInputMode, inputMode]);
 
-  // Schedule automation failures based on eventsPerMinute
+  // Enable both keyboard and touch/mouse listeners regardless of inputMode
+  // But we still track inputMode for logging purposes
   useEffect(() => {
     if (!isEnabled || !autoEvents) return;
 
@@ -135,58 +136,56 @@ const TrackingTask = forwardRef(({
     };
   }, [isAuto, automationFailure, eventStartTime]);
 
-    // Physics effect
-    useEffect(() => {
-        if (!isEnabled) return;
-    
-        // Scale drift parameters based on difficulty (0-10)
-        // Use event difficulty when in manual mode, otherwise use base difficulty
-        const difficultyToUse = !isAuto ? currentEventDifficulty : difficulty;
-    
-        // Reduce jitter and make control smoother
-        // Lower multiplier for less chaotic movement
-        const manualDriftMultiplier = 0.2 + (difficultyToUse / 10) * 1.5; // Reduced from 0.3 + ... * 3.5
-        const driftMultiplier = isAuto ? 1.0 : manualDriftMultiplier;
-    
-        const driftSpeed = 0.4 * driftMultiplier; // Slightly reduced from 0.5
-    
-        // Increase auto-correction at lower difficulties, decrease at higher difficulties
-        const autoCorrection = isAuto
-          ? 0.4
-          : Math.max(0.05, 0.3 - (difficultyToUse / 40)); 
-    
-        const maxDriftVelocity = 1.5 * driftMultiplier; // Reduced from 2.0
-    
-        // Apply initial drift based on difficulty when entering manual mode
-        if (!isAuto && (driftXRef.current === 0 && driftYRef.current === 0)) {
-          const initialDrift = 0.15 * driftMultiplier; // Reduced from 0.2
-          driftXRef.current = (Math.random() - 0.5) * initialDrift * 3;
-          driftYRef.current = (Math.random() - 0.5) * initialDrift * 3;
-        }
-    
-        const interval = setInterval(() => {
-          const now = Date.now();
-          const _dt = now - lastUpdateRef.current;
-          lastUpdateRef.current = now;
-    
-          const difficultyToUse = !isAuto ? currentEventDifficulty : difficulty;
-          
-          // Significantly reduce random factor to reduce jitter
-          const randomFactor = 0.15 * driftMultiplier; // Reduced from 0.4
-          const difficultyScale = 1 + (difficultyToUse / 20); // Reduced scaling effect
-    
+  // Physics effect
+  useEffect(() => {
+    if (!isEnabled) return;
+
+    // Scale drift parameters based on difficulty (0-10)
+    // Use event difficulty when in manual mode, otherwise use base difficulty
+    const difficultyToUse = !isAuto ? currentEventDifficulty : difficulty;
+
+    // More dramatic effect of difficulty on manual mode
+    const manualDriftMultiplier = 0.3 + (difficultyToUse / 10) * 3.5; // Scales from 0.3x to 3.8x based on difficulty
+    const driftMultiplier = isAuto ? 1.0 : manualDriftMultiplier;
+
+    const driftSpeed = 0.5 * driftMultiplier;
+
+    // Increase auto-correction at lower difficulties, decrease at higher difficulties
+    const autoCorrection = isAuto
+      ? 0.4
+      : Math.max(0.05, 0.3 - (difficultyToUse / 40)); // Scales from 0.3 to 0.05
+
+    const maxDriftVelocity = 2.0 * driftMultiplier;
+
+    // Apply initial drift based on difficulty when entering manual mode
+    if (!isAuto && (driftXRef.current === 0 && driftYRef.current === 0)) {
+      const initialDrift = 0.2 * driftMultiplier;
+      driftXRef.current = (Math.random() - 0.5) * initialDrift * 3;
+      driftYRef.current = (Math.random() - 0.5) * initialDrift * 3;
+    }
+
+    const interval = setInterval(() => {
+      const now = Date.now();
+      const _dt = now - lastUpdateRef.current; // Prefix with underscore since it's not used
+      lastUpdateRef.current = now;
+
+      // Make drift more responsive to difficulty
+      const difficultyToUse = !isAuto ? currentEventDifficulty : difficulty;
+      const randomFactor = 0.4 * driftMultiplier;
+      const difficultyScale = 1 + (difficultyToUse / 15); // Scales from 1.07 to 1.67
+
           // Add random acceleration to drift
           driftXRef.current += (Math.random() - 0.5) * randomFactor * difficultyScale;
           driftYRef.current += (Math.random() - 0.5) * randomFactor * difficultyScale;
-    
+
           // Limit maximum drift velocity
           driftXRef.current = Math.max(-maxDriftVelocity, Math.min(maxDriftVelocity, driftXRef.current));
           driftYRef.current = Math.max(-maxDriftVelocity, Math.min(maxDriftVelocity, driftYRef.current));
-    
+
           setCursorPosition(prev => {
             let newX = prev.x + driftXRef.current * driftSpeed;
             let newY = prev.y + driftYRef.current * driftSpeed;
-    
+
             // Auto mode logic
             if (isAuto) {
               driftXRef.current -= (newX * 0.05);
@@ -207,7 +206,7 @@ const TrackingTask = forwardRef(({
                 driftYRef.current -= (newY / 100) * assistLevel;
               }
             }
-    
+
             // Bounce off boundaries
             const bounceEnergy = 0.8 + (difficultyToUse / 20); // Reduced bounce energy
             if (Math.abs(newX) > 150) {
@@ -218,13 +217,13 @@ const TrackingTask = forwardRef(({
               driftYRef.current = -driftYRef.current * bounceEnergy;
               newY = Math.sign(newY) * 150;
             }
-    
+
             return { x: newX, y: newY };
           });
         }, 16);
-    
-        return () => clearInterval(interval);
-      }, [isAuto, inputMode, automationFailure, isEnabled, difficulty, currentEventDifficulty]);
+
+    return () => clearInterval(interval);
+  }, [isAuto, inputMode, automationFailure, isEnabled, difficulty, currentEventDifficulty]);
 
   // Separate effect for logging system
   useEffect(() => {
@@ -291,6 +290,8 @@ const TrackingTask = forwardRef(({
 
     const handleKeyDown = (e) => {
       keysPressed.add(e.key.toLowerCase());
+      // If user uses keyboard, update input mode for logging
+      if (inputMode !== 'keyboard') setInputMode('keyboard');
     };
 
     const handleKeyUp = (e) => {
@@ -321,11 +322,15 @@ const TrackingTask = forwardRef(({
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('keyup', handleKeyUp);
     };
-  }, [isAuto, inputMode, isEnabled]);
+  }, [isAuto, isEnabled, inputMode]);
 
-  // Touch input handling
+  // Touch input handling - enabled alongside keyboard
   const handleTouchStart = useCallback((e) => {
-    if (isAuto || inputMode !== 'touch') return;
+    if (isAuto) return;
+    // If user interacts with touch/mouse, update input mode for logging
+    // We use the function form to avoid dependency on inputMode state
+    setInputMode(prev => prev !== 'touch' ? 'touch' : prev);
+    
     e.preventDefault();
 
     // Get touch/click position relative to container center
@@ -340,7 +345,9 @@ const TrackingTask = forwardRef(({
 
     touchStartRef.current = {
       x: clientX,
-      y: clientY
+      y: clientY,
+      currentX: clientX, // Initialize currentX
+      currentY: clientY  // Initialize currentY
     };
 
     // Start movement loop with initial direction
@@ -350,36 +357,45 @@ const TrackingTask = forwardRef(({
 
       setCursorPosition(prev => {
         const moveStep = 2; // Reduced speed
+        // Calculate delta from initial touch/click point
         const deltaX = touchStartRef.current.currentX - touchStartRef.current.x;
         const deltaY = touchStartRef.current.currentY - touchStartRef.current.y;
 
-        // Calculate movement based on drag distance from start point
+        // Calculate movement based on drag distance from start point (joystick logic)
         const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
-        if (distance > 0) {
+        
+        // Deadzone check
+        if (distance > 5) {
+          // Normalize vector
           const normalizedX = deltaX / distance;
           const normalizedY = deltaY / distance;
-
+          
+          // Scale speed by distance (further drag = faster movement), capped at max speed
+          const speedMultiplier = Math.min(distance / 50, 2.0); // Cap at 2x speed for 100px drag
+          
           return {
-            x: Math.max(-150, Math.min(150, prev.x + normalizedX * moveStep)),
-            y: Math.max(-150, Math.min(150, prev.y + normalizedY * moveStep))
+            x: Math.max(-150, Math.min(150, prev.x + normalizedX * moveStep * speedMultiplier)),
+            y: Math.max(-150, Math.min(150, prev.y + normalizedY * moveStep * speedMultiplier))
           };
         }
         return prev;
       });
     }, 16);
-  }, [isAuto, inputMode]);
+  }, [isAuto]); // Removed inputMode dependency to prevent re-attaching listeners on mode switch
 
   const handleTouchMove = useCallback((e) => {
-    if (!touchStartRef.current || isAuto || inputMode !== 'touch') return;
+    if (!touchStartRef.current || isAuto) return;
     e.preventDefault();
 
     // Update current position for joystick calculations
     const clientX = e.touches ? e.touches[0].clientX : e.clientX;
     const clientY = e.touches ? e.touches[0].clientY : e.clientY;
 
-    touchStartRef.current.currentX = clientX;
-    touchStartRef.current.currentY = clientY;
-  }, [isAuto, inputMode]);
+    if (touchStartRef.current) {
+      touchStartRef.current.currentX = clientX;
+      touchStartRef.current.currentY = clientY;
+    }
+  }, [isAuto]);
 
   const handleTouchEnd = useCallback(() => {
     touchStartRef.current = null;
@@ -460,8 +476,8 @@ const TrackingTask = forwardRef(({
         clearInterval(moveIntervalRef.current);
       }
     };
-  }, [isAuto, inputMode, handleTouchStart, handleTouchMove, handleTouchEnd,
-    handleMouseDown, handleMouseMove, handleMouseUp, handleMouseLeave]);
+  }, [isAuto, handleTouchStart, handleTouchMove, handleTouchEnd,
+    handleMouseDown, handleMouseMove, handleMouseUp, handleMouseLeave]); // Removed inputMode dependency
 
   // Removed startAutomation - functionality moved to main physics loop
 
@@ -821,27 +837,17 @@ const TrackingTask = forwardRef(({
           }}>
             {isAuto ? 'AUTO' : 'MANUAL'}
           </div>
-          <div style={{
-            padding: '3px',
-            background: 'rgba(255,255,255,0.9)',
-            borderRadius: '4px',
-            boxShadow: '0 0 5px rgba(0,0,0,0.2)'
-          }}>
-            <select
-              value={inputMode}
-              onChange={(e) => handleInputModeChange(e.target.value)}
-              style={{
-                padding: '8px',
-                fontSize: '14px',
-                borderRadius: '4px',
-                border: '1px solid #ccc',
-                backgroundColor: 'white',
-                cursor: 'pointer'
-              }}
-            >
-              <option value="keyboard">{t('tasks.tracking.keyboard')} (WASD)</option>
-              <option value="touch">{t('tasks.tracking.touch')}</option>
-            </select>
+          <div 
+            style={{
+              padding: '3px',
+              background: 'rgba(255,255,255,0.9)',
+              borderRadius: '4px',
+              boxShadow: '0 0 5px rgba(0,0,0,0.2)',
+              cursor: 'help'
+            }}
+            title={t('tasks.tracking.controlsHelp', 'Use WASD keys or click/touch and drag to control cursor')}
+          >
+            <span style={{ fontSize: '14px', padding: '0 5px' }}>ℹ️</span>
           </div>
         </div>
       </div>

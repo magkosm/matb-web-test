@@ -24,7 +24,7 @@ export const COMM_CONFIG = {
         JITTER_VAR: 0.5, // Was 0.6 - Random variance (0.5 to 1.0 multiplier range)
 
         // Minimum delay between messages
-        MIN_DELAY_MS: 3000,
+        MIN_DELAY_MS: 5000, // Increased from 3000ms
     },
 
     // Response Window Logic

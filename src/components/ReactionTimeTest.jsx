@@ -417,21 +417,21 @@ const ReactionTimeTest = ({
     setShowFixation(false);
     currentStimulusIndexRef.current = 0;
 
-  // Start the game timer - only for displaying a countdown, game ends when all stimuli complete
+    // Start the game timer - only for displaying a countdown, game ends when all stimuli complete
     if (duration) {
-      gameTimerRef.current = setInterval(() => {
-        if (!isComponentMounted.current) return;
+    gameTimerRef.current = setInterval(() => {
+      if (!isComponentMounted.current) return;
 
-        setTimeRemaining(prev => {
-          const newTime = prev - 100;
-          if (newTime <= 0) {
-            debugLog('Time expired, ending game');
-            endGame();
-            return 0;
-          }
-          return newTime;
-        });
-      }, 100);
+      setTimeRemaining(prev => {
+        const newTime = prev - 100;
+        if (newTime <= 0) {
+          debugLog('Time expired, ending game');
+          endGame();
+          return 0;
+        }
+        return newTime;
+      });
+    }, 100);
     }
 
     // Use a smaller delay to ensure isActive has been applied before scheduling

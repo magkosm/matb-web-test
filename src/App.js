@@ -540,11 +540,12 @@ function App() {
           // This prevents issues with tasks being paused when events start
           const startGameWithTaskCheck = () => {
             // Check if all necessary tasks are registered
+            const tasksToCheck = tasks || ['comm', 'monitoring', 'tracking', 'resource'];
             const allRefsAvailable =
-              (!tasks.includes('comm') || commTaskRef?.current) &&
-              (!tasks.includes('monitoring') || monitoringTaskRef?.current) &&
-              (!tasks.includes('tracking') || trackingTaskRef?.current) &&
-              (!tasks.includes('resource') || resourceTaskRef?.current);
+              (!tasksToCheck.includes('comm') || commTaskRef?.current) &&
+              (!tasksToCheck.includes('monitoring') || monitoringTaskRef?.current) &&
+              (!tasksToCheck.includes('tracking') || trackingTaskRef?.current) &&
+              (!tasksToCheck.includes('resource') || resourceTaskRef?.current);
 
             if (allRefsAvailable) {
               console.log('All required task refs are ready for auto-start');

@@ -63,7 +63,7 @@ const NBackGame = ({ onReturn }) => {
     setGameResults(results);
   }, []);
 
-    const handleStartCustomGame = useCallback(() => {
+  const handleStartCustomGame = useCallback(() => {
     console.log('NBackGame: Starting custom game with settings:', {
       nValue,
       trials,
