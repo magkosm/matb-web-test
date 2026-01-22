@@ -215,8 +215,8 @@ const CustomModeGame = ({
       {showInstructions && (
         <InstructionOverlay
           show={showInstructions}
-          title={t(`instructionsOverlay.${taskConfig.instructionKey}Title`)}
-          content={t(`instructionsOverlay.${taskConfig.instructionKey}`)}
+          title={taskConfig.instructionTitle || t(`instructionsOverlay.${taskConfig.instructionKey}Title`)}
+          content={taskConfig.instructionContent || t(`instructionsOverlay.${taskConfig.instructionKey}`)}
           onStart={() => {
             setShowInstructions(false);
             gameStartTimeRef.current = Date.now();

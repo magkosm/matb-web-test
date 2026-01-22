@@ -135,91 +135,96 @@ const TrackingTask = forwardRef(({
     };
   }, [isAuto, automationFailure, eventStartTime]);
 
-  // Physics effect
-  useEffect(() => {
-    if (!isEnabled) return;
-
-    // Scale drift parameters based on difficulty (0-10)
-    // Use event difficulty when in manual mode, otherwise use base difficulty
-    const difficultyToUse = !isAuto ? currentEventDifficulty : difficulty;
-
-    // More dramatic effect of difficulty on manual mode
-    const manualDriftMultiplier = 0.3 + (difficultyToUse / 10) * 3.5; // Scales from 0.3x to 3.8x based on difficulty
-    const driftMultiplier = isAuto ? 1.0 : manualDriftMultiplier;
-
-    const driftSpeed = 0.5 * driftMultiplier;
-
-    // Increase auto-correction at lower difficulties, decrease at higher difficulties
-    const autoCorrection = isAuto
-      ? 0.4
-      : Math.max(0.05, 0.3 - (difficultyToUse / 40)); // Scales from 0.3 to 0.05
-
-    const maxDriftVelocity = 2.0 * driftMultiplier;
-
-    // Apply initial drift based on difficulty when entering manual mode
-    if (!isAuto && (driftXRef.current === 0 && driftYRef.current === 0)) {
-      const initialDrift = 0.2 * driftMultiplier;
-      driftXRef.current = (Math.random() - 0.5) * initialDrift * 3;
-      driftYRef.current = (Math.random() - 0.5) * initialDrift * 3;
-    }
-
-    const interval = setInterval(() => {
-      const now = Date.now();
-      const _dt = now - lastUpdateRef.current; // Prefix with underscore since it's not used
-      lastUpdateRef.current = now;
-
-      // Make drift more responsive to difficulty
-      const difficultyToUse = !isAuto ? currentEventDifficulty : difficulty;
-      const randomFactor = 0.4 * driftMultiplier;
-      const difficultyScale = 1 + (difficultyToUse / 15); // Scales from 1.07 to 1.67
-
-      // Add random acceleration to drift
-      driftXRef.current += (Math.random() - 0.5) * randomFactor * difficultyScale;
-      driftYRef.current += (Math.random() - 0.5) * randomFactor * difficultyScale;
-
-      // Limit maximum drift velocity (scaled by difficulty in manual mode)
-      driftXRef.current = Math.max(-maxDriftVelocity, Math.min(maxDriftVelocity, driftXRef.current));
-      driftYRef.current = Math.max(-maxDriftVelocity, Math.min(maxDriftVelocity, driftYRef.current));
-
-      setCursorPosition(prev => {
-        let newX = prev.x + driftXRef.current * driftSpeed;
-        let newY = prev.y + driftYRef.current * driftSpeed;
-
-        // Auto mode logic - constant centering (simulating perfect pilot)
-        if (isAuto) {
-          // Apply strong pull towards center (Spring force)
-          driftXRef.current -= (newX * 0.05);
-          driftYRef.current -= (newY * 0.05);
-
-          // Apply damping to prevent oscillation
-          driftXRef.current *= 0.9;
-          driftYRef.current *= 0.9;
-        } else {
-          // Manual mode logic - mild assistance at boundaries
-          if (Math.abs(newX) > 25 || Math.abs(newY) > 25) {
-            const assistLevel = Math.max(0, 0.15 - (difficultyToUse / 100));
-            driftXRef.current -= (newX / 100) * assistLevel;
-            driftYRef.current -= (newY / 100) * assistLevel;
-          }
+    // Physics effect
+    useEffect(() => {
+        if (!isEnabled) return;
+    
+        // Scale drift parameters based on difficulty (0-10)
+        // Use event difficulty when in manual mode, otherwise use base difficulty
+        const difficultyToUse = !isAuto ? currentEventDifficulty : difficulty;
+    
+        // Reduce jitter and make control smoother
+        // Lower multiplier for less chaotic movement
+        const manualDriftMultiplier = 0.2 + (difficultyToUse / 10) * 1.5; // Reduced from 0.3 + ... * 3.5
+        const driftMultiplier = isAuto ? 1.0 : manualDriftMultiplier;
+    
+        const driftSpeed = 0.4 * driftMultiplier; // Slightly reduced from 0.5
+    
+        // Increase auto-correction at lower difficulties, decrease at higher difficulties
+        const autoCorrection = isAuto
+          ? 0.4
+          : Math.max(0.05, 0.3 - (difficultyToUse / 40)); 
+    
+        const maxDriftVelocity = 1.5 * driftMultiplier; // Reduced from 2.0
+    
+        // Apply initial drift based on difficulty when entering manual mode
+        if (!isAuto && (driftXRef.current === 0 && driftYRef.current === 0)) {
+          const initialDrift = 0.15 * driftMultiplier; // Reduced from 0.2
+          driftXRef.current = (Math.random() - 0.5) * initialDrift * 3;
+          driftYRef.current = (Math.random() - 0.5) * initialDrift * 3;
         }
+    
+        const interval = setInterval(() => {
+          const now = Date.now();
+          const _dt = now - lastUpdateRef.current;
+          lastUpdateRef.current = now;
+    
+          const difficultyToUse = !isAuto ? currentEventDifficulty : difficulty;
+          
+          // Significantly reduce random factor to reduce jitter
+          const randomFactor = 0.15 * driftMultiplier; // Reduced from 0.4
+          const difficultyScale = 1 + (difficultyToUse / 20); // Reduced scaling effect
+    
+          // Add random acceleration to drift
+          driftXRef.current += (Math.random() - 0.5) * randomFactor * difficultyScale;
+          driftYRef.current += (Math.random() - 0.5) * randomFactor * difficultyScale;
+    
+          // Limit maximum drift velocity
+          driftXRef.current = Math.max(-maxDriftVelocity, Math.min(maxDriftVelocity, driftXRef.current));
+          driftYRef.current = Math.max(-maxDriftVelocity, Math.min(maxDriftVelocity, driftYRef.current));
+    
+          setCursorPosition(prev => {
+            let newX = prev.x + driftXRef.current * driftSpeed;
+            let newY = prev.y + driftYRef.current * driftSpeed;
+    
+            // Auto mode logic
+            if (isAuto) {
+              driftXRef.current -= (newX * 0.05);
+              driftYRef.current -= (newY * 0.05);
+              driftXRef.current *= 0.9;
+              driftYRef.current *= 0.9;
+            } else {
+              // Manual mode logic - Stronger user control
+              // Apply centering force (simulating user fighting the drift)
+              // This acts as "friction" or "control authority"
+              const controlAuthority = 0.02; // New parameter for stability
+              driftXRef.current *= (1.0 - controlAuthority);
+              driftYRef.current *= (1.0 - controlAuthority);
 
-        // Bounce off boundaries with more energy based on difficulty
-        const bounceEnergy = 0.8 + (difficultyToUse / 10); // 0.8 to 1.8 based on difficulty 
-        if (Math.abs(newX) > 150) {
-          driftXRef.current = -driftXRef.current * bounceEnergy;
-          newX = Math.sign(newX) * 150;
-        }
-        if (Math.abs(newY) > 150) {
-          driftYRef.current = -driftYRef.current * bounceEnergy;
-          newY = Math.sign(newY) * 150;
-        }
-
-        return { x: newX, y: newY };
-      });
-    }, 16);
-
-    return () => clearInterval(interval);
-  }, [isAuto, inputMode, automationFailure, isEnabled, difficulty, currentEventDifficulty]);
+              if (Math.abs(newX) > 25 || Math.abs(newY) > 25) {
+                const assistLevel = Math.max(0, 0.2 - (difficultyToUse / 100)); // Increased base assist from 0.15
+                driftXRef.current -= (newX / 100) * assistLevel;
+                driftYRef.current -= (newY / 100) * assistLevel;
+              }
+            }
+    
+            // Bounce off boundaries
+            const bounceEnergy = 0.8 + (difficultyToUse / 20); // Reduced bounce energy
+            if (Math.abs(newX) > 150) {
+              driftXRef.current = -driftXRef.current * bounceEnergy;
+              newX = Math.sign(newX) * 150;
+            }
+            if (Math.abs(newY) > 150) {
+              driftYRef.current = -driftYRef.current * bounceEnergy;
+              newY = Math.sign(newY) * 150;
+            }
+    
+            return { x: newX, y: newY };
+          });
+        }, 16);
+    
+        return () => clearInterval(interval);
+      }, [isAuto, inputMode, automationFailure, isEnabled, difficulty, currentEventDifficulty]);
 
   // Separate effect for logging system
   useEffect(() => {
@@ -565,18 +570,16 @@ const TrackingTask = forwardRef(({
         // Calculate end time for better tracking
         const _endTime = new Date(Date.now() + eventDuration); // Prefix with underscore since it's not used
 
-        // Set difficulty level for tracking if provided (1-10 scale)
-        if (typeof difficulty === 'number') {
-          // Apply difficulty by adjusting the drift values - more intense than before
-          const difficultyFactor = (difficulty / 5.0) * 2; // Convert 1-10 scale to 0.4-4.0 factor
+        // Limit difficulty effect
+        // Reduce the multiplier to limit the maximum difficulty
+        const difficultyFactor = (difficulty / 5.0) * 1.0; // Reduced from 2.0 (50% reduction)
 
-          // Create an initial push in a random direction
-          const angle = Math.random() * Math.PI * 2; // Random angle
-          const magnitude = 0.1 * difficultyFactor;
+        // Create an initial push in a random direction
+        const angle = Math.random() * Math.PI * 2; // Random angle
+        const magnitude = 0.1 * difficultyFactor;
 
-          driftXRef.current = Math.cos(angle) * magnitude;
-          driftYRef.current = Math.sin(angle) * magnitude;
-        }
+        driftXRef.current = Math.cos(angle) * magnitude;
+        driftYRef.current = Math.sin(angle) * magnitude;
 
         // Create and log an event
         const eventData = {

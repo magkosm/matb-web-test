@@ -417,20 +417,22 @@ const ReactionTimeTest = ({
     setShowFixation(false);
     currentStimulusIndexRef.current = 0;
 
-    // Start the game timer - only for displaying a countdown, game ends when all stimuli complete
-    gameTimerRef.current = setInterval(() => {
-      if (!isComponentMounted.current) return;
+  // Start the game timer - only for displaying a countdown, game ends when all stimuli complete
+    if (duration) {
+      gameTimerRef.current = setInterval(() => {
+        if (!isComponentMounted.current) return;
 
-      setTimeRemaining(prev => {
-        const newTime = prev - 100;
-        if (newTime <= 0) {
-          debugLog('Time expired, ending game');
-          endGame();
-          return 0;
-        }
-        return newTime;
-      });
-    }, 100);
+        setTimeRemaining(prev => {
+          const newTime = prev - 100;
+          if (newTime <= 0) {
+            debugLog('Time expired, ending game');
+            endGame();
+            return 0;
+          }
+          return newTime;
+        });
+      }, 100);
+    }
 
     // Use a smaller delay to ensure isActive has been applied before scheduling
     setTimeout(() => {
@@ -883,7 +885,7 @@ const ReactionTimeTest = ({
         borderRadius: '5px',
         boxShadow: '0 2px 5px rgba(0,0,0,0.2)'
       }}>
-        <p style={{ margin: '0' }}>{t('reactionTest.timeRemaining', 'Time')}: {formatTime(timeRemaining)}</p>
+        {duration && <p style={{ margin: '0' }}>{t('reactionTest.timeRemaining', 'Time')}: {formatTime(timeRemaining)}</p>}
         <p style={{ margin: '0' }}>{t('reactionTest.stimuliProgress', 'Stimuli')}: {currentStimulusIndex}/{maxStimuli}</p>
       </div>
 

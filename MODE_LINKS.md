@@ -1,0 +1,28 @@
+# Mode Links
+
+## Localhost (Development)
+- **Main Menu**: [http://localhost:3000](http://localhost:3000)
+- **Normal Mode (5 min)**: [http://localhost:3000/normal](http://localhost:3000/normal)
+- **Quick Test (2 min)**: [http://localhost:3000/2min](http://localhost:3000/2min)
+- **Communications Task Only**: [http://localhost:3000/comms](http://localhost:3000/comms)
+- **Monitoring Task Only**: [http://localhost:3000/monitoring](http://localhost:3000/monitoring)
+- **Tracking Task Only**: [http://localhost:3000/tracking](http://localhost:3000/tracking)
+- **Resource Management Only**: [http://localhost:3000/resource](http://localhost:3000/resource)
+- **Reaction Time Test**: [http://localhost:3000/reaction](http://localhost:3000/reaction)
+- **Reaction Time Quick Start**: [http://localhost:3000/reaction-default](http://localhost:3000/reaction-default)
+- **N-Back Test**: [http://localhost:3000/nback](http://localhost:3000/nback)
+- **N-Back Quick Start**: [http://localhost:3000/nbackdefault](http://localhost:3000/nbackdefault)
+
+## Production (GitHub Pages)
+- **Main Menu**: [https://magkosm.github.io/matb-web-test](https://magkosm.github.io/matb-web-test)
+- **Normal Mode (5 min)**: [https://magkosm.github.io/matb-web-test/normal](https://magkosm.github.io/matb-web-test/normal)
+- **Quick Test (2 min)**: [https://magkosm.github.io/matb-web-test/2min](https://magkosm.github.io/matb-web-test/2min)
+- **Communications Task Only**: [https://magkosm.github.io/matb-web-test/comms](https://magkosm.github.io/matb-web-test/comms)
+- **Monitoring Task Only**: [https://magkosm.github.io/matb-web-test/monitoring](https://magkosm.github.io/matb-web-test/monitoring)
+- **Tracking Task Only**: [https://magkosm.github.io/matb-web-test/tracking](https://magkosm.github.io/matb-web-test/tracking)
+- **Resource Management Only**: [https://magkosm.github.io/matb-web-test/resource](https://magkosm.github.io/matb-web-test/resource)
+- **Reaction Time Test**: [https://magkosm.github.io/matb-web-test/reaction](https://magkosm.github.io/matb-web-test/reaction)
+- **Reaction Time Quick Start**: [https://magkosm.github.io/matb-web-test/reaction-default](https://magkosm.github.io/matb-web-test/reaction-default)
+- **N-Back Test**: [https://magkosm.github.io/matb-web-test/nback](https://magkosm.github.io/matb-web-test/nback)
+- **N-Back Quick Start**: [https://magkosm.github.io/matb-web-test/nbackdefault](https://magkosm.github.io/matb-web-test/nbackdefault)
+

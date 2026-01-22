@@ -15,6 +15,8 @@ const ReactionTimeGame = ({
   const [customStimuli, setCustomStimuli] = useState(maxStimuli);
   const [customMinDelay, setCustomMinDelay] = useState(minDelay);
   const [customMaxDelay, setCustomMaxDelay] = useState(maxDelay);
+  const [limitMode, setLimitMode] = useState('stimuli'); // 'stimuli' or 'time'
+  const [customDuration, setCustomDuration] = useState(60000); // 1 minute default for time limit
 
   // Apply background on component mount to ensure consistency with main app
   useEffect(() => {
@@ -65,12 +67,14 @@ const ReactionTimeGame = ({
 
   const handleStartCustomGame = useCallback(() => {
     console.log('ReactionTimeGame: Starting custom game with settings:', {
-      maxStimuli: customStimuli,
+      limitMode,
+      maxStimuli: limitMode === 'stimuli' ? customStimuli : 9999,
+      duration: limitMode === 'time' ? customDuration : (customStimuli * (customMaxDelay + 1000) + 10000), // High duration buffer for stimuli mode
       minDelay: customMinDelay,
       maxDelay: customMaxDelay
     });
     setIsConfigScreen(false);
-  }, [customStimuli, customMinDelay, customMaxDelay]);
+  }, [limitMode, customStimuli, customDuration, customMinDelay, customMaxDelay]);
 
   const handleReturnToConfig = useCallback(() => {
     console.log('ReactionTimeGame: Returning to configuration screen');
@@ -103,21 +107,66 @@ const ReactionTimeGame = ({
           <h1>{t('reactionTest.configTitle', 'Reaction Time Test Configuration')}</h1>
           
           <div style={{ width: '100%', maxWidth: '500px', margin: '20px 0' }}>
-            <div style={{ marginBottom: '20px' }}>
-              <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
-                {t('reactionTest.stimuliCount', 'Number of Stimuli')}:
+            
+            {/* Limit Mode Selection */}
+            <div style={{ marginBottom: '20px', display: 'flex', justifyContent: 'center', gap: '20px' }}>
+              <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
+                <input
+                  type="radio"
+                  name="limitMode"
+                  value="stimuli"
+                  checked={limitMode === 'stimuli'}
+                  onChange={() => setLimitMode('stimuli')}
+                  style={{ marginRight: '8px' }}
+                />
+                {t('reactionTest.limitByStimuli', 'Limit by Stimuli')}
               </label>
-              <input 
-                type="range" 
-                min="5" 
-                max="30" 
-                step="1"
-                value={customStimuli} 
-                onChange={(e) => setCustomStimuli(parseInt(e.target.value))}
-                style={{ width: '100%' }}
-              />
-              <span>{customStimuli} {t('reactionTest.stimuli', 'stimuli')}</span>
+              <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
+                <input
+                  type="radio"
+                  name="limitMode"
+                  value="time"
+                  checked={limitMode === 'time'}
+                  onChange={() => setLimitMode('time')}
+                  style={{ marginRight: '8px' }}
+                />
+                {t('reactionTest.limitByTime', 'Limit by Time')}
+              </label>
             </div>
+
+            {limitMode === 'stimuli' ? (
+              <div style={{ marginBottom: '20px' }}>
+                <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
+                  {t('reactionTest.stimuliCount', 'Number of Stimuli')}:
+                </label>
+                <input 
+                  type="range" 
+                  min="5" 
+                  max="30" 
+                  step="1"
+                  value={customStimuli} 
+                  onChange={(e) => setCustomStimuli(parseInt(e.target.value))}
+                  style={{ width: '100%' }}
+                />
+                <span>{customStimuli} {t('reactionTest.stimuli', 'stimuli')}</span>
+              </div>
+            ) : (
+              <div style={{ marginBottom: '20px' }}>
+                <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
+                  {t('reactionTest.duration', 'Test Duration (seconds)')}:
+                </label>
+                <input 
+                  type="range" 
+                  min="30" 
+                  max="300" 
+                  step="10"
+                  value={customDuration / 1000} 
+                  onChange={(e) => setCustomDuration(parseInt(e.target.value) * 1000)}
+                  style={{ width: '100%' }}
+                />
+                <span>{customDuration / 1000} {t('common.seconds', 'seconds')}</span>
+              </div>
+            )}
             
             <div style={{ marginBottom: '20px' }}>
               <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
@@ -209,8 +258,8 @@ const ReactionTimeGame = ({
   // Render the actual game
   return (
     <ReactionTimeTest
-      duration={customStimuli * (customMinDelay + customMaxDelay) / 2 + 5000} // Estimated duration based on stimuli count and avg delay, plus buffer
-      maxStimuli={customStimuli}
+      duration={limitMode === 'time' ? customDuration : (customStimuli * (customMaxDelay + 1000) + 10000)}
+      maxStimuli={limitMode === 'stimuli' ? customStimuli : 9999}
       minDelay={customMinDelay}
       maxDelay={customMaxDelay}
       onFinish={handleGameFinished}

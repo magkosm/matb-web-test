@@ -336,6 +336,8 @@ const MainMenu = ({ onStartGame, onExitApp, gameResults }) => {
                 duration: 3 * 60 * 1000,
                 taskConfig: {
                   instructionKey: 'comm',
+                  instructionTitle: t('instructionsOverlay.commTitle'),
+                  instructionContent: t('instructionsOverlay.comm'),
                   comm: { isActive: true, difficulty: 6, eventsPerMinute: 6 }, // Higher difficulty and explicitly enabled events
                   monitoring: { isActive: false, difficulty: 1, eventsPerMinute: 0 },
                   tracking: { isActive: false, difficulty: 1, eventsPerMinute: 0 },
@@ -367,6 +369,8 @@ const MainMenu = ({ onStartGame, onExitApp, gameResults }) => {
                 duration: 3 * 60 * 1000,
                 taskConfig: {
                   instructionKey: 'track',
+                  instructionTitle: t('instructionsOverlay.trackTitle'),
+                  instructionContent: t('instructionsOverlay.track'),
                   comm: { isActive: false, difficulty: 1, eventsPerMinute: 0 },
                   monitoring: { isActive: false, difficulty: 1, eventsPerMinute: 0 },
                   tracking: { isActive: true, difficulty: 6, eventsPerMinute: 6 },
@@ -398,6 +402,8 @@ const MainMenu = ({ onStartGame, onExitApp, gameResults }) => {
                 duration: 3 * 60 * 1000,
                 taskConfig: {
                   instructionKey: 'sysMon',
+                  instructionTitle: t('instructionsOverlay.sysMonTitle'),
+                  instructionContent: t('instructionsOverlay.sysMon'),
                   comm: { isActive: false, difficulty: 1, eventsPerMinute: 0 },
                   monitoring: { isActive: true, difficulty: 6, eventsPerMinute: 6 },
                   tracking: { isActive: false, difficulty: 1, eventsPerMinute: 0 },
@@ -429,6 +435,8 @@ const MainMenu = ({ onStartGame, onExitApp, gameResults }) => {
                 duration: 3 * 60 * 1000,
                 taskConfig: {
                   instructionKey: 'resMan',
+                  instructionTitle: t('instructionsOverlay.resManTitle'),
+                  instructionContent: t('instructionsOverlay.resMan'),
                   comm: { isActive: false, difficulty: 1, eventsPerMinute: 0 },
                   monitoring: { isActive: false, difficulty: 1, eventsPerMinute: 0 },
                   tracking: { isActive: false, difficulty: 1, eventsPerMinute: 0 },
@@ -614,69 +622,9 @@ const MainMenu = ({ onStartGame, onExitApp, gameResults }) => {
         <LanguageSelector />
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-          <div style={{
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'flex-start',
-            backgroundColor: 'rgba(0,0,0,0.3)',
-            padding: '15px',
-            borderRadius: '5px',
-            marginBottom: '15px'
-          }}>
-            <h3 style={{ marginTop: 0, marginBottom: '10px', alignSelf: 'center' }}>{t('mainMenu.gameModeDescription')}</h3>
-
-            {/* Primary Game Mode - Normal Mode */}
-            <div style={{ width: '100%' }}>
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                backgroundColor: selectedMode === 'normal' ? 'rgba(0, 123, 255, 0.2)' : 'transparent',
-                padding: '12px',
-                borderRadius: '5px',
-                marginBottom: '10px'
-              }}>
-                <input
-                  type="radio"
-                  id="normalMode"
-                  name="gameMode"
-                  value="normal"
-                  checked={selectedMode === 'normal'}
-                  onChange={() => setSelectedMode('normal')}
-                  style={{ marginRight: '10px' }}
-                />
-                <label htmlFor="normalMode" style={{ fontSize: '18px', fontWeight: 'bold' }}>
-                  {t('mainMenu.normalMode')}
-                </label>
-              </div>
-
-              {selectedMode === 'normal' && (
-                <div style={{ width: '100%' }}>
-                  <label style={{ display: 'block', marginBottom: '5px' }}>
-                    {t('common.duration')} ({t('common.minutes')}):
-                  </label>
-                  <input
-                    type="number"
-                    min="1"
-                    max="60"
-                    value={gameDuration}
-                    onChange={(e) => setGameDuration(Math.max(1, Math.min(60, parseInt(e.target.value) || 1)))}
-                    style={{
-                      width: '100%',
-                      padding: '8px',
-                      backgroundColor: 'rgba(255,255,255,0.1)',
-                      border: '1px solid rgba(255,255,255,0.3)',
-                      borderRadius: '4px',
-                      color: 'white'
-                    }}
-                  />
-                </div>
-              )}
-            </div>
-          </div>
-
+          {/* Main Quick Access Buttons */}
           <button
-            onClick={handleStartGame}
+            onClick={() => onStartGame({ mode: 'normal', duration: 5 * 60 * 1000 })}
             style={{
               padding: '15px 30px',
               fontSize: '18px',
@@ -686,35 +634,73 @@ const MainMenu = ({ onStartGame, onExitApp, gameResults }) => {
               borderRadius: '5px',
               cursor: 'pointer',
               transition: 'background-color 0.3s',
-              marginTop: '10px'
+              width: '100%'
             }}
             onMouseOver={(e) => e.target.style.backgroundColor = '#0069d9'}
             onMouseOut={(e) => e.target.style.backgroundColor = '#007bff'}
           >
-            {t('common.start')}
+            {t('mainMenu.standardRun', 'MATB-II (5 min)')}
           </button>
-        </div>
 
-        <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap' }}>
           <button
-            onClick={() => setShowScoreboard(true)}
+            onClick={() => window.location.href = `${process.env.PUBLIC_URL}/reaction-default`}
             style={{
-              padding: '10px 20px',
-              fontSize: '16px',
-              backgroundColor: '#17a2b8',
+              padding: '15px 30px',
+              fontSize: '18px',
+              backgroundColor: '#9c27b0',
               color: 'white',
               border: 'none',
               borderRadius: '5px',
               cursor: 'pointer',
               transition: 'background-color 0.3s',
-              zIndex: 1500,
+              width: '100%'
+            }}
+            onMouseOver={(e) => e.target.style.backgroundColor = '#7B1FA2'}
+            onMouseOut={(e) => e.target.style.backgroundColor = '#9c27b0'}
+          >
+            {t('reactionTest.quickStart', 'Quick Reaction Time')}
+          </button>
+
+          <button
+            onClick={() => window.location.href = `${process.env.PUBLIC_URL}/nbackdefault`}
+            style={{
+              padding: '15px 30px',
+              fontSize: '18px',
+              backgroundColor: '#FF9800',
+              color: 'white',
+              border: 'none',
+              borderRadius: '5px',
+              cursor: 'pointer',
+              transition: 'background-color 0.3s',
+              width: '100%'
+            }}
+            onMouseOver={(e) => e.target.style.backgroundColor = '#F57C00'}
+            onMouseOut={(e) => e.target.style.backgroundColor = '#FF9800'}
+          >
+            {t('nbackTest.quickStart', 'Quick 2-Back')}
+          </button>
+        </div>
+
+        {/* Secondary Options */}
+        <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap', marginTop: '20px' }}>
+          <button
+            onClick={() => setShowPresetsModal(true)}
+            style={{
+              padding: '10px 20px',
+              fontSize: '16px',
+              backgroundColor: '#6c757d',
+              color: 'white',
+              border: 'none',
+              borderRadius: '5px',
+              cursor: 'pointer',
+              transition: 'background-color 0.3s',
               flex: 1,
               minWidth: '120px'
             }}
-            onMouseOver={(e) => e.target.style.backgroundColor = '#138496'}
-            onMouseOut={(e) => e.target.style.backgroundColor = '#17a2b8'}
+            onMouseOver={(e) => e.target.style.backgroundColor = '#5a6268'}
+            onMouseOut={(e) => e.target.style.backgroundColor = '#6c757d'}
           >
-            {t('mainMenu.scoreboard')}
+            {t('mainMenu.presets', 'Presets & Training')}
           </button>
 
           <button
@@ -728,77 +714,81 @@ const MainMenu = ({ onStartGame, onExitApp, gameResults }) => {
               borderRadius: '5px',
               cursor: 'pointer',
               transition: 'background-color 0.3s',
-              zIndex: 1500,
               flex: 1,
               minWidth: '120px'
             }}
             onMouseOver={(e) => e.target.style.backgroundColor = '#5a6268'}
             onMouseOut={(e) => e.target.style.backgroundColor = '#6c757d'}
           >
-            {t('mainMenu.otherModes')}
+            {t('mainMenu.customMode', 'Custom Mode')}
           </button>
+        </div>
 
+        <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap', marginTop: '10px' }}>
           <button
-            onClick={() => setShowPresetsModal(true)}
+            onClick={() => setShowScoreboard(true)}
             style={{
               padding: '10px 20px',
               fontSize: '16px',
-              backgroundColor: '#fd7e14',
+              backgroundColor: '#17a2b8',
               color: 'white',
               border: 'none',
               borderRadius: '5px',
               cursor: 'pointer',
               transition: 'background-color 0.3s',
-              zIndex: 1500,
               flex: 1,
               minWidth: '120px'
             }}
-            onMouseOver={(e) => e.target.style.backgroundColor = '#e36209'}
-            onMouseOut={(e) => e.target.style.backgroundColor = '#fd7e14'}
+            onMouseOver={(e) => e.target.style.backgroundColor = '#138496'}
+            onMouseOut={(e) => e.target.style.backgroundColor = '#17a2b8'}
           >
-            {t('mainMenu.presets', 'Presets')}
+            {t('mainMenu.scoreboard', 'Scoreboard')}
+          </button>
+
+          <button
+            onClick={() => setShowBackgroundSelector(true)}
+            style={{
+              padding: '10px 20px',
+              fontSize: '16px',
+              backgroundColor: '#28a745',
+              color: 'white',
+              border: 'none',
+              borderRadius: '5px',
+              cursor: 'pointer',
+              transition: 'background-color 0.3s',
+              flex: 1,
+              minWidth: '120px'
+            }}
+            onMouseOver={(e) => e.target.style.backgroundColor = '#218838'}
+            onMouseOut={(e) => e.target.style.backgroundColor = '#28a745'}
+          >
+            {t('mainMenu.changeBackground', 'Background')}
           </button>
         </div>
 
-        <button
-          onClick={() => setShowBackgroundSelector(true)}
-          style={{
-            padding: '10px 20px',
-            fontSize: '16px',
-            backgroundColor: '#28a745',
-            color: 'white',
-            border: 'none',
-            borderRadius: '5px',
-            cursor: 'pointer',
-            transition: 'background-color 0.3s'
-          }}
-          onMouseOver={(e) => e.target.style.backgroundColor = '#218838'}
-          onMouseOut={(e) => e.target.style.backgroundColor = '#28a745'}
-        >
-          {t('mainMenu.changeBackground')}
-        </button>
-
-        <button
-          onClick={onExitApp}
-          style={{
-            padding: '10px 20px',
-            fontSize: '16px',
-            backgroundColor: 'transparent',
-            color: 'white',
-            border: '1px solid #6c757d',
-            borderRadius: '5px',
-            cursor: 'pointer',
-            transition: 'background-color 0.3s'
-          }}
-          onMouseOver={(e) => {
-            e.target.style.backgroundColor = 'rgba(108, 117, 125, 0.2)';
-          }}
-          onMouseOut={(e) => {
-            e.target.style.backgroundColor = 'transparent';
-          }}
-        >
-          {t('common.exit')}
-        </button>
+        <div style={{ marginTop: '20px' }}>
+          <button
+            onClick={onExitApp}
+            style={{
+              padding: '10px 20px',
+              fontSize: '16px',
+              backgroundColor: 'transparent',
+              color: 'white',
+              border: '1px solid #6c757d',
+              borderRadius: '5px',
+              cursor: 'pointer',
+              transition: 'background-color 0.3s'
+            }}
+            onMouseOver={(e) => {
+              e.target.style.backgroundColor = 'rgba(108, 117, 125, 0.2)';
+            }}
+            onMouseOut={(e) => {
+              e.target.style.backgroundColor = 'transparent';
+            }}
+          >
+            {t('common.exit')}
+          </button>
+        </div>
       </div>
 
       <div style={{ marginTop: '30px', fontSize: '14px', opacity: 0.7 }}>

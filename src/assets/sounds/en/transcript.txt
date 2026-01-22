@@ -1,80 +1,80 @@
-OTHER_COM1_118-325.wav: A 3 3 3 9 5, A 3 3 3 9 5, turn your Comm 1 radio, to frequency, one one eight, point, tree two fife
-OTHER_COM1_120-825.wav: Citrus 2 1 1, Citrus 2 1 1, turn your Comm 1 radio, to frequency, one two zero, point, eight two fife
-OTHER_COM1_124-350.wav: AC 5 1 7 1, AC 5 1 7 1, turn your Comm 1 radio, to frequency, one two fower, point, tree fife zero
-OTHER_COM1_126-175.wav: SK 5 8 0, SK 5 8 0, turn your Comm 1 radio, to frequency, one two six, point, one seven fife
-OTHER_COM1_127-725.wav: A 3 3 3 9 5, A 3 3 3 9 5, turn your Comm 1 radio, to frequency, one two seven, point, seven two fife
-OTHER_COM1_128-525.wav: Citrus 2 1 1, Citrus 2 1 1, turn your Comm 1 radio, to frequency, one two eight, point, fife two fife
-OTHER_COM1_130-875.wav: AC 5 1 7 1, AC 5 1 7 1, turn your Comm 1 radio, to frequency, one tree zero, point, eight seven fife
-OTHER_COM1_132-950.wav: SK 5 8 0, SK 5 8 0, turn your Comm 1 radio, to frequency, one tree two, point, niner fife zero
-OTHER_COM1_134-175.wav: A 3 3 3 9 5, A 3 3 3 9 5, turn your Comm 1 radio, to frequency, one tree fower, point, one seven fife
-OTHER_COM1_135-225.wav: Citrus 2 1 1, Citrus 2 1 1, turn your Comm 1 radio, to frequency, one tree fife, point, two two fife
-OTHER_COM2_118-275.wav: AC 5 1 7 1, AC 5 1 7 1, turn your Comm 2 radio, to frequency, one one eight, point, two seven fife
-OTHER_COM2_120-775.wav: SK 5 8 0, SK 5 8 0, turn your Comm 2 radio, to frequency, one two zero, point, seven seven fife
-OTHER_COM2_124-500.wav: A 3 3 3 9 5, A 3 3 3 9 5, turn your Comm 2 radio, to frequency, one two fower, point, fife zero zero
-OTHER_COM2_126-025.wav: Citrus 2 1 1, Citrus 2 1 1, turn your Comm 2 radio, to frequency, one two six, point, zero two fife
-OTHER_COM2_127-675.wav: AC 5 1 7 1, AC 5 1 7 1, turn your Comm 2 radio, to frequency, one two seven, point, six seven fife
-OTHER_COM2_128-475.wav: SK 5 8 0, SK 5 8 0, turn your Comm 2 radio, to frequency, one two eight, point, fower seven fife
-OTHER_COM2_130-725.wav: A 3 3 3 9 5, A 3 3 3 9 5, turn your Comm 2 radio, to frequency, one tree zero, point, seven two fife
-OTHER_COM2_132-800.wav: Citrus 2 1 1, Citrus 2 1 1, turn your Comm 2 radio, to frequency, one tree two, point, eight zero zero
-OTHER_COM2_134-025.wav: AC 5 1 7 1, AC 5 1 7 1, turn your Comm 2 radio, to frequency, one tree fower, point, zero two fife
-OTHER_COM2_135-175.wav: SK 5 8 0, SK 5 8 0, turn your Comm 2 radio, to frequency, one tree fife, point, one seven fife
-OTHER_NAV1_108-350.wav: A 3 3 3 9 5, A 3 3 3 9 5, turn your Nav 1 radio, to frequency, one zero eight, point, tree fife zero
-OTHER_NAV1_109-250.wav: Citrus 2 1 1, Citrus 2 1 1, turn your Nav 1 radio, to frequency, one zero niner, point, two fife zero
-OTHER_NAV1_110-400.wav: AC 5 1 7 1, AC 5 1 7 1, turn your Nav 1 radio, to frequency, one one zero, point, fower zero zero
-OTHER_NAV1_111-950.wav: SK 5 8 0, SK 5 8 0, turn your Nav 1 radio, to frequency, one one one, point, niner fife zero
-OTHER_NAV1_112-150.wav: A 3 3 3 9 5, A 3 3 3 9 5, turn your Nav 1 radio, to frequency, one one two, point, one fife zero
-OTHER_NAV1_113-000.wav: Citrus 2 1 1, Citrus 2 1 1, turn your Nav 1 radio, to frequency, one one tree, point, zero zero zero
-OTHER_NAV1_114-500.wav: AC 5 1 7 1, AC 5 1 7 1, turn your Nav 1 radio, to frequency, one one fower, point, fife zero zero
-OTHER_NAV1_115-750.wav: SK 5 8 0, SK 5 8 0, turn your Nav 1 radio, to frequency, one one fife, point, seven fife zero
-OTHER_NAV1_116-450.wav: A 3 3 3 9 5, A 3 3 3 9 5, turn your Nav 1 radio, to frequency, one one six, point, fower fife zero
-OTHER_NAV1_117-650.wav: Citrus 2 1 1, Citrus 2 1 1, turn your Nav 1 radio, to frequency, one one seven, point, six fife zero
-OTHER_NAV2_108-750.wav: AC 5 1 7 1, AC 5 1 7 1, turn your Nav 2 radio, to frequency, one zero eight, point, seven fife zero
-OTHER_NAV2_109-650.wav: SK 5 8 0, SK 5 8 0, turn your Nav 2 radio, to frequency, one zero niner, point, six fife zero
-OTHER_NAV2_110-800.wav: A 3 3 3 9 5, A 3 3 3 9 5, turn your Nav 2 radio, to frequency, one one zero, point, eight zero zero
-OTHER_NAV2_111-350.wav: Citrus 2 1 1, Citrus 2 1 1, turn your Nav 2 radio, to frequency, one one one, point, tree fife zero
-OTHER_NAV2_112-550.wav: AC 5 1 7 1, AC 5 1 7 1, turn your Nav 2 radio, to frequency, one one two, point, fife fife zero
-OTHER_NAV2_113-400.wav: SK 5 8 0, SK 5 8 0, turn your Nav 2 radio, to frequency, one one tree, point, fower zero zero
-OTHER_NAV2_114-900.wav: A 3 3 3 9 5, A 3 3 3 9 5, turn your Nav 2 radio, to frequency, one one fower, point, niner zero zero
-OTHER_NAV2_115-050.wav: Citrus 2 1 1, Citrus 2 1 1, turn your Nav 2 radio, to frequency, one one fife, point, zero fife zero
-OTHER_NAV2_116-850.wav: AC 5 1 7 1, AC 5 1 7 1, turn your Nav 2 radio, to frequency, one one six, point, eight fife zero
-OTHER_NAV2_117-950.wav: SK 5 8 0, SK 5 8 0, turn your Nav 2 radio, to frequency, one one seven, point, niner fife zero
-OWN_COM1_124-575.wav: eesah 5 0 4, eesah 5 0 4, turn your Comm 1 radio, to frequency, one two fower, point, fife seven fife
-OWN_COM1_125-500.wav: eesah 5 0 4, eesah 5 0 4, turn your Comm 1 radio, to frequency, one two fife, point, fife zero zero
-OWN_COM1_125-550.wav: eesah 5 0 4, eesah 5 0 4, turn your Comm 1 radio, to frequency, one two fife, point, fife fife zero
-OWN_COM1_126-450.wav: eesah 5 0 4, eesah 5 0 4, turn your Comm 1 radio, to frequency, one two six, point, fower fife zero
-OWN_COM1_126-525.wav: eesah 5 0 4, eesah 5 0 4, turn your Comm 1 radio, to frequency, one two six, point, fife two fife
-OWN_COM1_127-500.wav: eesah 5 0 4, eesah 5 0 4, turn your Comm 1 radio, to frequency, one two seven, point, fife zero zero
-OWN_COM1_127-550.wav: eesah 5 0 4, eesah 5 0 4, turn your Comm 1 radio, to frequency, one two seven, point, fife fife zero
-OWN_COM1_128-475.wav: eesah 5 0 4, eesah 5 0 4, turn your Comm 1 radio, to frequency, one two eight, point, fower seven fife
-OWN_COM1_128-575.wav: eesah 5 0 4, eesah 5 0 4, turn your Comm 1 radio, to frequency, one two eight, point, fife seven fife
-OWN_COM1_129-450.wav: eesah 5 0 4, eesah 5 0 4, turn your Comm 1 radio, to frequency, one two niner, point, fower fife zero
-OWN_COM2_124-450.wav: eesah 5 0 4, eesah 5 0 4, turn your Comm 2 radio, to frequency, one two fower, point, fower fife zero
-OWN_COM2_125-500.wav: eesah 5 0 4, eesah 5 0 4, turn your Comm 2 radio, to frequency, one two fife, point, fife zero zero
-OWN_COM2_125-575.wav: eesah 5 0 4, eesah 5 0 4, turn your Comm 2 radio, to frequency, one two fife, point, fife seven fife
-OWN_COM2_126-475.wav: eesah 5 0 4, eesah 5 0 4, turn your Comm 2 radio, to frequency, one two six, point, fower seven fife
-OWN_COM2_126-550.wav: eesah 5 0 4, eesah 5 0 4, turn your Comm 2 radio, to frequency, one two six, point, fife fife zero
-OWN_COM2_127-500.wav: eesah 5 0 4, eesah 5 0 4, turn your Comm 2 radio, to frequency, one two seven, point, fife zero zero
-OWN_COM2_127-525.wav: eesah 5 0 4, eesah 5 0 4, turn your Comm 2 radio, to frequency, one two seven, point, fife two fife
-OWN_COM2_128-525.wav: eesah 5 0 4, eesah 5 0 4, turn your Comm 2 radio, to frequency, one two eight, point, fife two fife
-OWN_COM2_128-550.wav: eesah 5 0 4, eesah 5 0 4, turn your Comm 2 radio, to frequency, one two eight, point, fife fife zero
-OWN_COM2_129-575.wav: eesah 5 0 4, eesah 5 0 4, turn your Comm 2 radio, to frequency, one two niner, point, fife seven fife
-OWN_NAV1_110-650.wav: eesah 5 0 4, eesah 5 0 4, turn your Nav 1 radio, to frequency, one one zero, point, six fife zero
-OWN_NAV1_111-500.wav: eesah 5 0 4, eesah 5 0 4, turn your Nav 1 radio, to frequency, one one one, point, fife zero zero
-OWN_NAV1_111-600.wav: eesah 5 0 4, eesah 5 0 4, turn your Nav 1 radio, to frequency, one one one, point, six zero zero
-OWN_NAV1_112-450.wav: eesah 5 0 4, eesah 5 0 4, turn your Nav 1 radio, to frequency, one one two, point, fower fife zero
-OWN_NAV1_112-550.wav: eesah 5 0 4, eesah 5 0 4, turn your Nav 1 radio, to frequency, one one two, point, fife fife zero
-OWN_NAV1_113-500.wav: eesah 5 0 4, eesah 5 0 4, turn your Nav 1 radio, to frequency, one one tree, point, fife zero zero
-OWN_NAV1_113-600.wav: eesah 5 0 4, eesah 5 0 4, turn your Nav 1 radio, to frequency, one one tree, point, six zero zero
-OWN_NAV1_114-450.wav: eesah 5 0 4, eesah 5 0 4, turn your Nav 1 radio, to frequency, one one fower, point, fower fife zero
-OWN_NAV1_114-650.wav: eesah 5 0 4, eesah 5 0 4, turn your Nav 1 radio, to frequency, one one fower, point, six fife zero
-OWN_NAV1_115-400.wav: eesah 5 0 4, eesah 5 0 4, turn your Nav 1 radio, to frequency, one one fife, point, fower zero zero
-OWN_NAV2_110-500.wav: eesah 5 0 4, eesah 5 0 4, turn your Nav 2 radio, to frequency, one one zero, point, fife zero zero
-OWN_NAV2_111-400.wav: eesah 5 0 4, eesah 5 0 4, turn your Nav 2 radio, to frequency, one one one, point, fower zero zero
-OWN_NAV2_111-650.wav: eesah 5 0 4, eesah 5 0 4, turn your Nav 2 radio, to frequency, one one one, point, six fife zero
-OWN_NAV2_112-450.wav: eesah 5 0 4, eesah 5 0 4, turn your Nav 2 radio, to frequency, one one two, point, fower fife zero
-OWN_NAV2_112-600.wav: eesah 5 0 4, eesah 5 0 4, turn your Nav 2 radio, to frequency, one one two, point, six zero zero
-OWN_NAV2_113-500.wav: eesah 5 0 4, eesah 5 0 4, turn your Nav 2 radio, to frequency, one one tree, point, fife zero zero
-OWN_NAV2_113-550.wav: eesah 5 0 4, eesah 5 0 4, turn your Nav 2 radio, to frequency, one one tree, point, fife fife zero
-OWN_NAV2_114-450.wav: eesah 5 0 4, eesah 5 0 4, turn your Nav 2 radio, to frequency, one one fower, point, fower fife zero
-OWN_NAV2_114-600.wav: eesah 5 0 4, eesah 5 0 4, turn your Nav 2 radio, to frequency, one one fower, point, six zero zero
-OWN_NAV2_115-650.wav: eesah 5 0 4, eesah 5 0 4, turn your Nav 2 radio, to frequency, one one fife, point, six fife zero
+OTHER_COM1_118-325.wav: ... (A) three three three nine five, (A) three three three nine five, turn your Comm one radio to frequency one one eight point three two five.
+OTHER_COM1_120-825.wav: ... Citrus two one one, Citrus two one one, turn your Comm one radio to frequency one two zero point eight two five.
+OTHER_COM1_124-350.wav: ... AC five one seven one, AC five one seven one, turn your Comm one radio to frequency one two four point three five zero.
+OTHER_COM1_126-175.wav: ... SK five eight zero, SK five eight zero, turn your Comm one radio to frequency one two six point one seven five.
+OTHER_COM1_127-725.wav: ... (A) three three three nine five, (A) three three three nine five, turn your Comm one radio to frequency one two seven point seven two five.
+OTHER_COM1_128-525.wav: ... Citrus two one one, Citrus two one one, turn your Comm one radio to frequency one two eight point five two five.
+OTHER_COM1_130-875.wav: ... AC five one seven one, AC five one seven one, turn your Comm one radio to frequency one three zero point eight seven five.
+OTHER_COM1_132-950.wav: ... SK five eight zero, SK five eight zero, turn your Comm one radio to frequency one three two point nine five zero.
+OTHER_COM1_134-175.wav: ... (A) three three three nine five, (A) three three three nine five, turn your Comm one radio to frequency one three four point one seven five.
+OTHER_COM1_135-225.wav: ... Citrus two one one, Citrus two one one, turn your Comm one radio to frequency one three five point two two five.
+OTHER_COM2_118-275.wav: ... AC five one seven one, AC five one seven one, turn your Comm two radio to frequency one one eight point two seven five.
+OTHER_COM2_120-775.wav: ... SK five eight zero, SK five eight zero, turn your Comm two radio to frequency one two zero point seven seven five.
+OTHER_COM2_124-500.wav: ... (A) three three three nine five, (A) three three three nine five, turn your Comm two radio to frequency one two four point five zero zero.
+OTHER_COM2_126-025.wav: ... Citrus two one one, Citrus two one one, turn your Comm two radio to frequency one two six point zero two five.
+OTHER_COM2_127-675.wav: ... AC five one seven one, AC five one seven one, turn your Comm two radio to frequency one two seven point six seven five.
+OTHER_COM2_128-475.wav: ... SK five eight zero, SK five eight zero, turn your Comm two radio to frequency one two eight point four seven five.
+OTHER_COM2_130-725.wav: ... (A) three three three nine five, (A) three three three nine five, turn your Comm two radio to frequency one three zero point seven two five.
+OTHER_COM2_132-800.wav: ... Citrus two one one, Citrus two one one, turn your Comm two radio to frequency one three two point eight zero zero.
+OTHER_COM2_134-025.wav: ... AC five one seven one, AC five one seven one, turn your Comm two radio to frequency one three four point zero two five.
+OTHER_COM2_135-175.wav: ... SK five eight zero, SK five eight zero, turn your Comm two radio to frequency one three five point one seven five.
+OTHER_NAV1_108-350.wav: ... (A) three three three nine five, (A) three three three nine five, turn your Nav one radio to frequency one zero eight point three five zero.
+OTHER_NAV1_109-250.wav: ... Citrus two one one, Citrus two one one, turn your Nav one radio to frequency one zero nine point two five zero.
+OTHER_NAV1_110-400.wav: ... AC five one seven one, AC five one seven one, turn your Nav one radio to frequency one one zero point four zero zero.
+OTHER_NAV1_111-950.wav: ... SK five eight zero, SK five eight zero, turn your Nav one radio to frequency one one one point nine five zero.
+OTHER_NAV1_112-150.wav: ... (A) three three three nine five, (A) three three three nine five, turn your Nav one radio to frequency one one two point one five zero.
+OTHER_NAV1_113-000.wav: ... Citrus two one one, Citrus two one one, turn your Nav one radio to frequency one one three point zero zero zero.
+OTHER_NAV1_114-500.wav: ... AC five one seven one, AC five one seven one, turn your Nav one radio to frequency one one four point five zero zero.
+OTHER_NAV1_115-750.wav: ... SK five eight zero, SK five eight zero, turn your Nav one radio to frequency one one five point seven five zero.
+OTHER_NAV1_116-450.wav: ... (A) three three three nine five, (A) three three three nine five, turn your Nav one radio to frequency one one six point four five zero.
+OTHER_NAV1_117-650.wav: ... Citrus two one one, Citrus two one one, turn your Nav one radio to frequency one one seven point six five zero.
+OTHER_NAV2_108-750.wav: ... AC five one seven one, AC five one seven one, turn your Nav two radio to frequency one zero eight point seven five zero.
+OTHER_NAV2_109-650.wav: ... SK five eight zero, SK five eight zero, turn your Nav two radio to frequency one zero nine point six five zero.
+OTHER_NAV2_110-800.wav: ... (A) three three three nine five, (A) three three three nine five, turn your Nav two radio to frequency one one zero point eight zero zero.
+OTHER_NAV2_111-350.wav: ... Citrus two one one, Citrus two one one, turn your Nav two radio to frequency one one one point three five zero.
+OTHER_NAV2_112-550.wav: ... AC five one seven one, AC five one seven one, turn your Nav two radio to frequency one one two point five five zero.
+OTHER_NAV2_113-400.wav: ... SK five eight zero, SK five eight zero, turn your Nav two radio to frequency one one three point four zero zero.
+OTHER_NAV2_114-900.wav: ... (A) three three three nine five, (A) three three three nine five, turn your Nav two radio to frequency one one four point nine zero zero.
+OTHER_NAV2_115-050.wav: ... Citrus two one one, Citrus two one one, turn your Nav two radio to frequency one one five point zero five zero.
+OTHER_NAV2_116-850.wav: ... AC five one seven one, AC five one seven one, turn your Nav two radio to frequency one one six point eight five zero.
+OTHER_NAV2_117-950.wav: ... SK five eight zero, SK five eight zero, turn your Nav two radio to frequency one one seven point nine five zero.
+OWN_COM1_124-575.wav: ... eeza five zero four, eeza five zero four, turn your Comm one radio to frequency one two four point five seven five.
+OWN_COM1_125-500.wav: ... eeza five zero four, eeza five zero four, turn your Comm one radio to frequency one two five point five zero zero.
+OWN_COM1_125-550.wav: ... eeza five zero four, eeza five zero four, turn your Comm one radio to frequency one two five point five five zero.
+OWN_COM1_126-450.wav: ... eeza five zero four, eeza five zero four, turn your Comm one radio to frequency one two six point four five zero.
+OWN_COM1_126-525.wav: ... eeza five zero four, eeza five zero four, turn your Comm one radio to frequency one two six point five two five.
+OWN_COM1_127-500.wav: ... eeza five zero four, eeza five zero four, turn your Comm one radio to frequency one two seven point five zero zero.
+OWN_COM1_127-550.wav: ... eeza five zero four, eeza five zero four, turn your Comm one radio to frequency one two seven point five five zero.
+OWN_COM1_128-475.wav: ... eeza five zero four, eeza five zero four, turn your Comm one radio to frequency one two eight point four seven five.
+OWN_COM1_128-575.wav: ... eeza five zero four, eeza five zero four, turn your Comm one radio to frequency one two eight point five seven five.
+OWN_COM1_129-450.wav: ... eeza five zero four, eeza five zero four, turn your Comm one radio to frequency one two nine point four five zero.
+OWN_COM2_124-450.wav: ... eeza five zero four, eeza five zero four, turn your Comm two radio to frequency one two four point four five zero.
+OWN_COM2_125-500.wav: ... eeza five zero four, eeza five zero four, turn your Comm two radio to frequency one two five point five zero zero.
+OWN_COM2_125-575.wav: ... eeza five zero four, eeza five zero four, turn your Comm two radio to frequency one two five point five seven five.
+OWN_COM2_126-475.wav: ... eeza five zero four, eeza five zero four, turn your Comm two radio to frequency one two six point four seven five.
+OWN_COM2_126-550.wav: ... eeza five zero four, eeza five zero four, turn your Comm two radio to frequency one two six point five five zero.
+OWN_COM2_127-500.wav: ... eeza five zero four, eeza five zero four, turn your Comm two radio to frequency one two seven point five zero zero.
+OWN_COM2_127-525.wav: ... eeza five zero four, eeza five zero four, turn your Comm two radio to frequency one two seven point five two five.
+OWN_COM2_128-525.wav: ... eeza five zero four, eeza five zero four, turn your Comm two radio to frequency one two eight point five two five.
+OWN_COM2_128-550.wav: ... eeza five zero four, eeza five zero four, turn your Comm two radio to frequency one two eight point five five zero.
+OWN_COM2_129-575.wav: ... eeza five zero four, eeza five zero four, turn your Comm two radio to frequency one two nine point five seven five.
+OWN_NAV1_110-650.wav: ... eeza five zero four, eeza five zero four, turn your Nav one radio to frequency one one zero point six five zero.
+OWN_NAV1_111-500.wav: ... eeza five zero four, eeza five zero four, turn your Nav one radio to frequency one one one point five zero zero.
+OWN_NAV1_111-600.wav: ... eeza five zero four, eeza five zero four, turn your Nav one radio to frequency one one one point six zero zero.
+OWN_NAV1_112-450.wav: ... eeza five zero four, eeza five zero four, turn your Nav one radio to frequency one one two point four five zero.
+OWN_NAV1_112-550.wav: ... eeza five zero four, eeza five zero four, turn your Nav one radio to frequency one one two point five five zero.
+OWN_NAV1_113-500.wav: ... eeza five zero four, eeza five zero four, turn your Nav one radio to frequency one one three point five zero zero.
+OWN_NAV1_113-600.wav: ... eeza five zero four, eeza five zero four, turn your Nav one radio to frequency one one three point six zero zero.
+OWN_NAV1_114-450.wav: ... eeza five zero four, eeza five zero four, turn your Nav one radio to frequency one one four point four five zero.
+OWN_NAV1_114-650.wav: ... eeza five zero four, eeza five zero four, turn your Nav one radio to frequency one one four point six five zero.
+OWN_NAV1_115-400.wav: ... eeza five zero four, eeza five zero four, turn your Nav one radio to frequency one one five point four zero zero.
+OWN_NAV2_110-500.wav: ... eeza five zero four, eeza five zero four, turn your Nav two radio to frequency one one zero point five zero zero.
+OWN_NAV2_111-400.wav: ... eeza five zero four, eeza five zero four, turn your Nav two radio to frequency one one one point four zero zero.
+OWN_NAV2_111-650.wav: ... eeza five zero four, eeza five zero four, turn your Nav two radio to frequency one one one point six five zero.
+OWN_NAV2_112-450.wav: ... eeza five zero four, eeza five zero four, turn your Nav two radio to frequency one one two point four five zero.
+OWN_NAV2_112-600.wav: ... eeza five zero four, eeza five zero four, turn your Nav two radio to frequency one one two point six zero zero.
+OWN_NAV2_113-500.wav: ... eeza five zero four, eeza five zero four, turn your Nav two radio to frequency one one three point five zero zero.
+OWN_NAV2_113-550.wav: ... eeza five zero four, eeza five zero four, turn your Nav two radio to frequency one one three point five five zero.
+OWN_NAV2_114-450.wav: ... eeza five zero four, eeza five zero four, turn your Nav two radio to frequency one one four point four five zero.
+OWN_NAV2_114-600.wav: ... eeza five zero four, eeza five zero four, turn your Nav two radio to frequency one one four point six zero zero.
+OWN_NAV2_115-650.wav: ... eeza five zero four, eeza five zero four, turn your Nav two radio to frequency one one five point six five zero.

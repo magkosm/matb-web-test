@@ -83,8 +83,8 @@ const DirectReactionTimeRoute = () => {
   return (
     <React.Suspense fallback={<div>Loading...</div>}>
       <ReactionTimeTest
-        duration={30000} // 30 seconds
-        maxStimuli={10}
+        duration={null} // No time limit
+        maxStimuli={8} // 8 stimuli
         minDelay={1500}
         maxDelay={8000}
         onReturn={handleReturn}
@@ -112,6 +112,7 @@ const DirectNBackRoute = () => {
         bothTargets={2}
         tickTime={3000}
         onReturn={handleReturn}
+        audioEnabled={false} // Disable audio for quick mode
       />
     </React.Suspense>
   );

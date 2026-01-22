@@ -7,8 +7,12 @@
     "score": "Poäng",
     "time": "Tid",
     "gameOver": "Spelet slut",
+    "simulationComplete": "Simulering slutförd",
     "back": "Tillbaka",
     "settings": "Inställningar",
+    "minutes": "minuter",
+    "seconds": "sekunder",
+    "exit": "Avsluta",
     "status": "Status",
     "normal": "Normal",
     "warning": "Varning",
@@ -22,7 +26,26 @@
     "hideControls": "Dölj Kontroller",
     "showControls": "Visa Kontroller",
     "returnToMenu": "Återgå till huvudmenyn",
-    "close": "Stäng"
+    "close": "Stäng",
+    "duration": "Varaktighet"
+  },
+  "instructionsOverlay": {
+    "title": "Orbital Architecture – Multitasking",
+    "intro": "I detta test kommer du att öva på att göra flera saker samtidigt.\nSkärmen är uppdelad i 5 delar; en del visar din Systemstatus, och fyra uppgifter (Systemövervakning, Spårning auto, Kommunikationsuppgift, Resurshantering) som du behöver hålla koll på.",
+    "sysStatTitle": "Systemstatus",
+    "sysStat": "Systemstatus visar hur hela ditt system presterar.\nGenom att övervaka och lösa de fyra olika uppgifterna försöker du hålla systemets Hälsa så hög som möjligt och Belastningen så låg som möjligt.\nVi kommer nu att gå igenom de olika uppgifterna och öva på dem en efter en innan vi försöker göra alla samtidigt.",
+    "sysMonTitle": "Systemövervakning",
+    "sysMon": "I denna uppgift ska du kontrollera 6 mätare: F1-F6.\nDu måste korrigera systemet om:\n• F1 slutar vara grön - Korrigera genom att klicka på F1\n• F2 blir röd - Korrigera genom att klicka på F2\n• F3-F6-punkten flyttas utanför det grå mittintervallet till de rosa/röda delarna - Korrigera genom att klicka på F3 – F6",
+    "trackTitle": "Spårning – Auto",
+    "track": "I denna uppgift måste du korrigera markörens drift så att den stannar inom den lilla rutan i mitten.\nNär den gröna rutan med 'AUTO' blir blå med texten 'MANUELL', måste du manuellt korrigera markörens position för att hålla den inom den centrala rutan.\nDu styr markörens position med WASD-tangenterna (W=upp; A=vänster; S=ner; D=höger).",
+    "commTitle": "Kommunikationsuppgift",
+    "comm": "I denna uppgift måste du svara på ljudinstruktioner om att ändra radiofrekvenser. Vissa meddelanden riktas till dig (din anropssignal), men du måste ignorera andra (som riktas till andra anropssignaler).\nDin anropssignal står högst upp i uppgiften (ESA504).\n\nKontroller:\n1. För att välja vilken radio som ska ändras, använd pilarna [UPP] och [NER].\n2. För att ändra frekvensen (nummer) för den valda radion, använd pilarna [HÖGER] och [VÄNSTER].",
+    "resManTitle": "Resurshantering",
+    "resMan": "I denna uppgift måste du upprätthålla nivåerna i de två huvudtankarna (A och B) genom att använda en uppsättning reservtankar och pumpar, var och en med specifika flödeshastigheter.\nDin uppgift är att slå på och av numrerade pumpar för att få tankarna A och B så nära sina normala nivåer som möjligt.\nNormala nivåer för A- och B-tankar indikeras av den röda linjen genom tanken.\nPumpar kan ibland gå sönder, vilket indikeras av att de blir röda.\nFlödeshastigheter för olika pumpar visas under respektive pump (när den är aktiv).\n\nKontroller:\nFör att slå på eller av pumpar, använd siffertangenterna som motsvarar pumpnumret.",
+    "multiTitle": "Multitasking",
+    "multi": "Utmaningen är nu att göra alla dessa uppgifter samtidigt.\nLycka till!",
+    "ready": "Jag förstår - Starta övning",
+    "startPractice": "Jag förstår - Starta övning"
   },
   "mainMenu": {
     "title": "MATB-II Simulation",
@@ -111,6 +134,8 @@
     "tryAgain": "Försök igen",
     "quickStart": "Snabbstart reaktionstest",
     "noReactionTimes": "Inga reaktionstider registrerade",
+    "limitByStimuli": "Begränsa efter stimuli",
+    "limitByTime": "Begränsa efter tid",
     "tryAgainToTest": "Försök igen för att testa din reaktionstid.",
     "returnToMenu": "Återgå till huvudmenyn",
     "forceStimulus": "Tvinga stimulus",
@@ -161,7 +186,10 @@
     "overallDPrime": "Total d'",
     "detailedStats": "Detaljerad statistik",
     "restartTest": "Starta om testet",
-    "returnToMenu": "Återgå till huvudmenyn"
+    "returnToMenu": "Återgå till huvudmenyn",
+    "audioEnabled": "Ljud Aktiverat",
+    "audioOn": "Ljud PÅ",
+    "audioOff": "Ljud AV"
   },
   "training": {
     "commOnly": "Kommunikationsträning",

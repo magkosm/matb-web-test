@@ -10,6 +10,26 @@ ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarEleme
 // Debug flag - set to true to disable debug UI and logging
 const DEBUG_MODE = false;
 
+// Load N-Back sounds from src/assets/nback-sounds
+let nbackSounds = {};
+try {
+  // Use require.context to dynamically bundle all wav files in language subfolders
+  const context = require.context('../assets/nback-sounds', true, /\.wav$/);
+  context.keys().forEach((key) => {
+    // key is like "./en/C.wav" or "./el/C.wav"
+    const parts = key.split('/');
+    if (parts.length >= 3) {
+      const lang = parts[1];
+      const letter = parts[2].replace('.wav', '');
+      if (!nbackSounds[lang]) nbackSounds[lang] = {};
+      nbackSounds[lang][letter] = context(key);
+    }
+  });
+  console.log('N-Back sounds loaded:', Object.keys(nbackSounds).map(lang => `${lang}: ${Object.keys(nbackSounds[lang]).length}`).join(', '));
+} catch (error) {
+  console.error('Error loading N-Back sounds:', error);
+}
+
 // Helper Functions
 function generateDesign(n, dim1targs, dim2targs, bothtargs, trials) {
   // First n trials must be non-targets since they're the memorization phase
@@ -146,9 +166,19 @@ const NBackTest = ({
   bothTargets = 2,
   tickTime = 3000, // 3 seconds per stimulus
   onFinish,
-  onReturn
+  onReturn,
+  audioEnabled = true
 }) => {
   const { t, i18n } = useTranslation();
+  
+  // Audio state - allow internal toggle if audioEnabled prop is true
+  // If audioEnabled prop is false (like in quick start), it stays false
+  const [isAudioActive, setIsAudioActive] = useState(audioEnabled);
+
+  // Sync with prop changes, but only if prop turns it off or on explicitly
+  useEffect(() => {
+    setIsAudioActive(audioEnabled);
+  }, [audioEnabled]);
 
   // Game state
   const [testStarted, setTestStarted] = useState(false);
@@ -182,11 +212,22 @@ const NBackTest = ({
   const isMountedRef = useRef(true);
   const stimuliRef = useRef([[], []]);
   const audioRef = useRef(null);
+  // Add a ref to track current audio state for intervals/timeouts
+  const audioActiveRef = useRef(audioEnabled);
 
   // Available letters for nBack
   const nBackLetters = ['C', 'H', 'K', 'N', 'R', 'W', 'X', 'Y'];
 
-  // Clean up on unmount
+  // Sync with prop changes
+  useEffect(() => {
+    setIsAudioActive(audioEnabled);
+    audioActiveRef.current = audioEnabled;
+  }, [audioEnabled]);
+
+  // Sync ref with local state changes
+  useEffect(() => {
+    audioActiveRef.current = isAudioActive;
+  }, [isAudioActive]);
   useEffect(() => {
     isMountedRef.current = true;
     // Create a single shared audio element
@@ -207,7 +248,9 @@ const NBackTest = ({
 
   // Play a letter sound using the shared audio element
   const playLetterSound = (letter) => {
-    if (!audioRef.current) return;
+    // Use the ref here instead of state to ensure we always have the latest value
+    // inside the interval callback closure
+    if (!audioActiveRef.current || !audioRef.current) return;
 
     try {
       // Reset the audio element
@@ -217,46 +260,28 @@ const NBackTest = ({
       // Determine current language
       const currentLang = (i18n.language || 'en').split('-')[0];
 
-      // Try localized path first
-      const audioPath = `${process.env.PUBLIC_URL}/assets/nback-sounds/${currentLang}/${letter}.wav`;
-      const fallbackPath = `${process.env.PUBLIC_URL}/assets/nback-sounds/en/${letter}.wav`;
-
-      // Set the source 
-      // Only set a new source if it's different from the current one
-      if (audioRef.current.src !== audioPath && audioRef.current.dataset.fallback !== 'true') {
-        audioRef.current.src = audioPath;
-        audioRef.current.dataset.fallback = 'false';
+      // Get sound from bundled assets
+      let soundUrl = null;
+      if (nbackSounds[currentLang] && nbackSounds[currentLang][letter]) {
+        soundUrl = nbackSounds[currentLang][letter];
+      } else if (nbackSounds['en'] && nbackSounds['en'][letter]) {
+        // Fallback to English
+        soundUrl = nbackSounds['en'][letter];
       }
 
-      // Add an onerror handler to try fallback
-      audioRef.current.onerror = (err) => {
-        console.warn(`Audio error for ${audioPath}, trying fallback: ${fallbackPath}`);
-
-        if (audioRef.current.dataset.fallback !== 'true') {
-          audioRef.current.src = fallbackPath;
-          audioRef.current.dataset.fallback = 'true';
-          audioRef.current.play().catch(e => console.error('Fallback audio failed:', e));
-        } else {
-          console.error(`Audio error: ${err.type}`);
-        }
-      };
-
-      // Use a promise with a timeout to handle playback
-      const playPromise = audioRef.current.play();
-      if (playPromise !== undefined) {
-        playPromise.catch(err => {
-          // If the error is NotSupportedError or 404 (NetworkError), the onerror should catch it? 
-          // Re-trigger error if needed or log
-          if (err.name === 'NotSupportedError' || err.message.includes('404')) {
-            // Let onerror handle it
-          }
-          console.error(`Warning: ${err.message}. This is usually normal when navigating away during playback.`);
+      if (soundUrl) {
+        audioRef.current.src = soundUrl;
+        audioRef.current.play().catch(err => {
+          console.error(`Warning playing bundled sound: ${err.message}`);
         });
+      } else {
+        console.error(`No sound found for letter ${letter} in lang ${currentLang} or en fallback`);
       }
     } catch (err) {
       console.error(`Error in playLetterSound: ${err.message}`);
     }
   };
+
 
   // Return to main menu (memoized)
   const handleMainMenuReturn = useCallback(() => {
@@ -1284,10 +1309,27 @@ const NBackTest = ({
           background: 'rgba(0,0,0,0.7)',
           padding: '10px',
           borderRadius: '5px',
-          boxShadow: '0 2px 5px rgba(0,0,0,0.2)'
+          boxShadow: '0 2px 5px rgba(0,0,0,0.2)',
+          textAlign: 'right'
         }}>
-          <p style={{ margin: '0' }}>{t('nbackTest.progress', 'Progress')}: {currentStimulus + 1}/{trials}</p>
-          <p style={{ margin: '0' }}>{t('nbackTest.level', 'Level')}: {n}-back</p>
+          <p style={{ margin: '0 0 5px 0' }}>{t('nbackTest.progress', 'Progress')}: {currentStimulus + 1}/{trials}</p>
+          <p style={{ margin: '0 0 5px 0' }}>{t('nbackTest.level', 'Level')}: {n}-back</p>
+          
+          <button
+            onClick={() => setIsAudioActive(!isAudioActive)}
+            style={{
+              background: isAudioActive ? '#28a745' : '#dc3545',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              padding: '5px 10px',
+              fontSize: '12px',
+              cursor: 'pointer',
+              marginTop: '5px'
+            }}
+          >
+            {isAudioActive ? '🔊 ' + t('nbackTest.audioOn', 'Audio ON') : '🔇 ' + t('nbackTest.audioOff', 'Audio OFF')}
+          </button>
         </div>
 
         <h2>{t('nbackTest.title', 'N-Back Test')}</h2>

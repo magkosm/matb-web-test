@@ -15,6 +15,7 @@ const NBackGame = ({ onReturn }) => {
   const [dim2Targets, setDim2Targets] = useState(4);
   const [bothTargets, setBothTargets] = useState(2);
   const [tickTime, setTickTime] = useState(3000);
+  const [audioEnabled, setAudioEnabled] = useState(true);
 
   // Apply background on component mount to ensure consistency with main app
   useEffect(() => {
@@ -62,17 +63,18 @@ const NBackGame = ({ onReturn }) => {
     setGameResults(results);
   }, []);
 
-  const handleStartCustomGame = useCallback(() => {
+    const handleStartCustomGame = useCallback(() => {
     console.log('NBackGame: Starting custom game with settings:', {
       nValue,
       trials,
       dim1Targets,
       dim2Targets,
       bothTargets,
-      tickTime
+      tickTime,
+      audioEnabled
     });
     setIsConfigScreen(false);
-  }, [nValue, trials, dim1Targets, dim2Targets, bothTargets, tickTime]);
+  }, [nValue, trials, dim1Targets, dim2Targets, bothTargets, tickTime, audioEnabled]);
 
   const handleReturnToConfig = useCallback(() => {
     console.log('NBackGame: Returning to configuration screen');
@@ -215,6 +217,18 @@ const NBackGame = ({ onReturn }) => {
               />
               <span>{(tickTime / 1000).toFixed(1)} {t('common.seconds', 'seconds')}</span>
             </div>
+
+            <div style={{ marginBottom: '20px' }}>
+              <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}>
+                <input 
+                  type="checkbox"
+                  checked={audioEnabled}
+                  onChange={(e) => setAudioEnabled(e.target.checked)}
+                  style={{ marginRight: '10px' }}
+                />
+                {t('nbackTest.audioEnabled', 'Audio Enabled')}
+              </label>
+            </div>
           </div>
           
           <div style={{ display: 'flex', gap: '10px', marginTop: '20px', justifyContent: 'center' }}>
@@ -266,6 +280,7 @@ const NBackGame = ({ onReturn }) => {
       dim2targets={dim2Targets}
       bothTargets={bothTargets}
       tickTime={tickTime}
+      audioEnabled={audioEnabled}
       onFinish={handleGameFinished}
       onReturn={handleReturnToConfig}
     />

@@ -57,10 +57,10 @@ export const COMM_CONFIG = {
     },
 
     DEFAULT_FREQUENCIES: {
-        NAV1: '112.500',
-        NAV2: '112.500',
-        COM1: '118.325',
-        COM2: '120.775',
+        NAV1: '113.000',
+        NAV2: '113.000',
+        COM1: '127.000',
+        COM2: '127.000',
     }
 };
 
