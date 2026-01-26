@@ -5,6 +5,7 @@ import './index.css';
 import App from './App';
 import ReactionTimeGame from './components/ReactionTimeGame';
 import NBackGame from './components/NBackGame';
+import SuiteManager from './components/SuiteManager';
 import reportWebVitals from './reportWebVitals';
 
 // Import i18n configuration
@@ -135,6 +136,7 @@ root.render(
         <Route path="/nback" element={<NBackRoute />} />
         <Route path="/reaction-default" element={<DirectReactionTimeRoute />} />
         <Route path="/nbackdefault" element={<DirectNBackRoute />} />
+        <Route path="/suite" element={<SuiteManager />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>

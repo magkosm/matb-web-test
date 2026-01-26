@@ -6,6 +6,7 @@ This document provides explicit links to all simulation modes with pre-set langu
 - **English**: [?lng=en](https://magkosm.github.io/matb-web-test?lng=en)
 - **Greek (ελληνικά)**: [?lng=el](https://magkosm.github.io/matb-web-test?lng=el)
 - **Swedish (svenska)**: [?lng=sv](https://magkosm.github.io/matb-web-test?lng=sv)
+- **Full Orbital Suite**: [/suite](https://magkosm.github.io/matb-web-test/suite?lng=en)
 
 ---
 
@@ -23,6 +24,7 @@ This document provides explicit links to all simulation modes with pre-set langu
 - **Reaction Time (Quick Start)**: [https://magkosm.github.io/matb-web-test/reaction-default?lng=en](https://magkosm.github.io/matb-web-test/reaction-default?lng=en)
 - **N-Back Test**: [https://magkosm.github.io/matb-web-test/nback?lng=en](https://magkosm.github.io/matb-web-test/nback?lng=en)
 - **N-Back (Quick Start)**: [https://magkosm.github.io/matb-web-test/nbackdefault?lng=en](https://magkosm.github.io/matb-web-test/nbackdefault?lng=en)
+- **Full Orbital Suite**: [https://magkosm.github.io/matb-web-test/suite?lng=en](https://magkosm.github.io/matb-web-test/suite?lng=en)
 
 ### 🇬🇷 Greek Links (ελληνικά)
 - **Κύριο Μενού**: [https://magkosm.github.io/matb-web-test?lng=el](https://magkosm.github.io/matb-web-test?lng=el)

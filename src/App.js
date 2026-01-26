@@ -32,7 +32,7 @@ const getTrackingInputMode = () => {
   return isMobileDevice() ? 'touch' : 'keyboard';
 };
 
-function App() {
+function App({ isSuiteMode = false, suiteParams = null, onSuiteEnd = null }) {
   const { t } = useTranslation();
 
   // -------------------------
@@ -416,9 +416,16 @@ function App() {
     // Update the game results state with the standardized object
     setGameResults(standardizedResults);
 
+    // If in suite mode, notify the suite manager instead of exiting to main menu
+    if (isSuiteMode && onSuiteEnd) {
+      console.log('App: Suite stage finished, notifying suite manager');
+      onSuiteEnd(standardizedResults);
+      return;
+    }
+
     // Return to the main menu
     exitToMainMenu();
-  }, [exitToMainMenu, currentGameMode]);
+  }, [exitToMainMenu, currentGameMode, isSuiteMode, onSuiteEnd]);
 
   // Add keyboard shortcut (Ctrl+Q) to exit to main menu
   useEffect(() => {
@@ -494,6 +501,14 @@ function App() {
 
   // Check for startup parameters stored in localStorage
   useEffect(() => {
+    // Prioritize suite parameters if provided
+    if (isSuiteMode && suiteParams) {
+      console.log('App: Initializing with suite parameters', suiteParams);
+      startGame(suiteParams);
+      setStartupParamsChecked(true);
+      return;
+    }
+
     // Only check once and never when initializing
     if (startupParamsChecked || isInitializing) return;
 

@@ -1,261 +1,106 @@
 import React, { useMemo } from 'react';
-import { Chart as ChartJS, ArcElement, Tooltip, Legend, CategoryScale, LinearScale, PointElement, LineElement, Title, Filler } from 'chart.js';
-import { Doughnut, Line } from 'react-chartjs-2';
 import { useTranslation } from 'react-i18next';
+import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, PointElement, LineElement } from 'chart.js';
+import { Bar, Line } from 'react-chartjs-2';
+import { downloadCSV } from '../utils/csvExport';
 
-// Register ChartJS components
-ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, PointElement, LineElement, Title, Filler);
+ChartJS.register(CategoryScale, LinearScale, BarElement, PointElement, LineElement, Title, Tooltip, Legend);
 
-const ComprehensiveResults = ({ 
-  finalScore, 
-  logs, 
-  onExportData, 
-  onExportPlots,
-  onSaveScore,
-  onReturnToMenu,
-  showScoreSaveForm
-}) => {
+const ComprehensiveResults = ({ results, onReturn }) => {
   const { t } = useTranslation();
 
-  // Helper to calculate accuracy from logs
-  const calculateAccuracy = (taskLogs) => {
-    if (!taskLogs || taskLogs.length === 0) return { correct: 0, incorrect: 0, accuracy: 0 };
-    
-    // Logic depends on log structure for each task
-    // Simplified logic: assume 'isCorrect' or similar property exists or derived
-    // This is a placeholder logic - needs to be adapted to actual log structure
-    
-    let correct = 0;
-    let total = 0;
+  // RT Results: step 1
+  const rtData = results[1] || {};
+  // N-Back Results: steps 2, 3, 4, 5
+  const nbackData = [results[2], results[3], results[4], results[5]].filter(Boolean);
+  // MATB Results: steps 6, 7
+  const matbEasy = results[6] || {};
+  const matbHard = results[7] || {};
 
-    // For simplicity in this demo, we'll estimate based on event types in logs
-    // Real implementation should parse specific log formats
-    
-    // Example for Comm logs (checking if Remarks is HIT)
-    if (taskLogs[0].Radio_T !== undefined) {
-       correct = taskLogs.filter(l => l.Remarks === 'HIT' || l.Remarks === 'CR').length;
-       total = taskLogs.length;
-    }
-    // Example for Resource logs (checking status)
-    else if (taskLogs[0].tankA !== undefined) {
-        // Resource is continuous, we can check % of time in optimal range
-        correct = taskLogs.filter(l => l.corrA && l.corrB).length;
-        total = taskLogs.length;
-    }
-    // Monitoring logs
-    else if (taskLogs[0].type !== undefined) {
-        correct = taskLogs.filter(l => l.type === 'HIT').length;
-        // Total is hits + misses + false alarms
-        total = taskLogs.filter(l => l.type === 'HIT' || l.type === 'MISS' || l.type === 'FA').length;
-    }
-    // Tracking logs
-    else if (taskLogs[0].rmsError !== undefined) {
-        // Continuous tracking
-        correct = taskLogs.filter(l => l.isWithinTarget).length;
-        total = taskLogs.length;
+  const handleExportAll = () => {
+    const masterData = [];
+
+    // Add RT
+    if (rtData.reactionTimes) {
+      rtData.reactionTimes.forEach((time, i) => {
+        masterData.push({ Test: 'Reaction Time', Trial: i + 1, Metric: 'RT (ms)', Value: time });
+      });
     }
 
-    const accuracy = total > 0 ? (correct / total) * 100 : 0;
-    return { correct, incorrect: total - correct, accuracy };
+    // Add N-Back
+    nbackData.forEach(nb => {
+      const label = `${nb.n}-back`;
+      masterData.push({ Test: label, Trial: 'Summary', Metric: 'Accuracy', Value: nb.accuracy });
+      masterData.push({ Test: label, Trial: 'Summary', Metric: 'Correct', Value: nb.correct });
+      masterData.push({ Test: label, Trial: 'Summary', Metric: 'Incorrect', Value: nb.incorrect });
+    });
+
+    // Add MATB
+    [
+      { label: 'MATB Easy', data: matbEasy },
+      { label: 'MATB Hard', data: matbHard }
+    ].forEach(item => {
+      if (item.data.finalScore !== undefined) {
+        masterData.push({ Test: item.label, Trial: 'Summary', Metric: 'Score', Value: item.data.finalScore });
+      }
+    });
+
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    downloadCSV(masterData, `orbital_suite_results_${timestamp}`);
   };
 
-  const commStats = useMemo(() => calculateAccuracy(logs.comm), [logs.comm]);
-  const resStats = useMemo(() => calculateAccuracy(logs.resource), [logs.resource]);
-  const monStats = useMemo(() => calculateAccuracy(logs.monitoring), [logs.monitoring]);
-  const trackStats = useMemo(() => calculateAccuracy(logs.tracking), [logs.tracking]);
-
-  const createPieData = (stats, label) => ({
-    labels: ['Success', 'Error'],
-    datasets: [
-      {
-        label: label,
-        data: [stats.correct, stats.incorrect],
-        backgroundColor: [
-          'rgba(75, 192, 192, 0.6)',
-          'rgba(255, 99, 132, 0.6)',
-        ],
-        borderColor: [
-          'rgba(75, 192, 192, 1)',
-          'rgba(255, 99, 132, 1)',
-        ],
-        borderWidth: 1,
-      },
-    ],
-  });
-
-  const timePlotData = useMemo(() => {
-    if (!logs.performance || logs.performance.length === 0) return null;
-    const data = logs.performance;
-    return {
-        labels: data.map(d => {
-            const date = new Date(d.time);
-            return `${date.getMinutes()}:${date.getSeconds().toString().padStart(2, '0')}`;
-        }),
-        datasets: [
-            {
-                label: 'System Load',
-                data: data.map(d => d.systemLoad || 0),
-                borderColor: 'rgb(255, 99, 132)',
-                backgroundColor: 'rgba(255, 99, 132, 0.2)',
-                fill: true,
-                tension: 0.2,
-                yAxisID: 'y',
-                pointRadius: 0
-            },
-            {
-                label: 'Health Impact',
-                data: data.map(d => d.healthImpact || 0),
-                borderColor: 'rgb(53, 162, 235)',
-                backgroundColor: 'rgba(53, 162, 235, 0.2)',
-                fill: true,
-                tension: 0.2,
-                yAxisID: 'y1', // Use secondary axis if scales differ greatly
-                pointRadius: 0
-            }
-        ]
-    };
-  }, [logs.performance]);
-
-  const lineOptions = {
-    responsive: true,
-    interaction: {
-      mode: 'index',
-      intersect: false,
-    },
-    stacked: false,
-    plugins: {
-      title: {
-        display: true,
-        text: 'System Load & Health Over Time',
-        color: 'white'
-      },
-      legend: {
-          labels: { color: 'white' }
-      }
-    },
-    scales: {
-      y: {
-        type: 'linear',
-        display: true,
-        position: 'left',
-        title: { display: true, text: 'System Load', color: 'white' },
-        ticks: { color: 'white' },
-        min: 0,
-        max: 100
-      },
-      y1: {
-        type: 'linear',
-        display: true,
-        position: 'right',
-        title: { display: true, text: 'Health Impact', color: 'white' },
-        ticks: { color: 'white' },
-        grid: {
-          drawOnChartArea: false,
-        },
-      },
-      x: {
-          ticks: { color: 'white' }
-      }
-    },
+  const nbackChartData = {
+    labels: nbackData.map(d => `${d.n}-back`),
+    datasets: [{
+      label: 'Accuracy %',
+      data: nbackData.map(d => d.accuracy),
+      backgroundColor: 'rgba(75, 192, 192, 0.6)'
+    }]
   };
 
   return (
     <div style={{
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        padding: '20px',
-        width: '100%',
-        maxWidth: '1200px',
-        margin: '0 auto',
-        color: 'white'
+      padding: '40px', backgroundColor: 'rgba(26, 42, 58, 0.95)', color: 'white', minHeight: '100vh', overflowY: 'auto'
     }}>
-        <h2 style={{ fontSize: '2rem', marginBottom: '10px' }}>{t('gameOver.title')}</h2>
-        <h3 style={{ fontSize: '1.5rem', marginBottom: '20px' }}>{t('gameOver.finalScore')}: {finalScore}</h3>
+      <div style={{ maxWidth: '1000px', margin: '0 auto', background: 'rgba(0,0,0,0.6)', padding: '30px', borderRadius: '12px' }}>
+        <h1 style={{ textAlign: 'center' }}>Suite Completion Report</h1>
 
-        {/* Task Accuracy Pies */}
-        <div style={{
-            display: 'flex',
-            flexWrap: 'wrap',
-            justifyContent: 'center',
-            gap: '20px',
-            marginBottom: '30px',
-            width: '100%'
-        }}>
-            {[
-                { title: t('tasks.communications.title'), stats: commStats },
-                { title: t('tasks.monitoring.title'), stats: monStats },
-                { title: t('tasks.tracking.title'), stats: trackStats },
-                { title: t('tasks.resource.title'), stats: resStats }
-            ].map((item, idx) => (
-                <div key={idx} style={{
-                    width: '200px',
-                    textAlign: 'center',
-                    backgroundColor: 'rgba(255,255,255,0.05)',
-                    padding: '10px',
-                    borderRadius: '8px'
-                }}>
-                    <h4>{item.title}</h4>
-                    <div style={{ position: 'relative', height: '150px' }}>
-                        <Doughnut 
-                            data={createPieData(item.stats, item.title)} 
-                            options={{ 
-                                responsive: true, 
-                                maintainAspectRatio: false,
-                                plugins: { legend: { display: false } }
-                            }} 
-                        />
-                    </div>
-                    <p>{Math.round(item.stats.accuracy)}%</p>
-                </div>
-            ))}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', margin: '30px 0' }}>
+          {/* Reaction Time Summary */}
+          <div style={{ background: 'rgba(255,255,255,0.1)', padding: '20px', borderRadius: '8px' }}>
+            <h3>Reaction Time</h3>
+            <p>Avg: {rtData.averageReactionTime ? rtData.averageReactionTime.toFixed(2) : '--'} ms</p>
+            <p>Trials: {rtData.stimuliCount || 0}</p>
+          </div>
+
+          {/* MATB Scores */}
+          <div style={{ background: 'rgba(255,255,255,0.1)', padding: '20px', borderRadius: '8px' }}>
+            <h3>MATB Performance</h3>
+            <p>Easy Score: {matbEasy.finalScore || 0}</p>
+            <p>Hard Score: {matbHard.finalScore || 0}</p>
+          </div>
         </div>
 
-        {/* Timeplot */}
-        <div style={{
-            width: '100%',
-            height: '300px',
-            backgroundColor: 'rgba(255,255,255,0.05)',
-            padding: '15px',
-            borderRadius: '8px',
-            marginBottom: '20px'
-        }}>
-            {timePlotData ? <Line data={timePlotData} options={lineOptions} /> : <p>No performance data</p>}
+        <div style={{ height: '300px', margin: '20px 0' }}>
+          <h3>N-Back Accuracy Curve</h3>
+          <Bar data={nbackChartData} options={{ maintainAspectRatio: false, scales: { y: { beginAtZero: true, max: 100 } } }} />
         </div>
 
-        {/* Actions */}
-        <div style={{ display: 'flex', gap: '15px', marginBottom: '20px' }}>
-            <button onClick={onExportData} style={{ padding: '10px 20px', cursor: 'pointer', borderRadius: '5px' }}>
-                Export Raw Data
-            </button>
-            <button onClick={onExportPlots} style={{ padding: '10px 20px', cursor: 'pointer', borderRadius: '5px' }}>
-                Export Plot Data
-            </button>
+        <div style={{ display: 'flex', justifyContent: 'center', gap: '20px', marginTop: '40px' }}>
+          <button
+            onClick={handleExportAll}
+            style={{ backgroundColor: '#007bff', color: 'white', padding: '12px 25px', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+          >
+            Export All Data (CSV)
+          </button>
+          <button
+            onClick={onReturn}
+            style={{ backgroundColor: '#6c757d', color: 'white', padding: '12px 25px', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+          >
+            Finish & Exit
+          </button>
         </div>
-
-        {/* Score Save or Return */}
-        {showScoreSaveForm ? (
-             <div style={{ width: '100%', maxWidth: '400px', pointerEvents: 'auto' }}>
-                {/* ScoreSaveForm would be rendered here by parent if needed, 
-                    or we can pass the props to render it here directly if refactored */}
-             </div>
-        ) : (
-            <button
-              onClick={onReturnToMenu}
-              style={{
-                backgroundColor: '#007bff',
-                color: 'white',
-                border: 'none',
-                borderRadius: '4px',
-                padding: '10px 30px',
-                cursor: 'pointer',
-                fontSize: '18px',
-                fontWeight: 'bold'
-              }}
-            >
-              {t('common.returnToMenu')}
-            </button>
-        )}
+      </div>
     </div>
   );
 };

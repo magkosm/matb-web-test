@@ -7,7 +7,7 @@ const NBackGame = ({ onReturn }) => {
   const { t } = useTranslation();
   const [gameResults, setGameResults] = useState(null);
   const [isConfigScreen, setIsConfigScreen] = useState(true);
-  
+
   // Configuration options
   const [nValue, setNValue] = useState(2);
   const [trials, setTrials] = useState(20);
@@ -27,7 +27,7 @@ const NBackGame = ({ onReturn }) => {
     document.body.style.backgroundSize = style.backgroundSize || '';
     document.body.style.backgroundPosition = style.backgroundPosition || '';
     document.body.style.backgroundRepeat = style.backgroundRepeat || '';
-    
+
     return () => {
       console.log('NBackGame: Component unmounting');
     };
@@ -51,7 +51,7 @@ const NBackGame = ({ onReturn }) => {
         handleReturnToMenu();
       }
     };
-    
+
     window.addEventListener('keydown', handleKeyDown);
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
@@ -84,7 +84,7 @@ const NBackGame = ({ onReturn }) => {
 
   // Calculate max possible targets based on trials and n
   const maxPossibleTargets = Math.max(0, trials - nValue);
-  
+
   // Ensure dim1Targets + dim2Targets + bothTargets doesn't exceed maxPossibleTargets
   useEffect(() => {
     const totalTargets = dim1Targets + dim2Targets + bothTargets;
@@ -120,98 +120,98 @@ const NBackGame = ({ onReturn }) => {
           width: '80%'
         }}>
           <h1>{t('nbackTest.configTitle', 'N-Back Test Configuration')}</h1>
-          
+
           <div style={{ width: '100%', maxWidth: '500px', margin: '20px 0' }}>
             <div style={{ marginBottom: '20px' }}>
               <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
                 {t('nbackTest.nValue', 'N Value')}:
               </label>
-              <input 
-                type="range" 
-                min="1" 
-                max="3" 
+              <input
+                type="range"
+                min="1"
+                max="4"
                 step="1"
-                value={nValue} 
+                value={nValue}
                 onChange={(e) => setNValue(parseInt(e.target.value))}
                 style={{ width: '100%' }}
               />
               <span>{nValue}</span>
             </div>
-            
+
             <div style={{ marginBottom: '20px' }}>
               <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
                 {t('nbackTest.trials', 'Number of Trials')}:
               </label>
-              <input 
-                type="range" 
-                min="10" 
-                max="40" 
+              <input
+                type="range"
+                min="10"
+                max="40"
                 step="5"
-                value={trials} 
+                value={trials}
                 onChange={(e) => setTrials(parseInt(e.target.value))}
                 style={{ width: '100%' }}
               />
               <span>{trials} {t('nbackTest.trials', 'trials')}</span>
             </div>
-            
+
             <div style={{ marginBottom: '20px' }}>
               <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
                 {t('nbackTest.letterTargets', 'Letter Targets')}:
               </label>
-              <input 
-                type="range" 
-                min="1" 
+              <input
+                type="range"
+                min="1"
                 max={Math.max(1, Math.floor(maxPossibleTargets / 2))}
                 step="1"
-                value={dim1Targets} 
+                value={dim1Targets}
                 onChange={(e) => setDim1Targets(parseInt(e.target.value))}
                 style={{ width: '100%' }}
               />
               <span>{dim1Targets}</span>
             </div>
-            
+
             <div style={{ marginBottom: '20px' }}>
               <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
                 {t('nbackTest.positionTargets', 'Position Targets')}:
               </label>
-              <input 
-                type="range" 
-                min="1" 
+              <input
+                type="range"
+                min="1"
                 max={Math.max(1, Math.floor(maxPossibleTargets / 2))}
                 step="1"
-                value={dim2Targets} 
+                value={dim2Targets}
                 onChange={(e) => setDim2Targets(parseInt(e.target.value))}
                 style={{ width: '100%' }}
               />
               <span>{dim2Targets}</span>
             </div>
-            
+
             <div style={{ marginBottom: '20px' }}>
               <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
                 {t('nbackTest.bothTargets', 'Dual Targets')}:
               </label>
-              <input 
-                type="range" 
-                min="0" 
+              <input
+                type="range"
+                min="0"
                 max={Math.max(0, maxPossibleTargets - dim1Targets - dim2Targets)}
                 step="1"
-                value={bothTargets} 
+                value={bothTargets}
                 onChange={(e) => setBothTargets(parseInt(e.target.value))}
                 style={{ width: '100%' }}
               />
               <span>{bothTargets}</span>
             </div>
-            
+
             <div style={{ marginBottom: '20px' }}>
               <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
                 {t('nbackTest.stimulusTime', 'Time per Stimulus (seconds)')}:
               </label>
-              <input 
-                type="range" 
-                min="1.5" 
-                max="5" 
+              <input
+                type="range"
+                min="1.5"
+                max="5"
                 step="0.5"
-                value={tickTime / 1000} 
+                value={tickTime / 1000}
                 onChange={(e) => setTickTime(parseFloat(e.target.value) * 1000)}
                 style={{ width: '100%' }}
               />
@@ -220,7 +220,7 @@ const NBackGame = ({ onReturn }) => {
 
             <div style={{ marginBottom: '20px' }}>
               <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}>
-                <input 
+                <input
                   type="checkbox"
                   checked={audioEnabled}
                   onChange={(e) => setAudioEnabled(e.target.checked)}
@@ -230,9 +230,9 @@ const NBackGame = ({ onReturn }) => {
               </label>
             </div>
           </div>
-          
+
           <div style={{ display: 'flex', gap: '10px', marginTop: '20px', justifyContent: 'center' }}>
-            <button 
+            <button
               onClick={handleStartCustomGame}
               style={{
                 backgroundColor: '#4CAF50',
@@ -246,8 +246,8 @@ const NBackGame = ({ onReturn }) => {
             >
               {t('nbackTest.startTest', 'Start Test')}
             </button>
-            
-            <button 
+
+            <button
               onClick={handleReturnToMenu}
               style={{
                 backgroundColor: '#6c757d',
@@ -262,7 +262,7 @@ const NBackGame = ({ onReturn }) => {
               {t('common.returnToMenu', 'Return to Main Menu')}
             </button>
           </div>
-          
+
           <div style={{ marginTop: '30px', fontSize: '14px', opacity: 0.7 }}>
             <p>{t('nbackTest.pressCtrlQToReturn', 'Press Ctrl+Q to return to the main menu at any time')}</p>
           </div>
