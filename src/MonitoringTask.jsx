@@ -50,6 +50,7 @@ function MonitoringTask({
 
   // Add difficulty state
   const [difficulty, setDifficultyState] = useState(5);
+  const [isPaused, setIsPaused] = useState(false);
 
   // Items: F1, F2 (buttons), F3–F6 (gauges)
   // For gauges: track level (0..10) + eventSide ('low'|'high'|null)
@@ -484,12 +485,21 @@ function MonitoringTask({
     setDifficulty: (value) => {
       console.log('MonitoringTask: Setting difficulty to', value);
       setDifficultyState(value);
-    }
+    },
+    togglePause: () => {
+      setIsPaused(prev => !prev);
+      return !isPaused;
+    },
+    setPause: (shouldPause) => {
+      setIsPaused(shouldPause);
+      return shouldPause;
+    },
+    isPaused: () => isPaused
   }));
 
   // Schedule events based on EPM
   useEffect(() => {
-    if (!isEnabled || !autoEvents) {
+    if (!isEnabled || !autoEvents || isPaused) {
       if (eventTimeoutRef.current) {
         clearTimeout(eventTimeoutRef.current);
         eventTimeoutRef.current = null;
@@ -522,6 +532,8 @@ function MonitoringTask({
 
   // Update metrics periodically
   useEffect(() => {
+    if (isPaused) return;
+
     const updateMetrics = () => {
       const now = Date.now();
       setTaskMetrics(prev => ({
@@ -534,56 +546,62 @@ function MonitoringTask({
     return () => {
       if (metricsLoopRef.current) clearInterval(metricsLoopRef.current);
     };
-  }, [startTime]);
+  }, [startTime, isPaused]);
 
   // Handle event completion and health impact
   useEffect(() => {
-    const now = Date.now();
-    setActiveEvents(prev => {
-      const stillActive = [];
-      const completed = [];
+    if (isPaused) return;
 
-      for (const evt of prev) {
-        if (evt.type === null) {
-          const age = now - evt.timestamp;
-          if (age >= 5000) {
-            // MISS
-            evt.type = 'MISS';
-            evt.responded = false;
-            evt.responseTime = null;
-            if (onPenalty) onPenalty(-5);
-            setTaskMetrics(prev => ({
-              ...prev,
-              misses: prev.misses + 1,
-              activeEvents: prev.activeEvents - 1
-            }));
+    const interval = setInterval(() => {
+      const now = Date.now();
+      setActiveEvents(prev => {
+        const stillActive = [];
+        const completed = [];
 
-            // Deactivate indicator
-            setItems(prevItems =>
-              prevItems.map(it =>
-                it.label === evt.label ? { ...it, eventActive: false } : it
-              )
-            );
-            completed.push(evt);
+        for (const evt of prev) {
+          if (evt.type === null) {
+            const age = now - evt.timestamp;
+            if (age >= 5000) {
+              // MISS
+              evt.type = 'MISS';
+              evt.responded = false;
+              evt.responseTime = null;
+              if (onPenalty) onPenalty(-5);
+              setTaskMetrics(prev => ({
+                ...prev,
+                misses: prev.misses + 1,
+                activeEvents: prev.activeEvents - 1
+              }));
+
+              // Deactivate indicator
+              setItems(prevItems =>
+                prevItems.map(it =>
+                  it.label === evt.label ? { ...it, eventActive: false } : it
+                )
+              );
+              completed.push(evt);
+            } else {
+              stillActive.push(evt);
+            }
           } else {
-            stillActive.push(evt);
+            completed.push(evt);
           }
-        } else {
-          completed.push(evt);
         }
-      }
 
-      if (completed.length > 0) {
-        setEventLog(prev => {
-          const logIds = new Set(prev.map(x => x.id));
-          const uniqueCompleted = completed.filter(e => !logIds.has(e.id));
-          return [...prev, ...uniqueCompleted];
-        });
-      }
+        if (completed.length > 0) {
+          setEventLog(prev => {
+            const logIds = new Set(prev.map(x => x.id));
+            const uniqueCompleted = completed.filter(e => !logIds.has(e.id));
+            return [...prev, ...uniqueCompleted];
+          });
+        }
 
-      return stillActive;
-    });
-  }, []);
+        return stillActive;
+      });
+    }, 1000); // Check every second
+
+    return () => clearInterval(interval);
+  }, [isPaused, onPenalty]);
 
   // Reset function with enhanced cleanup
   const resetTask = useCallback(() => {
@@ -628,6 +646,8 @@ function MonitoringTask({
 
   useEffect(() => {
     mainLoopRef.current = setInterval(() => {
+      if (isPaused) return;
+
       // 3a) Gauge fluctuation
       setItems((prev) =>
         prev.map((item) => {
@@ -780,6 +800,16 @@ function MonitoringTask({
 
   // Add effect to update metrics when health impact changes
   useEffect(() => {
+    if (!isEnabled || isPaused) {
+      if (!isEnabled) {
+        onMetricsUpdate?.({ healthImpact: 0, systemLoad: 0 });
+      } else {
+        // If paused, also send 0 metrics to stop SystemHealth updates
+        onMetricsUpdate?.({ healthImpact: 0, systemLoad: 0 });
+      }
+      return;
+    }
+
     // Calculate load based on number of active indicators (5% each)
     const activeCount = items.filter(item => item.eventActive).length;
     const calculatedLoad = activeCount * 5;
@@ -802,7 +832,7 @@ function MonitoringTask({
       }, 250);
       return () => clearTimeout(timer);
     }
-  }, [healthImpact, items]);
+  }, [healthImpact, items, isEnabled, isPaused, onMetricsUpdate]);
 
   // Add cleanup on unmount
   useEffect(() => {

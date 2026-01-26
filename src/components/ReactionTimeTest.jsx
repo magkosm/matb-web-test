@@ -4,6 +4,8 @@ import { Line, Bar } from 'react-chartjs-2';
 import { useTranslation } from 'react-i18next';
 import ScoreboardService from '../services/ScoreboardService';
 
+import { downloadCSV } from '../utils/csvExport';
+
 // Register ChartJS components
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, Title, Tooltip, Legend);
 
@@ -70,6 +72,7 @@ const ReactionTimeTest = ({
   const stimulusStartTime = useRef(null);
   const gameTimerRef = useRef(null);
   const nextStimulusTimeoutRef = useRef(null);
+  const scheduledTimeRef = useRef(null);
   const isComponentMounted = useRef(true);
   const currentStimulusIndexRef = useRef(0); // Keep a ref to current index for timeout callbacks
   const timersRef = useRef([]); // Track all timers for better cleanup
@@ -277,7 +280,9 @@ const ReactionTimeTest = ({
 
     // Random delay between minDelay and maxDelay
     const delay = Math.floor(Math.random() * (maxDelay - minDelay + 1)) + minDelay;
-    debugLog(`Scheduling stimulus ${currentStimulusIndexRef.current + 1} with delay ${delay}ms`);
+    const scheduledTime = Date.now() + delay;
+    scheduledTimeRef.current = scheduledTime;
+    debugLog(`Scheduling stimulus ${currentStimulusIndexRef.current + 1} with delay ${delay}ms (at ${scheduledTime})`);
 
     // Clear any existing timeout
     if (nextStimulusTimeoutRef.current) {
@@ -299,6 +304,74 @@ const ReactionTimeTest = ({
     timersRef.current.push(timerId);
   };
 
+  // Handle false alarm (spam click)
+  const handleFalseAlarm = () => {
+    debugLog('False alarm (early reaction) detected');
+
+    // Case 1: Spamming while stimulus is visible (too fast response < 100ms)
+    // This takes precedence because if stimulus is shown, scheduledTimeRef refers to the PAST start time
+    if (showStimulus) {
+      debugLog('False alarm during stimulus (too fast). Cancelled current stimulus.');
+      setShowStimulus(false);
+
+      const now = Date.now();
+      const penaltyDelay = 1000;
+
+      // IMPORTANT: Update scheduled time so subsequent clicks count as false alarms
+      scheduledTimeRef.current = now + penaltyDelay;
+
+      const timerId = setTimeout(() => {
+        debugLog(`Penalty timeout fired (after fast response)`);
+        if (isComponentMounted.current && isActiveRef.current) {
+          showNextStimulus();
+        }
+      }, penaltyDelay);
+
+      nextStimulusTimeoutRef.current = timerId;
+      timersRef.current.push(timerId);
+
+      // Don't increment confirmed score, but increment index to retry or move on
+      // Let's increment index to move on so they don't get stuck on the same one forever
+      currentStimulusIndexRef.current += 1;
+      setCurrentStimulusIndex(currentStimulusIndexRef.current);
+      return;
+    }
+
+    // Case 2: Spamming before stimulus appears (Early Prediction)
+    // Check if a stimulus is currently scheduled
+    if (scheduledTimeRef.current && nextStimulusTimeoutRef.current) {
+      const now = Date.now();
+      const timeUntilStimulus = scheduledTimeRef.current - now;
+
+      // If stimulus is coming within the next second (1000ms)
+      if (timeUntilStimulus > 0 && timeUntilStimulus < 1000) {
+        debugLog(`False alarm: Stimulus was scheduled in ${timeUntilStimulus}ms (< 1s). Delaying to 1s.`);
+
+        // Clear existing timeout
+        clearTimeout(nextStimulusTimeoutRef.current);
+        nextStimulusTimeoutRef.current = null;
+
+        // Re-schedule with exactly 1s delay from now
+        const penaltyDelay = 1000;
+        scheduledTimeRef.current = now + penaltyDelay;
+
+        const timerId = setTimeout(() => {
+          debugLog(`Penalty timeout fired`);
+          if (isComponentMounted.current && isActiveRef.current) {
+            showNextStimulus();
+          }
+        }, penaltyDelay);
+
+        nextStimulusTimeoutRef.current = timerId;
+        timersRef.current.push(timerId);
+      } else {
+        debugLog(`False alarm: Stimulus not imminent (${timeUntilStimulus}ms). No penalty applied.`);
+      }
+    } else {
+      debugLog('False alarm: No stimulus scheduled. No penalty applied.');
+    }
+  };
+
   // Handle reaction to stimulus
   const handleReaction = () => {
     if (!isComponentMounted.current) {
@@ -317,10 +390,19 @@ const ReactionTimeTest = ({
     }
 
     const reactionTime = Date.now() - stimulusStartTime.current;
+
+    // Spam protection: ignore reaction times faster than 100ms
+    if (reactionTime < 100) {
+      debugLog(`Reaction ignored - too fast (${reactionTime}ms < 100ms) - likely spam or prediction`);
+      handleFalseAlarm(); // Treat as false alarm
+      return;
+    }
+
     debugLog(`User reacted to stimulus ${currentStimulusIndexRef.current + 1} in ${reactionTime}ms`);
 
     setReactionTimes(prev => [...prev, reactionTime]);
     setShowStimulus(false);
+    scheduledTimeRef.current = null; // Clear scheduled time
 
     // Show fixation cross
     setShowFixation(true);
@@ -358,9 +440,15 @@ const ReactionTimeTest = ({
     if (e.code === 'Space') {
       debugLog(`Space key pressed, stimulus shown: ${showStimulus}, game active: ${isActive}`);
 
-      if (showStimulus && isActive) {
-        debugLog('Spacebar pressed for stimulus response');
-        handleReaction();
+      if (isActive) {
+        if (showStimulus) {
+          debugLog('Spacebar pressed for stimulus response');
+          handleReaction();
+        } else {
+          // Stimulus not shown, check for false alarm
+          debugLog('Spacebar pressed without stimulus - checking false alarm');
+          handleFalseAlarm();
+        }
       }
     }
   };
@@ -419,19 +507,19 @@ const ReactionTimeTest = ({
 
     // Start the game timer - only for displaying a countdown, game ends when all stimuli complete
     if (duration) {
-    gameTimerRef.current = setInterval(() => {
-      if (!isComponentMounted.current) return;
+      gameTimerRef.current = setInterval(() => {
+        if (!isComponentMounted.current) return;
 
-      setTimeRemaining(prev => {
-        const newTime = prev - 100;
-        if (newTime <= 0) {
-          debugLog('Time expired, ending game');
-          endGame();
-          return 0;
-        }
-        return newTime;
-      });
-    }, 100);
+        setTimeRemaining(prev => {
+          const newTime = prev - 100;
+          if (newTime <= 0) {
+            debugLog('Time expired, ending game');
+            endGame();
+            return 0;
+          }
+          return newTime;
+        });
+      }, 100);
     }
 
     // Use a smaller delay to ensure isActive has been applied before scheduling
@@ -594,7 +682,21 @@ const ReactionTimeTest = ({
       });
 
       setScoreSaved(true);
+      setScoreSaved(true);
       setShowSaveForm(false);
+    };
+
+    const handleExportData = () => {
+      if (reactionTimes.length === 0) return;
+
+      const data = reactionTimes.map((rt, index) => ({
+        trial: index + 1,
+        reactionTimeMs: rt,
+        reactionTimeSec: (rt / 1000).toFixed(3)
+      }));
+
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+      downloadCSV(data, `reaction_time_results_${timestamp}`);
     };
 
     return (
@@ -823,6 +925,21 @@ const ReactionTimeTest = ({
 
           <div style={{ display: 'flex', gap: '15px', justifyContent: 'center', marginTop: '20px' }}>
             <button
+              onClick={handleExportData}
+              style={{
+                backgroundColor: '#17a2b8',
+                color: 'white',
+                padding: '10px 20px',
+                fontSize: '16px',
+                cursor: 'pointer',
+                border: 'none',
+                borderRadius: '4px'
+              }}
+            >
+              Export Data
+            </button>
+
+            <button
               onClick={handleReturn}
               style={{
                 backgroundColor: '#4CAF50',
@@ -987,18 +1104,40 @@ const ReactionTimeTest = ({
           />
         )}
 
+        {!showStimulus && !showFixation && (
+          <div
+            onClick={handleFalseAlarm}
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              width: '100%',
+              height: '100%',
+              cursor: 'pointer'
+            }}
+          >
+            <div style={{
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+              height: '100%'
+            }}>
+              <p style={{ pointerEvents: 'none' }}>{t('reactionTest.getReady', 'Get ready for the next stimulus...')}</p>
+            </div>
+          </div>
+        )}
+
         {showFixation && (
           <div style={{
             fontSize: '40px',
-            fontWeight: 'bold'
+            fontWeight: 'bold',
+            pointerEvents: 'none' // Prevent clicks on fixation cross from triggering anything
           }}>
             +
           </div>
         )}
 
-        {!showStimulus && !showFixation && (
-          <p>{t('reactionTest.getReady', 'Get ready for the next stimulus...')}</p>
-        )}
+        {/* Duplicate removed */}
       </div>
 
       <p style={{ marginTop: '20px' }}>

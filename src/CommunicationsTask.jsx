@@ -459,6 +459,24 @@ const CommunicationsTask = forwardRef(({
           setTimeout(() => {
             try {
               const fallbackAudio = new Audio(fallbackFile);
+              // Set a short duration for the fallback sound to avoid long delays
+              fallbackAudio.currentTime = 0;
+              
+              // Helper to stop after 2 seconds
+              const stopAfterDuration = () => {
+                setTimeout(() => {
+                  try {
+                    fallbackAudio.pause();
+                    // Manually trigger ended event
+                    if (fallbackAudio.onended) fallbackAudio.onended();
+                  } catch (e) {
+                    console.warn('Error stopping fallback audio:', e);
+                  }
+                }, 2000);
+              };
+
+              fallbackAudio.onplay = stopAfterDuration;
+              
               fallbackAudio.play()
                 .then(() => {
                   console.log(`[AUDIO] Fallback audio playing for message: ${msg.id}`);
@@ -1435,9 +1453,13 @@ const CommunicationsTask = forwardRef(({
 
   // Remove the old 1000ms reset timer
   useEffect(() => {
+    if (isPaused) {
+      onMetricsUpdate?.({ healthImpact: 0, systemLoad: 0 });
+      return;
+    }
     // Only update metrics when health impact changes
     onMetricsUpdate?.({ healthImpact, systemLoad });
-  }, [healthImpact, systemLoad]);
+  }, [healthImpact, systemLoad, isPaused, onMetricsUpdate]);
 
   // Add getMetrics function to expose current health and load values
   const getMetrics = () => ({

@@ -179,12 +179,16 @@ const SystemHealth = forwardRef(({
   useEffect(() => {
     const logInterval = setInterval(() => {
       if (onPerformanceUpdate) {
-        onPerformanceUpdate({
+        const performanceData = {
           timestamp: new Date().toISOString(),
           health: internalHealthRef.current,
-          load: systemLoad,
-          // Include breakup of load if needed
-        });
+          load: systemLoad
+        };
+        // Log sample data for debugging
+        if (Math.random() < 0.1) { // 10% sample rate
+          console.log('Performance update:', performanceData);
+        }
+        onPerformanceUpdate(performanceData);
       }
     }, 1000);
     return () => clearInterval(logInterval);

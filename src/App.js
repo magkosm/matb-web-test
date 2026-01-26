@@ -313,11 +313,8 @@ function App() {
       }
       systemHealthValueRef.current = 100;
 
-      // Force task unpausing after reset
-      setTimeout(() => {
-        eventService.resumeAllTasks();
-        console.log('All tasks resumed after reset');
-      }, 200);
+      // Don't auto-resume tasks here - let game components control their own pause state
+      console.log('All tasks reset - pause control remains with game component');
     }, 200);
   }, []);
 
@@ -374,9 +371,15 @@ function App() {
           console.warn('Resource task not available for reset');
         }
 
-        // Ensure all tasks are unpaused after initialization
+        // For normal/custom mode, DON'T auto-resume - let NormalModeGame/CustomModeGame control pause state
+        // This prevents the game from running during instruction overlay
+        console.log('Game mode started - pause control handed to game component');
+      }, 300);
+    } else if (mode === 'testing') {
+      // For testing mode, resume tasks since there's no instruction overlay
+      setTimeout(() => {
         eventService.resumeAllTasks();
-        console.log('Tasks resumed after game start');
+        console.log('Testing mode - tasks resumed');
       }, 300);
     }
   }, [resetAllTasksToDefault]);

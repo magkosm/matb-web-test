@@ -147,6 +147,7 @@ function ResourceManagementTaskComponent({
   const [healthImpact, setHealthImpact] = useState(0);
   const [systemLoad, setSystemLoad] = useState(0);
   const [currentDifficulty, setCurrentDifficulty] = useState(difficulty);
+  const [isPaused, setIsPaused] = useState(false);
   const pumpTimeoutsRef = useRef({});
 
   // Calculate and store positions of tanks and pumps
@@ -212,8 +213,41 @@ function ResourceManagementTaskComponent({
     return positions;
   };
 
+  // Modify togglePump to be more robust - DEFINE BEFORE handleKeyPress
+  const togglePump = useCallback((pumpId) => {
+    if (isPaused) return;
+
+    // console.log(`Attempting to toggle pump ${pumpId}`, {
+    //   currentState: pumps[pumpId]?.state,
+    //   isFailed: failures.has(pumpId)
+    // });
+
+    // Check both the failures Set and the pump's state
+    if (failures.has(pumpId) || pumps[pumpId]?.state === 'failure') {
+      // console.log(`Cannot toggle pump ${pumpId} - failed`);
+      return;
+    }
+
+    setPumps(prev => {
+      const pump = prev[pumpId];
+      if (!pump) return prev;
+
+      const newState = pump.state === 'on' ? 'off' : 'on';
+      // console.log(`Toggling pump ${pumpId} from ${pump.state} to ${newState}`);
+
+      return {
+        ...prev,
+        [pumpId]: {
+          ...pump,
+          state: newState
+        }
+      };
+    });
+  }, [isPaused, failures, pumps]);
+
   // Handle keyboard controls
   const handleKeyPress = useCallback((event) => {
+    if (isPaused) return;
     const key = event.key;
     if (/[1-8]/.test(key)) {
       const pumpId = key;
@@ -221,7 +255,7 @@ function ResourceManagementTaskComponent({
         togglePump(pumpId);
       }
     }
-  }, [failures]);
+  }, [failures, isPaused, togglePump]);
 
   // Add keyboard event listeners
   useEffect(() => {
@@ -233,7 +267,7 @@ function ResourceManagementTaskComponent({
 
   // Schedule pump failures based on EPM
   useEffect(() => {
-    if (!isEnabled || !autoEvents) return; // Skip if autoEvents is false
+    if (!isEnabled || !autoEvents || isPaused) return; // Skip if autoEvents is false or paused
 
     const failureInterval = setInterval(() => {
       const workingPumps = Object.keys(pumps).filter(id =>
@@ -327,7 +361,7 @@ function ResourceManagementTaskComponent({
     }, 1000);
 
     return () => clearInterval(failureInterval);
-  }, [failures, pumps, repairingPumps, eventsPerMinute, isEnabled, autoEvents]);
+  }, [failures, pumps, repairingPumps, eventsPerMinute, isEnabled, autoEvents, isPaused]);
 
   // Add debug logging for loss rate
   useEffect(() => {
@@ -338,36 +372,6 @@ function ResourceManagementTaskComponent({
     //   tankBLoss: tanks.b.lossPerMinute * lossMultiplier
     // });
   }, [difficulty, lossMultiplier]);
-
-  // Modify togglePump to be more robust
-  const togglePump = (pumpId) => {
-    // console.log(`Attempting to toggle pump ${pumpId}`, {
-    //   currentState: pumps[pumpId]?.state,
-    //   isFailed: failures.has(pumpId)
-    // });
-
-    // Check both the failures Set and the pump's state
-    if (failures.has(pumpId) || pumps[pumpId]?.state === 'failure') {
-      // console.log(`Cannot toggle pump ${pumpId} - failed`);
-      return;
-    }
-
-    setPumps(prev => {
-      const pump = prev[pumpId];
-      if (!pump) return prev;
-
-      const newState = pump.state === 'on' ? 'off' : 'on';
-      // console.log(`Toggling pump ${pumpId} from ${pump.state} to ${newState}`);
-
-      return {
-        ...prev,
-        [pumpId]: {
-          ...pump,
-          state: newState
-        }
-      };
-    });
-  };
 
   // Add debug logging for pump operations
   useEffect(() => {
@@ -400,6 +404,13 @@ function ResourceManagementTaskComponent({
 
     const interval = setInterval(() => {
       const now = Date.now();
+
+      // If paused, just update the timestamp and skip processing
+      if (isPaused) {
+        setLastUpdate(now);
+        return;
+      }
+
       const deltaTime = (now - lastUpdate) / 1000;
 
       setTanks(prevTanks => {
@@ -447,7 +458,7 @@ function ResourceManagementTaskComponent({
     }, 100);
 
     return () => clearInterval(interval);
-  }, [pumps, lastUpdate, failures, lossMultiplier, isEnabled]);
+  }, [pumps, lastUpdate, failures, lossMultiplier, isEnabled, isPaused]);
 
   // Add to your existing state declarations
   const logRow = useCallback((row) => {
@@ -463,6 +474,8 @@ function ResourceManagementTaskComponent({
 
   // Add logging to your existing tank level updates
   useEffect(() => {
+    if (isPaused) return;
+
     const now = Date.now();
 
     // Only log if 1 second has passed since last log AND the task is enabled
@@ -555,7 +568,17 @@ function ResourceManagementTaskComponent({
   // Expose resetTask to ref
   useImperativeHandle(ref, () => ({
     resetTask,
+    togglePause: () => {
+      setIsPaused(prev => !prev);
+      return !isPaused;
+    },
+    setPause: (shouldPause) => {
+      setIsPaused(shouldPause);
+      return shouldPause;
+    },
+    isPaused: () => isPaused,
     triggerPumpFailure: (config) => {
+      if (isPaused) return false;
       try {
         const { pumpId, duration } = config;
 
@@ -660,6 +683,7 @@ function ResourceManagementTaskComponent({
       });
     },
     triggerMultiplePumpFailures: (config) => {
+      if (isPaused) return false;
       try {
         const { count, duration } = config;
 
@@ -764,6 +788,7 @@ function ResourceManagementTaskComponent({
       }
     },
     setFuelLossRate: (multiplier, duration) => {
+      if (isPaused) return false;
       try {
         // Validate multiplier (0.1 to 5.0)
         const validMultiplier = Math.min(5.0, Math.max(0.1, multiplier || 1.0));
@@ -902,8 +927,13 @@ function ResourceManagementTaskComponent({
 
   // Modify the metrics update effect
   useEffect(() => {
-    if (!isEnabled) {
-      onMetricsUpdate?.({ healthImpact: 0, systemLoad: 0 });
+    if (!isEnabled || isPaused) {
+      if (!isEnabled) {
+        onMetricsUpdate?.({ healthImpact: 0, systemLoad: 0 });
+      } else {
+        // If paused, also send 0 metrics
+        onMetricsUpdate?.({ healthImpact: 0, systemLoad: 0 });
+      }
       return;
     }
 

@@ -28,32 +28,37 @@ const PerformancePlot = ({ data, title = "System Performance" }) => {
     const chartData = useMemo(() => {
         if (!data || data.length === 0) return null;
 
-        // No decimation - show all data points and allow scrolling
+        // Use a subset of data if we're not using decimation plugin
+        // For large datasets, chart.js can be slow without decimation
+        const displayData = data; 
+
         return {
-            labels: data.map(d => {
+            labels: displayData.map(d => {
                 const date = new Date(d.time);
                 return `${date.getMinutes()}:${date.getSeconds().toString().padStart(2, '0')}`;
             }),
             datasets: [
                 {
                     label: 'System Load',
-                    data: data.map(d => d.systemLoad || 0),
+                    data: displayData.map(d => d.systemLoad || 0),
                     borderColor: 'rgb(255, 99, 132)',
                     backgroundColor: 'rgba(255, 99, 132, 0.2)',
                     fill: true,
-                    tension: 0.2
+                    tension: 0.2,
+                    pointRadius: 0 // Hide points for cleaner look on large datasets
                 },
                 {
                     label: 'Health Impact',
-                    data: data.map(d => d.healthImpact || 0),
+                    data: displayData.map(d => d.healthImpact || 0),
                     borderColor: 'rgb(53, 162, 235)',
                     backgroundColor: 'rgba(53, 162, 235, 0.2)',
                     fill: true,
-                    tension: 0.2
+                    tension: 0.2,
+                    pointRadius: 0
                 }
             ]
         };
-    }, [data]);
+    }, [data]); // Only re-calculate when data prop changes
 
     const options = {
         responsive: true,

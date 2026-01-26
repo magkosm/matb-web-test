@@ -1,7 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import ScoreboardService from '../services/ScoreboardService';
 
 const ScoreSaveForm = ({ score, mode, onSaved, onSkip }) => {
+  const { t } = useTranslation();
   const [playerName, setPlayerName] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
@@ -50,12 +52,12 @@ const ScoreSaveForm = ({ score, mode, onSaved, onSkip }) => {
       color: 'white',
       pointerEvents: 'auto'
     }}>
-      <h3 style={{ textAlign: 'center', marginBottom: '15px' }}>New High Score!</h3>
+      <h3 style={{ textAlign: 'center', marginBottom: '15px' }}>{t('scoreboard.newHighScore', 'New High Score!')}</h3>
       
       <div style={{ textAlign: 'center', marginBottom: '20px' }}>
-        <div>Your score: <strong>{formatScore(score, mode)}</strong></div>
+        <div>{t('scoreboard.yourScore', 'Your score')}: <strong>{formatScore(score, mode)}</strong></div>
         <div style={{ fontSize: '0.8em', opacity: 0.7, marginTop: '5px' }}>
-          {mode === 'infinite' ? 'Time Survived' : 'Final Score'}
+          {mode === 'infinite' ? t('scoreboard.timeSurvived', 'Time Survived') : t('scoreboard.finalScore', 'Final Score')}
         </div>
       </div>
       
@@ -66,7 +68,7 @@ const ScoreSaveForm = ({ score, mode, onSaved, onSkip }) => {
               htmlFor="playerName" 
               style={{ display: 'block', marginBottom: '5px' }}
             >
-              Enter your name:
+              {t('scoreboard.enterName', 'Enter your name:')}
             </label>
             <input
               ref={inputRef}
@@ -74,7 +76,7 @@ const ScoreSaveForm = ({ score, mode, onSaved, onSkip }) => {
               type="text"
               value={playerName}
               onChange={(e) => setPlayerName(e.target.value)}
-              placeholder="Your Name"
+              placeholder={t('scoreboard.yourName', 'Your Name')}
               style={{
                 width: '100%',
                 padding: '8px',
@@ -110,7 +112,7 @@ const ScoreSaveForm = ({ score, mode, onSaved, onSkip }) => {
               }}
               disabled={isSaving}
             >
-              Skip
+              {t('common.skip', 'Skip')}
             </button>
             <button
               type="submit"
@@ -126,7 +128,7 @@ const ScoreSaveForm = ({ score, mode, onSaved, onSkip }) => {
               }}
               disabled={isSaving}
             >
-              {isSaving ? 'Saving...' : 'Save Score'}
+              {isSaving ? t('common.saving', 'Saving...') : t('scoreboard.saveScore', 'Save Score')}
             </button>
           </div>
         </form>
@@ -137,7 +139,7 @@ const ScoreSaveForm = ({ score, mode, onSaved, onSkip }) => {
           borderRadius: '5px',
           textAlign: 'center'
         }}>
-          Score saved successfully!
+          {t('scoreboard.scoreSaved', 'Score saved successfully!')}
         </div>
       )}
     </div>

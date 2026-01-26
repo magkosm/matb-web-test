@@ -41,6 +41,7 @@ const TrackingTask = forwardRef(({
   const [currentEventDuration, setCurrentEventDuration] = useState(0);
   const [eventStartTime, setEventStartTime] = useState(null);
   const [showMobileHelp, setShowMobileHelp] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
   const failureTimeoutRef = useRef(null);
   const logIntervalRef = useRef(null);
 
@@ -79,7 +80,7 @@ const TrackingTask = forwardRef(({
   // Enable both keyboard and touch/mouse listeners regardless of inputMode
   // But we still track inputMode for logging purposes
   useEffect(() => {
-    if (!isEnabled || !autoEvents) return;
+    if (!isEnabled || !autoEvents || isPaused) return;
 
     const scheduleNextFailure = () => {
       if (failureTimeoutRef.current) {
@@ -165,6 +166,8 @@ const TrackingTask = forwardRef(({
     }
 
     const interval = setInterval(() => {
+      if (isPaused) return;
+
       const now = Date.now();
       const _dt = now - lastUpdateRef.current; // Prefix with underscore since it's not used
       lastUpdateRef.current = now;
@@ -174,59 +177,61 @@ const TrackingTask = forwardRef(({
       const randomFactor = 0.4 * driftMultiplier;
       const difficultyScale = 1 + (difficultyToUse / 15); // Scales from 1.07 to 1.67
 
-          // Add random acceleration to drift
-          driftXRef.current += (Math.random() - 0.5) * randomFactor * difficultyScale;
-          driftYRef.current += (Math.random() - 0.5) * randomFactor * difficultyScale;
+      // Add random acceleration to drift
+      driftXRef.current += (Math.random() - 0.5) * randomFactor * difficultyScale;
+      driftYRef.current += (Math.random() - 0.5) * randomFactor * difficultyScale;
 
-          // Limit maximum drift velocity
-          driftXRef.current = Math.max(-maxDriftVelocity, Math.min(maxDriftVelocity, driftXRef.current));
-          driftYRef.current = Math.max(-maxDriftVelocity, Math.min(maxDriftVelocity, driftYRef.current));
+      // Limit maximum drift velocity
+      driftXRef.current = Math.max(-maxDriftVelocity, Math.min(maxDriftVelocity, driftXRef.current));
+      driftYRef.current = Math.max(-maxDriftVelocity, Math.min(maxDriftVelocity, driftYRef.current));
 
-          setCursorPosition(prev => {
-            let newX = prev.x + driftXRef.current * driftSpeed;
-            let newY = prev.y + driftYRef.current * driftSpeed;
+      setCursorPosition(prev => {
+        let newX = prev.x + driftXRef.current * driftSpeed;
+        let newY = prev.y + driftYRef.current * driftSpeed;
 
-            // Auto mode logic
-            if (isAuto) {
-              driftXRef.current -= (newX * 0.05);
-              driftYRef.current -= (newY * 0.05);
-              driftXRef.current *= 0.9;
-              driftYRef.current *= 0.9;
-            } else {
-              // Manual mode logic - Stronger user control
-              // Apply centering force (simulating user fighting the drift)
-              // This acts as "friction" or "control authority"
-              const controlAuthority = 0.02; // New parameter for stability
-              driftXRef.current *= (1.0 - controlAuthority);
-              driftYRef.current *= (1.0 - controlAuthority);
+        // Auto mode logic
+        if (isAuto) {
+          driftXRef.current -= (newX * 0.05);
+          driftYRef.current -= (newY * 0.05);
+          driftXRef.current *= 0.9;
+          driftYRef.current *= 0.9;
+        } else {
+          // Manual mode logic - Stronger user control
+          // Apply centering force (simulating user fighting the drift)
+          // This acts as "friction" or "control authority"
+          const controlAuthority = 0.02; // New parameter for stability
+          driftXRef.current *= (1.0 - controlAuthority);
+          driftYRef.current *= (1.0 - controlAuthority);
 
-              if (Math.abs(newX) > 25 || Math.abs(newY) > 25) {
-                const assistLevel = Math.max(0, 0.2 - (difficultyToUse / 100)); // Increased base assist from 0.15
-                driftXRef.current -= (newX / 100) * assistLevel;
-                driftYRef.current -= (newY / 100) * assistLevel;
-              }
-            }
+          if (Math.abs(newX) > 25 || Math.abs(newY) > 25) {
+            const assistLevel = Math.max(0, 0.2 - (difficultyToUse / 100)); // Increased base assist from 0.15
+            driftXRef.current -= (newX / 100) * assistLevel;
+            driftYRef.current -= (newY / 100) * assistLevel;
+          }
+        }
 
-            // Bounce off boundaries
-            const bounceEnergy = 0.8 + (difficultyToUse / 20); // Reduced bounce energy
-            if (Math.abs(newX) > 150) {
-              driftXRef.current = -driftXRef.current * bounceEnergy;
-              newX = Math.sign(newX) * 150;
-            }
-            if (Math.abs(newY) > 150) {
-              driftYRef.current = -driftYRef.current * bounceEnergy;
-              newY = Math.sign(newY) * 150;
-            }
+        // Bounce off boundaries
+        const bounceEnergy = 0.8 + (difficultyToUse / 20); // Reduced bounce energy
+        if (Math.abs(newX) > 150) {
+          driftXRef.current = -driftXRef.current * bounceEnergy;
+          newX = Math.sign(newX) * 150;
+        }
+        if (Math.abs(newY) > 150) {
+          driftYRef.current = -driftYRef.current * bounceEnergy;
+          newY = Math.sign(newY) * 150;
+        }
 
-            return { x: newX, y: newY };
-          });
-        }, 16);
+        return { x: newX, y: newY };
+      });
+    }, 16);
 
     return () => clearInterval(interval);
-  }, [isAuto, inputMode, automationFailure, isEnabled, difficulty, currentEventDifficulty]);
+  }, [isAuto, inputMode, automationFailure, isEnabled, difficulty, currentEventDifficulty, isPaused]);
 
   // Separate effect for logging system
   useEffect(() => {
+    if (isPaused) return;
+
     let animationFrameId;
 
     const generateLog = () => {
@@ -257,7 +262,7 @@ const TrackingTask = forwardRef(({
         frameRef.current = null;
       }
     };
-  }, [cursorPosition, isAuto, inputMode]);
+  }, [cursorPosition, isAuto, inputMode, isPaused]);
 
   // Separate effect JUST for parent updates
   useEffect(() => {
@@ -283,7 +288,7 @@ const TrackingTask = forwardRef(({
 
   // Keyboard input handling (separate from physics)
   useEffect(() => {
-    if (isAuto || inputMode !== 'keyboard' || !isEnabled) return;
+    if (isAuto || inputMode !== 'keyboard' || !isEnabled || isPaused) return;
 
     const keysPressed = new Set();
     const moveStep = 2;
@@ -326,11 +331,11 @@ const TrackingTask = forwardRef(({
 
   // Touch input handling - enabled alongside keyboard
   const handleTouchStart = useCallback((e) => {
-    if (isAuto) return;
+    if (isAuto || isPaused) return;
     // If user interacts with touch/mouse, update input mode for logging
     // We use the function form to avoid dependency on inputMode state
     setInputMode(prev => prev !== 'touch' ? 'touch' : prev);
-    
+
     e.preventDefault();
 
     // Get touch/click position relative to container center
@@ -363,16 +368,16 @@ const TrackingTask = forwardRef(({
 
         // Calculate movement based on drag distance from start point (joystick logic)
         const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
-        
+
         // Deadzone check
         if (distance > 5) {
           // Normalize vector
           const normalizedX = deltaX / distance;
           const normalizedY = deltaY / distance;
-          
+
           // Scale speed by distance (further drag = faster movement), capped at max speed
           const speedMultiplier = Math.min(distance / 50, 2.0); // Cap at 2x speed for 100px drag
-          
+
           return {
             x: Math.max(-150, Math.min(150, prev.x + normalizedX * moveStep * speedMultiplier)),
             y: Math.max(-150, Math.min(150, prev.y + normalizedY * moveStep * speedMultiplier))
@@ -384,7 +389,7 @@ const TrackingTask = forwardRef(({
   }, [isAuto]); // Removed inputMode dependency to prevent re-attaching listeners on mode switch
 
   const handleTouchMove = useCallback((e) => {
-    if (!touchStartRef.current || isAuto) return;
+    if (!touchStartRef.current || isAuto || isPaused) return;
     e.preventDefault();
 
     // Update current position for joystick calculations
@@ -562,7 +567,17 @@ const TrackingTask = forwardRef(({
       console.log('TrackingTask: Setting difficulty to', value);
       setCurrentEventDifficulty(value);
     },
+    togglePause: () => {
+      setIsPaused(prev => !prev);
+      return !isPaused;
+    },
+    setPause: (shouldPause) => {
+      setIsPaused(shouldPause);
+      return shouldPause;
+    },
+    isPaused: () => isPaused,
     forceManualControl: (config) => {
+      if (isPaused) return false;
       try {
         const { duration, difficulty } = config;
 
@@ -661,8 +676,13 @@ const TrackingTask = forwardRef(({
 
   // Add metrics calculation effect
   useEffect(() => {
-    if (!isEnabled) {
-      onMetricsUpdate?.(TrackingTask.getDefaultMetrics());
+    if (!isEnabled || isPaused) {
+      if (!isEnabled) {
+        onMetricsUpdate?.(TrackingTask.getDefaultMetrics());
+      } else {
+        // If paused, also send 0 metrics
+        onMetricsUpdate?.(TrackingTask.getDefaultMetrics());
+      }
       return;
     }
 
@@ -837,7 +857,7 @@ const TrackingTask = forwardRef(({
           }}>
             {isAuto ? 'AUTO' : 'MANUAL'}
           </div>
-          <div 
+          <div
             style={{
               padding: '3px',
               background: 'rgba(255,255,255,0.9)',

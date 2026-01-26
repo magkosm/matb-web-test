@@ -1,0 +1,312 @@
+import React, { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
+import { downloadCSV } from '../utils/csvExport';
+import {
+    Chart as ChartJS,
+    CategoryScale,
+    LinearScale,
+    PointElement,
+    LineElement,
+    Title,
+    Tooltip,
+    Legend,
+    Filler,
+    ArcElement
+} from 'chart.js';
+import { Line, Pie } from 'react-chartjs-2';
+
+// Register ChartJS components
+ChartJS.register(
+    CategoryScale,
+    LinearScale,
+    PointElement,
+    LineElement,
+    Title,
+    Tooltip,
+    Legend,
+    Filler,
+    ArcElement
+);
+
+const MatbResults = ({ logs, finalScore }) => {
+    const { t } = useTranslation();
+
+    /* console.log('MatbResults rendering with logs:', {
+        comm: logs?.comm?.length || 0,
+        resource: logs?.resource?.length || 0,
+        monitoring: logs?.monitoring?.length || 0,
+        tracking: logs?.tracking?.length || 0,
+        performance: logs?.performance?.length || 0
+    }); */
+
+    // Calculate accuracies for each task
+    const calculateAccuracy = (taskLogs, taskType) => {
+        if (!taskLogs || taskLogs.length === 0) {
+            return { correct: 0, incorrect: 0, accuracy: 0 };
+        }
+
+        let correct = 0;
+        let incorrect = 0;
+
+        if (taskType === 'comm') {
+            // For comms, check for 'HIT' or 'CR' (Correct Rejection) vs 'MISS' or 'FA'
+            taskLogs.forEach(log => {
+                if (log.Remarks === 'HIT' || log.Remarks === 'CR') correct++;
+                else if (log.Remarks === 'MISS' || log.Remarks === 'FA') incorrect++;
+            });
+        } else if (taskType === 'resource') {
+            // For resource, check tank range status (corrA && corrB)
+            // Only count logs that have corrA/corrB fields (not event logs)
+            taskLogs.forEach(log => {
+                if (log.corrA !== undefined && log.corrB !== undefined) {
+                    if (log.corrA && log.corrB) correct++;
+                    else incorrect++;
+                }
+            });
+        } else if (taskType === 'monitoring') {
+            // For monitoring, check type (HIT vs MISS/FA)
+            taskLogs.forEach(log => {
+                if (log.type === 'HIT') correct++;
+                else if (log.type === 'MISS' || log.type === 'FA') incorrect++;
+            });
+        } else if (taskType === 'tracking') {
+            // For tracking, check isWithinTarget - sample every 10th entry to avoid massive data
+            const sampledLogs = taskLogs.filter((_, index) => index % 10 === 0);
+            sampledLogs.forEach(log => {
+                if (log.isWithinTarget !== undefined) {
+                    if (log.isWithinTarget) correct++;
+                    else incorrect++;
+                }
+            });
+
+        }
+
+        const total = correct + incorrect;
+        return {
+            correct,
+            incorrect,
+            accuracy: total > 0 ? (correct / total) * 100 : 0
+        };
+    };
+
+    const commAccuracy = calculateAccuracy(logs.comm, 'comm');
+    const resourceAccuracy = calculateAccuracy(logs.resource, 'resource');
+    const monitoringAccuracy = calculateAccuracy(logs.monitoring, 'monitoring');
+    const trackingAccuracy = calculateAccuracy(logs.tracking, 'tracking');
+
+    // Prepare chart data for Performance (Load & Health)
+    const performanceChartData = useMemo(() => {
+        if (!logs.performance || logs.performance.length === 0) {
+            console.log('No performance data available');
+            return null;
+        }
+
+        console.log(`Performance data: ${logs.performance.length} entries`);
+        console.log('Sample performance entry:', logs.performance[0]);
+
+        return {
+            labels: logs.performance.map(d => {
+                // Use timestamp field
+                const timeVal = d.timestamp || d.time;
+                if (!timeVal) return '';
+                const dateObj = new Date(timeVal);
+                return `${dateObj.getMinutes()}:${dateObj.getSeconds().toString().padStart(2, '0')}`;
+            }),
+            datasets: [
+                {
+                    label: t('systemStatus.load', 'System Load'),
+                    data: logs.performance.map(d => Number(d.load) || Number(d.systemLoad) || 0),
+                    borderColor: 'rgb(255, 99, 132)',
+                    backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                    fill: true,
+                    tension: 0.2,
+                    yAxisID: 'y'
+                },
+                {
+                    label: t('systemStatus.health', 'System Health'),
+                    data: logs.performance.map(d => Number(d.health) || 0),
+                    borderColor: 'rgb(53, 162, 235)',
+                    backgroundColor: 'rgba(53, 162, 235, 0.2)',
+                    fill: true,
+                    tension: 0.2,
+                    yAxisID: 'y1'
+                }
+            ]
+        };
+    }, [logs.performance, t]);
+
+    const handleExportData = () => {
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+
+        // Export Performance Logs
+        if (logs.performance && logs.performance.length > 0) {
+            downloadCSV(logs.performance, `matb_performance_${timestamp}`);
+        }
+
+        // Export Task Logs
+        if (logs.comm && logs.comm.length > 0) {
+            downloadCSV(logs.comm, `matb_comm_logs_${timestamp}`);
+        }
+        if (logs.resource && logs.resource.length > 0) {
+            downloadCSV(logs.resource, `matb_resource_logs_${timestamp}`);
+        }
+        if (logs.monitoring && logs.monitoring.length > 0) {
+            downloadCSV(logs.monitoring, `matb_monitoring_logs_${timestamp}`);
+        }
+        if (logs.tracking && logs.tracking.length > 0) {
+            // Sample tracking logs if too large? 
+            // For now export all, but maybe user wants raw data.
+            downloadCSV(logs.tracking, `matb_tracking_logs_${timestamp}`);
+        }
+
+        // Create a summary CSV
+        const summaryData = [{
+            finalScore,
+            commAccuracy: commAccuracy.accuracy.toFixed(2),
+            resourceAccuracy: resourceAccuracy.accuracy.toFixed(2),
+            monitoringAccuracy: monitoringAccuracy.accuracy.toFixed(2),
+            trackingAccuracy: trackingAccuracy.accuracy.toFixed(2),
+            date: new Date().toLocaleString()
+        }];
+        downloadCSV(summaryData, `matb_summary_${timestamp}`);
+    };
+
+    const performanceOptions = {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: { position: 'top', labels: { color: 'white' } },
+            title: { display: true, text: 'System Performance Over Time', color: 'white' }
+        },
+        scales: {
+            y: {
+                type: 'linear',
+                display: true,
+                position: 'left',
+                min: 0,
+                max: 100,
+                title: { display: true, text: 'Load (%)', color: 'white' },
+                ticks: { color: 'white' },
+                grid: { color: 'rgba(255, 255, 255, 0.1)' }
+            },
+            y1: {
+                type: 'linear',
+                display: true,
+                position: 'right',
+                // min/max for health depends on if it's 0-100 or relative
+                // Assuming 0-100 for cumulative health
+                min: 0,
+                max: 100,
+                grid: { drawOnChartArea: false },
+                title: { display: true, text: 'Health (%)', color: 'white' },
+                ticks: { color: 'white' }
+            },
+            x: {
+                ticks: { color: 'white' },
+                grid: { color: 'rgba(255, 255, 255, 0.1)' }
+            }
+        }
+    };
+
+    // Helper for Pie Charts
+    const createPieData = (accData, label) => ({
+        labels: [t('common.correct', 'Correct'), t('common.incorrect', 'Incorrect')],
+        datasets: [
+            {
+                label,
+                data: [accData.correct, accData.incorrect],
+                backgroundColor: ['rgba(75, 192, 192, 0.6)', 'rgba(255, 99, 132, 0.6)'],
+                borderColor: ['rgba(75, 192, 192, 1)', 'rgba(255, 99, 132, 1)'],
+                borderWidth: 1,
+            },
+        ],
+    });
+
+    const pieOptions = {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: { position: 'bottom', labels: { color: 'white', boxWidth: 10, padding: 10 } },
+            title: { display: false }
+        }
+    };
+
+    return (
+        <div style={{ width: '100%', color: 'white' }}>
+            <div style={{ textAlign: 'center', marginBottom: '20px' }}>
+                <h2 style={{ margin: '0 0 10px 0' }}>{t('gameOver.finalScore')}: {finalScore}</h2>
+                <button
+                    onClick={handleExportData}
+                    style={{
+                        backgroundColor: '#4CAF50',
+                        color: 'white',
+                        padding: '10px 20px',
+                        fontSize: '16px',
+                        cursor: 'pointer',
+                        border: 'none',
+                        borderRadius: '4px'
+                    }}
+                >
+                    {t('scoreboard.saveScore')} (CSV)
+                </button>
+            </div>
+
+            {/* Performance Plot (Time) */}
+            <div style={{ height: '250px', marginBottom: '30px', background: 'rgba(255,255,255,0.05)', padding: '15px', borderRadius: '8px' }}>
+                {performanceChartData ? (
+                    <Line data={performanceChartData} options={performanceOptions} />
+                ) : (
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>No performance data</div>
+                )}
+            </div>
+
+            {/* Accuracy Pie Charts */}
+            <div style={{
+                display: 'flex',
+                flexDirection: 'row',
+                justifyContent: 'space-around',
+                flexWrap: 'wrap',
+                gap: '20px',
+                marginBottom: '30px'
+            }}>
+                {/* Communications */}
+                <div style={{ textAlign: 'center', flex: '1 1 150px', maxWidth: '200px' }}>
+                    <h4 style={{ fontSize: '14px', marginBottom: '10px' }}>{t('tasks.communications.title')}</h4>
+                    <div style={{ height: '150px' }}>
+                        <Pie data={createPieData(commAccuracy, 'Comms')} options={pieOptions} />
+                    </div>
+                    <p style={{ fontSize: '12px', marginTop: '5px' }}>{commAccuracy.accuracy.toFixed(1)}%</p>
+                </div>
+
+                {/* Monitoring */}
+                <div style={{ textAlign: 'center', flex: '1 1 150px', maxWidth: '200px' }}>
+                    <h4 style={{ fontSize: '14px', marginBottom: '10px' }}>{t('tasks.monitoring.title')}</h4>
+                    <div style={{ height: '150px' }}>
+                        <Pie data={createPieData(monitoringAccuracy, 'Monitoring')} options={pieOptions} />
+                    </div>
+                    <p style={{ fontSize: '12px', marginTop: '5px' }}>{monitoringAccuracy.accuracy.toFixed(1)}%</p>
+                </div>
+
+                {/* Tracking */}
+                <div style={{ textAlign: 'center', flex: '1 1 150px', maxWidth: '200px' }}>
+                    <h4 style={{ fontSize: '14px', marginBottom: '10px' }}>{t('tasks.tracking.title')}</h4>
+                    <div style={{ height: '150px' }}>
+                        <Pie data={createPieData(trackingAccuracy, 'Tracking')} options={pieOptions} />
+                    </div>
+                    <p style={{ fontSize: '12px', marginTop: '5px' }}>{trackingAccuracy.accuracy.toFixed(1)}%</p>
+                </div>
+
+                {/* Resource */}
+                <div style={{ textAlign: 'center', flex: '1 1 150px', maxWidth: '200px' }}>
+                    <h4 style={{ fontSize: '14px', marginBottom: '10px' }}>{t('tasks.resource.title')}</h4>
+                    <div style={{ height: '150px' }}>
+                        <Pie data={createPieData(resourceAccuracy, 'Resource')} options={pieOptions} />
+                    </div>
+                    <p style={{ fontSize: '12px', marginTop: '5px' }}>{resourceAccuracy.accuracy.toFixed(1)}%</p>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+export default MatbResults;

@@ -8,6 +8,9 @@
     "yes": "Yes",
     "no": "No",
     "ok": "OK",
+    "correct": "Correct",
+    "incorrect": "Incorrect",
+    "skip": "Skip",
     "difficulty": "Difficulty",
     "duration": "Duration",
     "settings": "Settings",
@@ -81,6 +84,8 @@
     "presets": "Presets",
     "cognitiveTests": "Cognitive Tests",
     "trainingPresets": "Training Modes",
+    "quickMATB": "Quick MATB Test",
+    "5minRun": "5-Minute Run",
     "2minTest": "Quick Test (2 min)",
     "2minDesc": "Quick validation run with all tasks enabled.",
     "standardRun": "Standard 10-Minute Run",
@@ -98,6 +103,11 @@
     "finalScore": "Final Score",
     "timeSurvived": "Duration Completed",
     "scoreSaved": "Performance data saved",
+    "newHighScore": "New High Score!",
+    "yourScore": "Your score",
+    "enterName": "Enter your name:",
+    "yourName": "Your Name",
+    "saveScore": "Save Score",
     "anonymous": "Anonymous"
   },
   "backgroundSelector": {
@@ -134,7 +144,6 @@
     "quickStart": "Quick Start Reaction Test",
     "tryAgain": "Try Again",
     "noReactionTimes": "No reaction times recorded",
-    "quickStart": "Quick Start Reaction Test",
     "limitByStimuli": "Limit by Stimuli",
     "limitByTime": "Limit by Time"
   },

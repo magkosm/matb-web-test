@@ -4,6 +4,8 @@ import { Bar } from 'react-chartjs-2';
 import { useTranslation } from 'react-i18next';
 import ScoreboardService from '../services/ScoreboardService';
 
+import { downloadCSV } from '../utils/csvExport';
+
 // Register ChartJS components
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, Title, Tooltip, Legend);
 
@@ -214,6 +216,7 @@ const NBackTest = ({
   const audioRef = useRef(null);
   // Add a ref to track current audio state for intervals/timeouts
   const audioActiveRef = useRef(audioEnabled);
+  const stimulusTimestampRef = useRef(0);
 
   // Available letters for nBack
   const nBackLetters = ['C', 'H', 'K', 'N', 'R', 'W', 'X', 'Y'];
@@ -323,7 +326,8 @@ const NBackTest = ({
       {
         dimension,
         correct: isMatch,
-        stimulusIndex: currentStimulus
+        stimulusIndex: currentStimulus,
+        rt: Date.now() - stimulusTimestampRef.current
       }
     ]);
   }, [testStarted, currentStimulus, n, design]);
@@ -453,6 +457,9 @@ const NBackTest = ({
 
     // Play letter sound using the shared function
     playLetterSound(letter);
+    
+    // Record timestamp
+    stimulusTimestampRef.current = Date.now();
   };
 
   // presentStimulus removed as use of presentStimulusDirect is preferred to avoid audio glitching
@@ -508,8 +515,8 @@ const NBackTest = ({
 
     // Create a fresh results object
     const newResults = {
-      dim1: { hits: 0, misses: 0, correctRejections: 0, falseAlarms: 0 },
-      dim2: { hits: 0, misses: 0, correctRejections: 0, falseAlarms: 0 }
+      dim1: { hits: 0, misses: 0, correctRejections: 0, falseAlarms: 0, totalRT: 0, hitCount: 0 },
+      dim2: { hits: 0, misses: 0, correctRejections: 0, falseAlarms: 0, totalRT: 0, hitCount: 0 }
     };
 
     // Counters for design targets
@@ -542,6 +549,8 @@ const NBackTest = ({
         if (dim1Response) {
           // User responded - HIT
           newResults.dim1.hits++;
+          newResults.dim1.totalRT += dim1Response.rt;
+          newResults.dim1.hitCount++;
           if (DEBUG_MODE) console.log(`Letter HIT at trial ${i}`);
         } else {
           // User did not respond - MISS
@@ -569,6 +578,8 @@ const NBackTest = ({
         if (dim2Response) {
           // User responded - HIT
           newResults.dim2.hits++;
+          newResults.dim2.totalRT += dim2Response.rt;
+          newResults.dim2.hitCount++;
           if (DEBUG_MODE) console.log(`Position HIT at trial ${i}`);
         } else {
           // User did not respond - MISS
@@ -588,6 +599,14 @@ const NBackTest = ({
         }
       }
     }
+
+    // Calculate average RT
+    const dim1AvgRT = newResults.dim1.hitCount > 0 ? newResults.dim1.totalRT / newResults.dim1.hitCount : 0;
+    const dim2AvgRT = newResults.dim2.hitCount > 0 ? newResults.dim2.totalRT / newResults.dim2.hitCount : 0;
+    
+    // Add to results
+    newResults.dim1.avgRT = dim1AvgRT;
+    newResults.dim2.avgRT = dim2AvgRT;
 
     if (DEBUG_MODE) {
       console.log('Final metrics:');
@@ -784,7 +803,11 @@ const NBackTest = ({
       dim1HitRate: dim1HitRate.toFixed(2),
       dim1FaRate: dim1FaRate.toFixed(2),
       dim2HitRate: dim2HitRate.toFixed(2),
-      dim2FaRate: dim2FaRate.toFixed(2)
+      dim2FaRate: dim2FaRate.toFixed(2),
+      
+      // Reaction Times
+      dim1AvgRT: calculatedResults.dim1.avgRT.toFixed(0),
+      dim2AvgRT: calculatedResults.dim2.avgRT.toFixed(0)
     };
   };
 
@@ -1011,6 +1034,79 @@ const NBackTest = ({
     );
   };
 
+  const handleExportData = () => {
+    // Generate row-by-row data for export
+    const exportData = [];
+    
+    // Process each trial
+    for (let i = 0; i < trials; i++) {
+      const trialData = {
+        trial: i + 1,
+        isMemorization: i < n,
+        letter: '---',
+        position: '---',
+        targetLetter: false,
+        targetPosition: false,
+        responseLetter: false,
+        responsePosition: false,
+        correctLetter: 'N/A',
+        correctPosition: 'N/A'
+      };
+
+      // Get stimulus data if available
+      if (stimuli[0][i] && stimuli[1][i]) {
+        const letterIndex = stimuli[0][i] - 1;
+        const positionIndex = stimuli[1][i] - 1;
+        const positionMapping = [0, 1, 2, 3, 5, 6, 7, 8];
+        
+        if (letterIndex >= 0 && letterIndex < nBackLetters.length) {
+          trialData.letter = nBackLetters[letterIndex];
+        }
+        
+        if (positionIndex >= 0 && positionIndex < positionMapping.length) {
+          trialData.position = positionMapping[positionIndex];
+        }
+      }
+
+      // Get target status from design
+      if (i >= n && design[i]) {
+        trialData.targetLetter = design[i][0] === 1;
+        trialData.targetPosition = design[i][1] === 1;
+      }
+
+      // Get user responses
+      const letterResponse = responses.find(r => r.dimension === 0 && r.stimulusIndex === i);
+      const positionResponse = responses.find(r => r.dimension === 1 && r.stimulusIndex === i);
+      
+      trialData.responseLetter = !!letterResponse;
+        trialData.responsePosition = !!positionResponse;
+      
+      // Add RT to export
+      trialData.letterRT = letterResponse ? letterResponse.rt : '';
+      trialData.positionRT = positionResponse ? positionResponse.rt : '';
+
+      // Determine correctness
+      if (i >= n) {
+        if (trialData.targetLetter) {
+          trialData.correctLetter = trialData.responseLetter ? 'HIT' : 'MISS';
+        } else {
+          trialData.correctLetter = trialData.responseLetter ? 'FA' : 'CR';
+        }
+
+        if (trialData.targetPosition) {
+          trialData.correctPosition = trialData.responsePosition ? 'HIT' : 'MISS';
+        } else {
+          trialData.correctPosition = trialData.responsePosition ? 'FA' : 'CR';
+        }
+      }
+
+      exportData.push(trialData);
+    }
+
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    downloadCSV(exportData, `nback_results_${timestamp}`);
+  };
+
   // Display for test results
   const renderTestResults = () => {
     // Calculate results directly instead of using the results state
@@ -1120,7 +1216,7 @@ const NBackTest = ({
     return (
       <div style={styles.nbackResults}>
         <h2>N-Back Test Results</h2>
-        <p>Test completed with N = {n}</p>
+        <p>Test completed with N = {n} ({n}-back)</p>
 
         <div style={styles.resultsSection}>
           <h3>{t('nbackTest.traditionalAccuracy', 'Traditional Accuracy')}</h3>
@@ -1133,6 +1229,14 @@ const NBackTest = ({
               <tr style={styles.tableRow}>
                 <td style={styles.tableCell}>{t('nbackTest.positionAccuracy', 'Position Accuracy')}:</td>
                 <td style={styles.tableCell}>{metrics.dim2Accuracy}%</td>
+              </tr>
+              <tr style={styles.tableRow}>
+                <td style={styles.tableCell}>Letter Average RT:</td>
+                <td style={styles.tableCell}>{metrics.dim1AvgRT} ms</td>
+              </tr>
+              <tr style={styles.tableRow}>
+                <td style={styles.tableCell}>Position Average RT:</td>
+                <td style={styles.tableCell}>{metrics.dim2AvgRT} ms</td>
               </tr>
               <tr style={{ ...styles.tableRow, ...styles.overallScore }}>
                 <td style={styles.tableCell}>{t('nbackTest.overallAccuracy', 'Overall Accuracy')}:</td>
@@ -1237,6 +1341,12 @@ const NBackTest = ({
         )}
 
         <div style={styles.resultsActions}>
+          <button
+            style={{ ...styles.button, backgroundColor: '#17a2b8' }}
+            onClick={handleExportData}
+          >
+            Export Data
+          </button>
           <button
             style={styles.button}
             onClick={startNBackTest}

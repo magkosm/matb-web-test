@@ -460,6 +460,17 @@ class EventService {
     }
   }
 
+  // Helper method to get task ref by name
+  getTaskRef(taskName) {
+    switch (taskName) {
+      case 'comm': return this.commTaskRef;
+      case 'monitoring': return this.monitoringTaskRef;
+      case 'tracking': return this.trackingTaskRef;
+      case 'resource': return this.resourceTaskRef;
+      default: return null;
+    }
+  }
+
   // Check if a task is paused
   isTaskPaused(taskName) {
     // First check if the task is available
@@ -469,24 +480,7 @@ class EventService {
     }
 
     // Get the appropriate ref based on task name
-    let taskRef = null;
-    switch (taskName) {
-      case 'comm':
-        taskRef = this.commTaskRef;
-        break;
-      case 'monitoring':
-        taskRef = this.monitoringTaskRef;
-        break;
-      case 'tracking':
-        taskRef = this.trackingTaskRef;
-        break;
-      case 'resource':
-        taskRef = this.resourceTaskRef;
-        break;
-      default:
-        console.error(`isTaskPaused called with unknown task name: ${taskName}`);
-        return false;
-    }
+    const taskRef = this.getTaskRef(taskName);
 
     // Safety check
     if (!taskRef || !taskRef.current) {
@@ -498,7 +492,7 @@ class EventService {
       if (typeof taskRef.current.isPaused === 'function') {
         const paused = taskRef.current.isPaused();
         if (paused) {
-          console.log(`EventService: ${taskName} task is paused`);
+          // console.log(`EventService: ${taskName} task is paused`);
         }
         return paused;
       }
@@ -534,26 +528,20 @@ class EventService {
 
   // Toggle pause on a task
   toggleTaskPause(taskName) {
-    switch (taskName) {
-      case 'comm':
-        if (this.isTaskAvailable('comm') && typeof this.commTaskRef.current.togglePause === 'function') {
-          try {
-            const isPaused = this.commTaskRef.current.togglePause();
-            console.log(`EventService: Communications task ${isPaused ? 'paused' : 'resumed'}`);
-            return true;
-          } catch (error) {
-            console.error('EventService: Error toggling communications task pause state:', error);
-            return false;
-          }
-        } else {
-          console.warn('EventService: Cannot toggle pause - comm task reference unavailable or missing togglePause method');
-          return false;
-        }
+    const taskRef = this.getTaskRef(taskName);
 
-      // Add cases for other tasks here when they implement pause functionality
-      default:
-        console.warn(`EventService: Pause toggle not implemented for ${taskName}`);
+    if (this.isTaskAvailable(taskName) && taskRef && typeof taskRef.current.togglePause === 'function') {
+      try {
+        const isPaused = taskRef.current.togglePause();
+        console.log(`EventService: ${taskName} task ${isPaused ? 'paused' : 'resumed'}`);
+        return true;
+      } catch (error) {
+        console.error(`EventService: Error toggling ${taskName} task pause state:`, error);
         return false;
+      }
+    } else {
+      console.warn(`EventService: Cannot toggle pause - ${taskName} task reference unavailable or missing togglePause method`);
+      return false;
     }
   }
 
@@ -562,24 +550,33 @@ class EventService {
     console.log('EventService: Attempting to pause all tasks');
 
     let allPaused = true;
+    const tasks = ['comm', 'monitoring', 'tracking', 'resource'];
 
-    // Pause communications task
-    if (this.isTaskAvailable('comm') && typeof this.commTaskRef.current.togglePause === 'function') {
-      try {
-        // Only toggle if not already paused
-        if (!this.isTaskPaused('comm')) {
-          this.commTaskRef.current.togglePause();
-          console.log('EventService: Communications task paused');
+    tasks.forEach(taskName => {
+      const taskRef = this.getTaskRef(taskName);
+      if (this.isTaskAvailable(taskName) && taskRef && taskRef.current) {
+        try {
+          if (typeof taskRef.current.setPause === 'function') {
+            // Use explicit setPause if available
+            taskRef.current.setPause(true);
+            console.log(`EventService: ${taskName} task paused (explicit)`);
+          } else if (typeof taskRef.current.togglePause === 'function') {
+            // Fallback to toggle if setPause not available
+            // Only toggle if not already paused
+            if (!this.isTaskPaused(taskName)) {
+              taskRef.current.togglePause();
+              console.log(`EventService: ${taskName} task paused (toggled)`);
+            }
+          }
+        } catch (error) {
+          console.error(`EventService: Error pausing ${taskName} task:`, error);
+          allPaused = false;
         }
-      } catch (error) {
-        console.error('EventService: Error pausing communications task:', error);
-        allPaused = false;
+      } else if (this.isTaskAvailable(taskName)) {
+        // Task exists but doesn't support pause
+        // console.warn(`EventService: ${taskName} task does not support pause`);
       }
-    } else {
-      allPaused = false;
-    }
-
-    // TODO: Implement pause for other tasks when they support it
+    });
 
     return allPaused;
   }
@@ -589,24 +586,30 @@ class EventService {
     console.log('EventService: Attempting to resume all tasks');
 
     let allResumed = true;
+    const tasks = ['comm', 'monitoring', 'tracking', 'resource'];
 
-    // Resume communications task
-    if (this.isTaskAvailable('comm') && typeof this.commTaskRef.current.togglePause === 'function') {
-      try {
-        // Only toggle if currently paused
-        if (this.isTaskPaused('comm')) {
-          this.commTaskRef.current.togglePause();
-          console.log('EventService: Communications task resumed');
+    tasks.forEach(taskName => {
+      const taskRef = this.getTaskRef(taskName);
+      if (this.isTaskAvailable(taskName) && taskRef && taskRef.current) {
+        try {
+          if (typeof taskRef.current.setPause === 'function') {
+            // Use explicit setPause if available
+            taskRef.current.setPause(false);
+            console.log(`EventService: ${taskName} task resumed (explicit)`);
+          } else if (typeof taskRef.current.togglePause === 'function') {
+            // Fallback to toggle
+            // Only toggle if currently paused
+            if (this.isTaskPaused(taskName)) {
+              taskRef.current.togglePause();
+              console.log(`EventService: ${taskName} task resumed (toggled)`);
+            }
+          }
+        } catch (error) {
+          console.error(`EventService: Error resuming ${taskName} task:`, error);
+          allResumed = false;
         }
-      } catch (error) {
-        console.error('EventService: Error resuming communications task:', error);
-        allResumed = false;
       }
-    } else {
-      allResumed = false;
-    }
-
-    // TODO: Implement resume for other tasks when they support it
+    });
 
     return allResumed;
   }

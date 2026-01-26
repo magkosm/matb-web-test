@@ -65,6 +65,8 @@
     "presets": "Förinställningar",
     "cognitiveTests": "Kognitiva test",
     "trainingPresets": "Träningslägen",
+    "quickMATB": "Snabbt MATB-test",
+    "5minRun": "5-minuters körning",
     "2minTest": "Snabbtest (2 min)",
     "2minDesc": "Snabb valideringskörning med alla uppgifter aktiverade.",
     "standardRun": "Standard 10-minuters körning",

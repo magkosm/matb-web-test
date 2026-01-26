@@ -314,15 +314,12 @@ const MainMenu = ({ onStartGame, onExitApp, gameResults }) => {
               alignItems: 'center'
             }}
           >
-            <span style={{ fontWeight: 'bold' }}>{t('mainMenu.2minTest', '2-Minute Test (Short)')}</span>
-            <span style={{ fontSize: '12px', opacity: 0.8, marginTop: '5px' }}>
-              {t('mainMenu.2minDesc', 'Quick validation run with all tasks enabled.')}
-            </span>
+            <span style={{ fontWeight: 'bold' }}>{t('mainMenu.2minTest', '2-Minute Test')}</span>
           </button>
 
           <button
             onClick={() => {
-              onStartGame({ mode: 'normal', duration: 10 * 60 * 1000 });
+              onStartGame({ mode: 'normal', duration: 5 * 60 * 1000 });
               setShowPresetsModal(false);
             }}
             style={{
@@ -338,10 +335,28 @@ const MainMenu = ({ onStartGame, onExitApp, gameResults }) => {
               alignItems: 'center'
             }}
           >
+            <span style={{ fontWeight: 'bold' }}>{t('mainMenu.5minRun', '5-Minute Run')}</span>
+          </button>
+
+          <button
+            onClick={() => {
+              onStartGame({ mode: 'normal', duration: 10 * 60 * 1000 });
+              setShowPresetsModal(false);
+            }}
+            style={{
+              padding: '15px',
+              backgroundColor: '#17a2b8',
+              color: 'white',
+              border: 'none',
+              borderRadius: '5px',
+              cursor: 'pointer',
+              fontSize: '16px',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center'
+            }}
+          >
             <span style={{ fontWeight: 'bold' }}>{t('mainMenu.standardRun', 'Standard 10-Minute Run')}</span>
-            <span style={{ fontSize: '12px', opacity: 0.8, marginTop: '5px' }}>
-              {t('mainMenu.standardDesc', 'Full duration session for data collection.')}
-            </span>
           </button>
 
           <h3 style={{ margin: '10px 0 5px 0' }}>{t('mainMenu.trainingPresets', 'Training Modes')}</h3>
@@ -642,7 +657,7 @@ const MainMenu = ({ onStartGame, onExitApp, gameResults }) => {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
           {/* Main Quick Access Buttons */}
           <button
-            onClick={() => onStartGame({ mode: 'normal', duration: 5 * 60 * 1000 })}
+            onClick={() => window.location.href = `${process.env.PUBLIC_URL}/2min`}
             style={{
               padding: '15px 30px',
               fontSize: '18px',
@@ -657,7 +672,7 @@ const MainMenu = ({ onStartGame, onExitApp, gameResults }) => {
             onMouseOver={(e) => e.target.style.backgroundColor = '#0069d9'}
             onMouseOut={(e) => e.target.style.backgroundColor = '#007bff'}
           >
-            {t('mainMenu.standardRun', 'MATB-II (5 min)')}
+            {t('mainMenu.quickMATB', 'Quick MATB Test')}
           </button>
 
           <button
