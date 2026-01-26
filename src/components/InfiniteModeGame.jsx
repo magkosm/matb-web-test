@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import ScoreSaveForm from './ScoreSaveForm';
 import ScoreboardService from '../services/ScoreboardService';
 
@@ -7,6 +8,7 @@ const InfiniteModeGame = ({
   eventService,
   healthRef
 }) => {
+  const { t } = useTranslation();
   // Game state
   const [timeElapsed, setTimeElapsed] = useState(0);
   const [score, setScore] = useState(0);
@@ -233,7 +235,7 @@ const InfiniteModeGame = ({
       left: 0,
       width: '100%',
       pointerEvents: 'none',
-      zIndex: 1000
+      zIndex: 9999
     }}>
       <div style={{
         display: 'flex',
@@ -243,10 +245,10 @@ const InfiniteModeGame = ({
         color: 'white'
       }}>
         <div>
-          <strong>Time Survived: </strong>{formatTimeElapsed()}
+          <strong>{t('mainMenu.timeSurvived', 'Time Survived')}: </strong>{formatTimeElapsed()}
         </div>
         <div>
-          <strong>Health: </strong>{healthRef.current !== undefined ? Math.floor(healthRef.current) : 100}
+          <strong>{t('tasks.performance.health', 'Health')}: </strong>{healthRef.current !== undefined ? Math.floor(healthRef.current) : 100}
         </div>
         <button
           onClick={handleQuit}
@@ -260,7 +262,7 @@ const InfiniteModeGame = ({
             pointerEvents: 'auto'
           }}
         >
-          Quit Game
+          {t('gameOver.quit', 'Quit Game')}
         </button>
       </div>
 

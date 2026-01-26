@@ -23,8 +23,8 @@ const isMobileDevice = () => {
     (navigator.maxTouchPoints && navigator.maxTouchPoints > 1);
 };
 
-// Add helper function to get the saved input mode
-const getTrackingInputMode = () => {
+// Helper function to get the saved input mode (exported for use in MainMenu)
+export const getTrackingInputMode = () => {
   const savedMode = localStorage.getItem('trackingInputMode');
   if (savedMode && ['keyboard', 'touch'].includes(savedMode)) {
     return savedMode;
@@ -46,7 +46,16 @@ function App({ isSuiteMode = false, suiteParams = null, onSuiteEnd = null }) {
   const [startupParamsChecked, setStartupParamsChecked] = useState(false);
 
   // Main Menu state - we'll decide this after checking localStorage
-  const [showMainMenu, setShowMainMenu] = useState(true);
+  // Main Menu state - check localStorage synchronously for auto-start params to avoid flash
+  const [showMainMenu, setShowMainMenu] = useState(() => {
+    // If we're in suite mode or have start params, don't show menu initially
+    if (isSuiteMode) return false;
+    try {
+      return localStorage.getItem('matb_start_params') === null;
+    } catch {
+      return true;
+    }
+  });
 
   // Game mode state
   const [currentGameMode, setCurrentGameMode] = useState('testing');
@@ -55,7 +64,6 @@ function App({ isSuiteMode = false, suiteParams = null, onSuiteEnd = null }) {
 
   // Monitoring Task controls
   const [monitoringEPM, setMonitoringEPM] = useState(3);
-  const [showMonitoringLog, _setShowMonitoringLog] = useState(false); // Prefix with underscore to indicate intentionally unused
   const [monitoringDifficulty, setMonitoringDifficulty] = useState(5);
   const [isMonitoringTaskEnabled, setIsMonitoringTaskEnabled] = useState(true);
   const [monitoringAutoEvents, setMonitoringAutoEvents] = useState(false);
@@ -63,7 +71,6 @@ function App({ isSuiteMode = false, suiteParams = null, onSuiteEnd = null }) {
 
   // Communications Task controls
   const [commEPM, setCommEPM] = useState(COMM_CONFIG.DEFAULT_EPM);
-  const [showCommLog, _setShowCommLog] = useState(false); // Prefix with underscore to indicate intentionally unused
   const [commDifficulty, setCommDifficulty] = useState(5);
   const [isCommTaskEnabled, setIsCommTaskEnabled] = useState(true);
   const [commAutoEvents, setCommAutoEvents] = useState(false);
@@ -73,7 +80,6 @@ function App({ isSuiteMode = false, suiteParams = null, onSuiteEnd = null }) {
   // Resource Management controls
   const [resourceEPM, setResourceEPM] = useState(2);
   const [resourceDifficulty, setResourceDifficulty] = useState(5);
-  const [showResourceLog, _setShowResourceLog] = useState(false); // Prefix with underscore to indicate intentionally unused
   const [isResourceTaskEnabled, setIsResourceTaskEnabled] = useState(true);
   const [resourceAutoEvents, setResourceAutoEvents] = useState(false);
   const [resourceEventLog, setResourceEventLog] = useState([]);
@@ -86,7 +92,6 @@ function App({ isSuiteMode = false, suiteParams = null, onSuiteEnd = null }) {
   // Tracking Task controls
   const [trackingEPM, setTrackingEPM] = useState(2);
   const [trackingDifficulty, setTrackingDifficulty] = useState(5);
-  const [showTrackingLog, _setShowTrackingLog] = useState(false); // Prefix with underscore to indicate intentionally unused
   const [isTrackingTaskEnabled, setIsTrackingTaskEnabled] = useState(true);
   const [trackingAutoEvents, setTrackingAutoEvents] = useState(false);
   const [trackingEventLog, setTrackingEventLog] = useState([]);
@@ -99,7 +104,6 @@ function App({ isSuiteMode = false, suiteParams = null, onSuiteEnd = null }) {
   );
 
   // Sidebar control
-  const [_isSidebarOpen, setIsSidebarOpen] = useState(false); // Prefix with underscore to indicate intentionally unused
   const [isEventSidebarOpen, setIsEventSidebarOpen] = useState(false);
 
   // Add state for monitoring metrics
@@ -114,6 +118,7 @@ function App({ isSuiteMode = false, suiteParams = null, onSuiteEnd = null }) {
   // Handler for SystemHealth performance updates
   const handlePerformanceUpdate = useCallback((data) => {
     setSystemPerformanceLog(prev => [...prev, data]);
+    performanceLogRef.current = [...performanceLogRef.current, data];
   }, []);
 
   // Inside the App component, add a state for showing the background selector
@@ -127,6 +132,13 @@ function App({ isSuiteMode = false, suiteParams = null, onSuiteEnd = null }) {
   const systemHealthRef = useRef(null);
   const systemHealthValueRef = useRef(100);
 
+  // Log Refs to ensure we have the latest data at all times (especially for suite graduation)
+  const commLogRef = useRef([]);
+  const monitoringLogRef = useRef([]);
+  const trackingLogRef = useRef([]);
+  const resourceLogRef = useRef([]);
+  const performanceLogRef = useRef([]);
+
   // Task registration status
   const [tasksRegistered, setTasksRegistered] = useState(false);
 
@@ -139,9 +151,40 @@ function App({ isSuiteMode = false, suiteParams = null, onSuiteEnd = null }) {
   // Always use keyboard input mode
   const [trackingInputMode, setTrackingInputMode] = useState('keyboard'); // Default to keyboard input
 
+  // Handler for Monitoring logs
+  const handleMonitoringLogUpdate = useCallback((newEntry) => {
+    setMonitoringEventLog(prevLog => {
+      const updated = typeof newEntry === 'function' ? newEntry(prevLog) : newEntry;
+      monitoringLogRef.current = updated;
+      return updated;
+    });
+  }, []);
+
+  // Handler for Comm logs
+  const handleCommLogUpdate = useCallback((newEntry) => {
+    setCommEventLog(prevLog => {
+      const updated = typeof newEntry === 'function' ? newEntry(prevLog) : newEntry;
+      commLogRef.current = updated;
+      return updated;
+    });
+  }, []);
+
+  // Handler for Resource logs
+  const handleResourceLogUpdate = useCallback((newEntry) => {
+    setResourceEventLog(prevLog => {
+      const updated = typeof newEntry === 'function' ? newEntry(prevLog) : newEntry;
+      resourceLogRef.current = updated;
+      return updated;
+    });
+  }, []);
+
   // Custom handler to append Tracking logs
   const handleTrackingLogUpdate = useCallback((newEntry) => {
-    setTrackingEventLog(prevLog => [...prevLog, newEntry]);
+    setTrackingEventLog(prevLog => {
+      const updated = typeof newEntry === 'function' ? newEntry(prevLog) : newEntry;
+      trackingLogRef.current = updated;
+      return updated;
+    });
   }, []);
 
   // Handle resource metrics update
@@ -225,8 +268,9 @@ function App({ isSuiteMode = false, suiteParams = null, onSuiteEnd = null }) {
     // These refs need to be in the dependency array to ensure registration happens when they're available
   ]);
 
-  // Reset all tasks to default states
-  const resetAllTasksToDefault = useCallback(() => {
+  // Reset all tasks to default states - added isSuite parameter to skip timeouts
+  const resetAllTasksToDefault = useCallback((isSuite = false) => {
+    console.log(`resetAllTasksToDefault: isSuite=${isSuite}`);
     // Stop the event scheduler if running
     eventService.stopScheduler();
 
@@ -250,6 +294,13 @@ function App({ isSuiteMode = false, suiteParams = null, onSuiteEnd = null }) {
     setTrackingEventLog([]);
     setSystemPerformanceLog([]);
 
+    // Reset log refs
+    commLogRef.current = [];
+    monitoringLogRef.current = [];
+    resourceLogRef.current = [];
+    trackingLogRef.current = [];
+    performanceLogRef.current = [];
+
     // Reset task enablement
     setIsCommTaskEnabled(true);
     setIsMonitoringTaskEnabled(true);
@@ -263,63 +314,73 @@ function App({ isSuiteMode = false, suiteParams = null, onSuiteEnd = null }) {
     setResourceAutoEvents(false);
 
     // Reset sidebars
-    setIsSidebarOpen(false);
     setIsEventSidebarOpen(false);
 
     // Reset game mode state
     setGameResults(null);
 
     // Reset task components explicitly
-    // Use setTimeout to ensure this runs after state updates
-    setTimeout(() => {
-      console.log('Resetting all task components...');
-
-      // Reset Resource Management task (tanks)
-      if (resourceTaskRef.current && typeof resourceTaskRef.current.resetTask === 'function') {
-        resourceTaskRef.current.resetTask();
-        console.log('Resource task reset');
-      }
-
-      // Reset Communications task
-      if (commTaskRef.current) {
-        if (typeof commTaskRef.current.resetTask === 'function') {
-          commTaskRef.current.resetTask();
-          console.log('Communications task reset via resetTask');
-        } else if (typeof commTaskRef.current.reset === 'function') {
-          commTaskRef.current.reset();
-          console.log('Communications task reset via reset');
-        } else if (typeof commTaskRef.current.clearActiveMessage === 'function') {
-          commTaskRef.current.clearActiveMessage();
-          console.log('Communications task cleared active message');
-        }
-      }
-
-      // Reset Monitoring task
-      if (monitoringTaskRef.current && typeof monitoringTaskRef.current.resetTask === 'function') {
-        monitoringTaskRef.current.resetTask();
-        console.log('Monitoring task reset');
-      }
-
-      // Reset Tracking task
-      if (trackingTaskRef.current && typeof trackingTaskRef.current.resetTask === 'function') {
-        trackingTaskRef.current.resetTask();
-        console.log('Tracking task reset');
-      }
-
-      // Make sure system health is reset too
-      if (systemHealthRef.current && typeof systemHealthRef.current.resetHealth === 'function') {
-        systemHealthRef.current.resetHealth();
-        console.log('System health reset');
-      }
+    if (isSuite) {
+      // Synchronous reset for suite mode
+      console.log('Resetting task components synchronously for suite mode...');
+      if (resourceTaskRef.current?.resetTask) resourceTaskRef.current.resetTask();
+      if (commTaskRef.current?.resetTask) commTaskRef.current.resetTask();
+      if (monitoringTaskRef.current?.resetTask) monitoringTaskRef.current.resetTask();
+      if (trackingTaskRef.current?.resetTask) trackingTaskRef.current.resetTask();
+      if (systemHealthRef.current?.resetHealth) systemHealthRef.current.resetHealth();
       systemHealthValueRef.current = 100;
+    } else {
+      // Use setTimeout for regular mode to ensure this runs after state updates
+      setTimeout(() => {
+        console.log('Resetting all task components...');
 
-      // Don't auto-resume tasks here - let game components control their own pause state
-      console.log('All tasks reset - pause control remains with game component');
-    }, 200);
+        // Reset Resource Management task (tanks)
+        if (resourceTaskRef.current && typeof resourceTaskRef.current.resetTask === 'function') {
+          resourceTaskRef.current.resetTask();
+          console.log('Resource task reset');
+        }
+
+        // Reset Communications task
+        if (commTaskRef.current) {
+          if (typeof commTaskRef.current.resetTask === 'function') {
+            commTaskRef.current.resetTask();
+            console.log('Communications task reset via resetTask');
+          } else if (typeof commTaskRef.current.reset === 'function') {
+            commTaskRef.current.reset();
+            console.log('Communications task reset via reset');
+          } else if (typeof commTaskRef.current.clearActiveMessage === 'function') {
+            commTaskRef.current.clearActiveMessage();
+            console.log('Communications task cleared active message');
+          }
+        }
+
+        // Reset Monitoring task
+        if (monitoringTaskRef.current && typeof monitoringTaskRef.current.resetTask === 'function') {
+          monitoringTaskRef.current.resetTask();
+          console.log('Monitoring task reset');
+        }
+
+        // Reset Tracking task
+        if (trackingTaskRef.current && typeof trackingTaskRef.current.resetTask === 'function') {
+          trackingTaskRef.current.resetTask();
+          console.log('Tracking task reset');
+        }
+
+        // Make sure system health is reset too
+        if (systemHealthRef.current && typeof systemHealthRef.current.resetHealth === 'function') {
+          systemHealthRef.current.resetHealth();
+          console.log('System health reset');
+        }
+        systemHealthValueRef.current = 100;
+
+        // Don't auto-resume tasks here - let game components control their own pause state
+        console.log('All tasks reset - pause control remains with game component');
+      }, 200);
+    }
   }, []);
 
   // Function to handle starting the game from the main menu
-  const startGame = useCallback((options) => {
+  const startGame = useCallback((options, isSuite = false) => {
     // Get mode and duration from options
     const { mode, duration, taskConfig, trackingInputMode: menuInputMode } = options;
 
@@ -337,7 +398,7 @@ function App({ isSuiteMode = false, suiteParams = null, onSuiteEnd = null }) {
     }
 
     // Reset all tasks to their default states
-    resetAllTasksToDefault();
+    resetAllTasksToDefault(isSuite);
 
     // Set game mode and duration
     setCurrentGameMode(mode);
@@ -362,19 +423,24 @@ function App({ isSuiteMode = false, suiteParams = null, onSuiteEnd = null }) {
 
     // Reset all tanks explicitly for Normal Mode
     if (mode === 'normal' || mode === 'custom') {
-      // Use a small timeout to ensure components are mounted
-      setTimeout(() => {
-        if (resourceTaskRef.current && typeof resourceTaskRef.current.resetTask === 'function') {
-          console.log('Resetting all tanks for game mode');
-          resourceTaskRef.current.resetTask();
-        } else {
-          console.warn('Resource task not available for reset');
-        }
+      if (isSuite) {
+        // For suite mode, avoid further timeouts
+        if (resourceTaskRef.current?.resetTask) resourceTaskRef.current.resetTask();
+      } else {
+        // Use a small timeout to ensure components are mounted
+        setTimeout(() => {
+          if (resourceTaskRef.current && typeof resourceTaskRef.current.resetTask === 'function') {
+            console.log('Resetting all tanks for game mode');
+            resourceTaskRef.current.resetTask();
+          } else {
+            console.warn('Resource task not available for reset');
+          }
 
-        // For normal/custom mode, DON'T auto-resume - let NormalModeGame/CustomModeGame control pause state
-        // This prevents the game from running during instruction overlay
-        console.log('Game mode started - pause control handed to game component');
-      }, 300);
+          // For normal/custom mode, DON'T auto-resume - let NormalModeGame/CustomModeGame control pause state
+          // This prevents the game from running during instruction overlay
+          console.log('Game mode started - pause control handed to game component');
+        }, 300);
+      }
     } else if (mode === 'testing') {
       // For testing mode, resume tasks since there's no instruction overlay
       setTimeout(() => {
@@ -382,7 +448,20 @@ function App({ isSuiteMode = false, suiteParams = null, onSuiteEnd = null }) {
         console.log('Testing mode - tasks resumed');
       }, 300);
     }
-  }, [resetAllTasksToDefault]);
+  }, [
+    resetAllTasksToDefault,
+    setShowMainMenu,
+    setTasksRegistered,
+    resourceTaskRef,
+    setTrackingInputMode,
+    setCurrentGameMode,
+    setGameDuration,
+    setCustomGameConfig,
+    setIsCommTaskEnabled,
+    setIsMonitoringTaskEnabled,
+    setIsTrackingTaskEnabled,
+    setIsResourceTaskEnabled
+  ]);
 
   // Function to handle exiting to the main menu
   const exitToMainMenu = useCallback(() => {
@@ -410,7 +489,15 @@ function App({ isSuiteMode = false, suiteParams = null, onSuiteEnd = null }) {
     // Create a standardized result object with the mode included
     const standardizedResults = {
       ...results,
-      gameMode
+      gameMode,
+      // Inject logs for suite mode summary export - using REFS for absolute latest data
+      trialLogs: isSuiteMode ? {
+        comm: [...commLogRef.current],
+        resource: [...resourceLogRef.current],
+        monitoring: [...monitoringLogRef.current],
+        tracking: [...trackingLogRef.current],
+        performance: [...performanceLogRef.current]
+      } : null
     };
 
     // Update the game results state with the standardized object
@@ -503,8 +590,10 @@ function App({ isSuiteMode = false, suiteParams = null, onSuiteEnd = null }) {
   useEffect(() => {
     // Prioritize suite parameters if provided
     if (isSuiteMode && suiteParams) {
-      console.log('App: Initializing with suite parameters', suiteParams);
-      startGame(suiteParams);
+      if (startupParamsChecked) return;
+      console.log('App: Initializing with suite parameters IMMEDIATELY', suiteParams);
+      // Synchronous start for suite mode to avoid race conditions with component mount
+      startGame(suiteParams, true);
       setStartupParamsChecked(true);
       return;
     }
@@ -515,106 +604,79 @@ function App({ isSuiteMode = false, suiteParams = null, onSuiteEnd = null }) {
     try {
       const storedParams = localStorage.getItem('matb_start_params');
       if (storedParams) {
-        setIsInitializing(true); // Set initializing flag to prevent duplicate starts
-
+        setIsInitializing(true);
+        setShowMainMenu(false); // Hide menu immediately while preparing
         const startParams = JSON.parse(storedParams);
+        const { mode, duration, tasks } = startParams;
 
-        // Create task configuration object for custom mode
-        const createCustomTaskConfig = () => {
-          const { tasks } = startParams;
+        // Create task configuration object for custom mode (moved here to be accessible)
+        const generateTaskConfig = () => {
+          // Default all tasks to true if no task list provided, or filter based on list
+          const isEnabled = (taskKey) => !tasks || tasks.includes(taskKey);
+
           return {
             comm: {
-              isActive: tasks.includes('comm'),
+              isActive: isEnabled('comm'),
               eventsPerMinute: commEPM,
               difficulty: commDifficulty
             },
             monitoring: {
-              isActive: tasks.includes('monitoring'),
+              isActive: isEnabled('monitoring'),
               eventsPerMinute: monitoringEPM,
               difficulty: monitoringDifficulty
             },
             tracking: {
-              isActive: tasks.includes('tracking'),
+              isActive: isEnabled('tracking'),
               eventsPerMinute: trackingEPM,
               difficulty: trackingDifficulty
             },
             resource: {
-              isActive: tasks.includes('resource'),
+              isActive: isEnabled('resource'),
               eventsPerMinute: resourceEPM,
               difficulty: resourceDifficulty
             }
           };
         };
 
-        // Set the main menu to hidden
-        setShowMainMenu(false);
+        // Wait a bit for normal mode to ensure refs are ready
+        const timer = setTimeout(() => {
+          console.log(`App: Auto-starting game in mode: ${mode}, duration: ${duration}`);
 
-        // Use a longer timeout to ensure the components have fully mounted
-        // and all initialization is complete
-        setTimeout(() => {
-          const { mode, tasks, duration } = startParams;
-
-          // Ensure we have task registration before starting the game
-          // This prevents issues with tasks being paused when events start
-          const startGameWithTaskCheck = () => {
-            // Check if all necessary tasks are registered
-            const tasksToCheck = tasks || ['comm', 'monitoring', 'tracking', 'resource'];
-            const allRefsAvailable =
-              (!tasksToCheck.includes('comm') || commTaskRef?.current) &&
-              (!tasksToCheck.includes('monitoring') || monitoringTaskRef?.current) &&
-              (!tasksToCheck.includes('tracking') || trackingTaskRef?.current) &&
-              (!tasksToCheck.includes('resource') || resourceTaskRef?.current);
-
-            if (allRefsAvailable) {
-              console.log('All required task refs are ready for auto-start');
-
-              if (mode === 'normal' && duration) {
-                // Start normal mode with specified duration
-                startGame({
-                  mode: 'normal',
-                  duration
-                });
-              }
-              else if (mode === 'custom' && tasks) {
-                startGame({
-                  mode: 'custom',
-                  duration: gameDuration,
-                  taskConfig: createCustomTaskConfig()
-                });
-              }
-
-              // Ensure tasks are unpaused
-              setTimeout(() => {
-                eventService.resumeAllTasks();
-                console.log('Tasks resumed after auto-start');
-              }, 300);
-
-              // Clear the params so they don't re-trigger on refresh
-              localStorage.removeItem('matb_start_params');
-              setIsInitializing(false); // Reset initializing flag
-            } else {
-              // If tasks aren't ready yet, try again after a short delay
-              console.log('Not all required task refs are ready, waiting...');
-              setTimeout(startGameWithTaskCheck, 100);
-            }
+          const startOptions = {
+            mode: mode || 'normal',
+            duration: duration || gameDuration,
           };
 
-          // Start the task check process
-          startGameWithTaskCheck();
-        }, 800); // Increased timeout to ensure components are mounted
+          if (mode === 'custom') {
+            startOptions.taskConfig = generateTaskConfig();
+          }
+
+          startGame(startOptions, false);
+
+          if (mode === 'testing') {
+            eventService.resumeAllTasks();
+          }
+
+          localStorage.removeItem('matb_start_params');
+          setIsInitializing(false);
+          setStartupParamsChecked(true);
+        }, 200); // Reduced timeout
+        return () => clearTimeout(timer);
       } else {
-        // Mark as checked to prevent repeated processing if no parameters found
         setStartupParamsChecked(true);
       }
     } catch (error) {
       console.error("Error processing startup parameters:", error);
       localStorage.removeItem('matb_start_params');
       setStartupParamsChecked(true);
-      setIsInitializing(false); // Reset initializing flag
+      setIsInitializing(false);
     }
-    // We're intentionally only running this once
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isInitializing, startupParamsChecked]);
+  }, [
+    isSuiteMode, suiteParams, startGame, startupParamsChecked, isInitializing, gameDuration,
+    commEPM, commDifficulty, monitoringEPM, monitoringDifficulty,
+    trackingEPM, trackingDifficulty, resourceEPM, resourceDifficulty,
+    setShowMainMenu, setIsInitializing, setStartupParamsChecked
+  ]);
 
   // If the main menu should be shown, render it instead of the main app
   if (showMainMenu) {
@@ -629,43 +691,8 @@ function App({ isSuiteMode = false, suiteParams = null, onSuiteEnd = null }) {
 
   return (
     <div className="app-container" style={{ height: '100vh', overflow: 'hidden' }}>
-      <div className="main-container">
-        {/* Only show game controls in game modes */}
-        {currentGameMode === 'normal' && (
-          <NormalModeGame
-            duration={gameDuration}
-            onGameEnd={handleGameEnd}
-            eventService={eventService}
-            isSuite={isSuiteMode}
-            logs={{
-              comm: commEventLog,
-              resource: resourceEventLog,
-              monitoring: monitoringEventLog,
-              tracking: trackingEventLog,
-              performance: systemPerformanceLog
-            }}
-          />
-        )}
+      <div className="main-container" style={{ position: 'relative', height: '100%' }}>
 
-        {currentGameMode === 'infinite' && (
-          <InfiniteModeGame
-            onGameEnd={handleGameEnd}
-            eventService={eventService}
-            healthRef={systemHealthValueRef}
-            isSuite={isSuiteMode}
-          />
-        )}
-
-        {currentGameMode === 'custom' && customGameConfig && (
-          <CustomModeGame
-            duration={gameDuration}
-            taskConfig={customGameConfig}
-            onGameEnd={handleGameEnd}
-            eventService={eventService}
-            healthRef={systemHealthValueRef}
-            isSuite={isSuiteMode}
-          />
-        )}
 
         <div className={`main-content ${isEventSidebarOpen && currentGameMode === 'testing' ? 'sidebar-open' : ''}`}>
           <div style={{
@@ -701,9 +728,7 @@ function App({ isSuiteMode = false, suiteParams = null, onSuiteEnd = null }) {
                         ref={monitoringTaskRef}
                         eventsPerMinute={monitoringEPM}
                         setEventsPerMinute={setMonitoringEPM}
-                        showLog={showMonitoringLog}
-                        setShowLog={_setShowMonitoringLog} // Using prefixed setter
-                        onLogUpdate={setMonitoringEventLog}
+                        onLogUpdate={handleMonitoringLogUpdate}
                         isEnabled={isMonitoringTaskEnabled}
                         onMetricsUpdate={setMonitoringMetrics}
                         autoEvents={monitoringAutoEvents}
@@ -751,7 +776,6 @@ function App({ isSuiteMode = false, suiteParams = null, onSuiteEnd = null }) {
                         ref={trackingTaskRef}
                         eventsPerMinute={trackingEPM}
                         difficulty={trackingDifficulty}
-                        showLog={showTrackingLog}
                         onLogUpdate={handleTrackingLogUpdate}
                         onStatusUpdate={({ isManual, isInBox }) => {
                           setIsTrackingManual(isManual);
@@ -836,8 +860,7 @@ function App({ isSuiteMode = false, suiteParams = null, onSuiteEnd = null }) {
                       <CommunicationsTask
                         ref={commTaskRef}
                         eventsPerMinute={commEPM}
-                        showLog={showCommLog}
-                        onLogUpdate={setCommEventLog}
+                        onLogUpdate={handleCommLogUpdate}
                         isEnabled={isCommTaskEnabled}
                         onMetricsUpdate={setCommMetrics}
                         autoEvents={commAutoEvents}
@@ -883,8 +906,7 @@ function App({ isSuiteMode = false, suiteParams = null, onSuiteEnd = null }) {
                         ref={resourceTaskRef}
                         eventsPerMinute={resourceEPM}
                         difficulty={resourceDifficulty}
-                        showLog={showResourceLog}
-                        onLogUpdate={setResourceEventLog}
+                        onLogUpdate={handleResourceLogUpdate}
                         onMetricsUpdate={handleResourceMetricsUpdate}
                         isEnabled={isResourceTaskEnabled}
                         autoEvents={resourceAutoEvents}
@@ -1101,6 +1123,60 @@ function App({ isSuiteMode = false, suiteParams = null, onSuiteEnd = null }) {
                 <BackgroundSelector small={true} />
               </div>
             )}
+          </div>
+        )}
+        {/* Game components rendered in a fixed top-level overlay with absolute priority */}
+        {(currentGameMode === 'normal' || currentGameMode === 'infinite' || (currentGameMode === 'custom' && customGameConfig)) && (
+          <div className="game-controls-overlay" style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            width: '100%',
+            height: '100%',
+            zIndex: 99999,
+            pointerEvents: 'none'
+          }}>
+            <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+              {currentGameMode === 'normal' && (
+                <NormalModeGame
+                  key={`normal-game-${gameDuration}`}
+                  duration={gameDuration}
+                  onGameEnd={handleGameEnd}
+                  eventService={eventService}
+                  healthRef={systemHealthValueRef}
+                  isSuite={isSuiteMode}
+                  logs={{
+                    comm: commEventLog,
+                    resource: resourceEventLog,
+                    monitoring: monitoringEventLog,
+                    tracking: trackingEventLog,
+                    performance: systemPerformanceLog
+                  }}
+                />
+              )}
+
+              {currentGameMode === 'infinite' && (
+                <InfiniteModeGame
+                  key="infinite-game"
+                  onGameEnd={handleGameEnd}
+                  eventService={eventService}
+                  healthRef={systemHealthValueRef}
+                  isSuite={isSuiteMode}
+                />
+              )}
+
+              {currentGameMode === 'custom' && customGameConfig && (
+                <CustomModeGame
+                  key={`custom-game-${gameDuration}`}
+                  duration={gameDuration}
+                  taskConfig={customGameConfig}
+                  onGameEnd={handleGameEnd}
+                  eventService={eventService}
+                  healthRef={systemHealthValueRef}
+                  isSuite={isSuiteMode}
+                />
+              )}
+            </div>
           </div>
         )}
       </div>
