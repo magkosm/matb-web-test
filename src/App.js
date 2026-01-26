@@ -1136,47 +1136,45 @@ function App({ isSuiteMode = false, suiteParams = null, onSuiteEnd = null }) {
             zIndex: 99999,
             pointerEvents: 'none'
           }}>
-            <div style={{ position: 'relative', width: '100%', height: '100%' }}>
-              {currentGameMode === 'normal' && (
-                <NormalModeGame
-                  key={`normal-game-${gameDuration}`}
-                  duration={gameDuration}
-                  onGameEnd={handleGameEnd}
-                  eventService={eventService}
-                  healthRef={systemHealthValueRef}
-                  isSuite={isSuiteMode}
-                  logs={{
-                    comm: commEventLog,
-                    resource: resourceEventLog,
-                    monitoring: monitoringEventLog,
-                    tracking: trackingEventLog,
-                    performance: systemPerformanceLog
-                  }}
-                />
-              )}
+            {currentGameMode === 'normal' && (
+              <NormalModeGame
+                key={`normal-game-${gameDuration}`}
+                duration={gameDuration}
+                onGameEnd={handleGameEnd}
+                eventService={eventService}
+                healthRef={systemHealthValueRef}
+                isSuite={isSuiteMode}
+                logs={{
+                  comm: commEventLog,
+                  resource: resourceEventLog,
+                  monitoring: monitoringEventLog,
+                  tracking: trackingEventLog,
+                  performance: systemPerformanceLog
+                }}
+              />
+            )}
 
-              {currentGameMode === 'infinite' && (
-                <InfiniteModeGame
-                  key="infinite-game"
-                  onGameEnd={handleGameEnd}
-                  eventService={eventService}
-                  healthRef={systemHealthValueRef}
-                  isSuite={isSuiteMode}
-                />
-              )}
+            {currentGameMode === 'infinite' && (
+              <InfiniteModeGame
+                key="infinite-game"
+                onGameEnd={handleGameEnd}
+                eventService={eventService}
+                healthRef={systemHealthValueRef}
+                isSuite={isSuiteMode}
+              />
+            )}
 
-              {currentGameMode === 'custom' && customGameConfig && (
-                <CustomModeGame
-                  key={`custom-game-${gameDuration}`}
-                  duration={gameDuration}
-                  taskConfig={customGameConfig}
-                  onGameEnd={handleGameEnd}
-                  eventService={eventService}
-                  healthRef={systemHealthValueRef}
-                  isSuite={isSuiteMode}
-                />
-              )}
-            </div>
+            {currentGameMode === 'custom' && customGameConfig && (
+              <CustomModeGame
+                key={`custom-game-${gameDuration}`}
+                duration={gameDuration}
+                taskConfig={customGameConfig}
+                onGameEnd={handleGameEnd}
+                eventService={eventService}
+                healthRef={systemHealthValueRef}
+                isSuite={isSuiteMode}
+              />
+            )}
           </div>
         )}
       </div>
