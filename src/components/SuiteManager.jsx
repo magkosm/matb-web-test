@@ -1,5 +1,4 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { useTranslation } from 'react-i18next';
 import ReactionTimeTest from './ReactionTimeTest';
 import NBackTest from './NBackTest';
 import App from '../App';
@@ -7,10 +6,8 @@ import ComprehensiveResults from './ComprehensiveResults';
 import BackgroundService from '../services/BackgroundService';
 
 const SuiteManager = () => {
-    const { t } = useTranslation();
     const [step, setStep] = useState(0);
     const [results, setResults] = useState({});
-    const [isFinished, setIsFinished] = useState(false);
 
     // Steps definition:
     // 0: Introduction
@@ -35,6 +32,7 @@ const SuiteManager = () => {
     }, []);
 
     const handleNext = useCallback((stepResults) => {
+        console.log(`SuiteManager: Step ${step} finished. Moving to ${step + 1}. Results:`, stepResults);
         setResults(prev => ({ ...prev, [step]: stepResults }));
         setStep(prev => prev + 1);
     }, [step]);
@@ -42,6 +40,18 @@ const SuiteManager = () => {
     const handleReturnToMenu = () => {
         window.location.href = process.env.PUBLIC_URL + '/';
     };
+
+    // Debug Shortcut: Ctrl+Shift+N to skip to next stage
+    useEffect(() => {
+        const handleKeyDown = (e) => {
+            if (e.ctrlKey && e.shiftKey && e.key === 'N') {
+                console.log(`SuiteManager: Debug skip triggered for step ${step}`);
+                handleNext({ skipped: true, finalScore: 0, accuracy: 0, averageReactionTime: 0 });
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [step, handleNext]);
 
     if (step === 0) {
         return (
@@ -79,6 +89,9 @@ const SuiteManager = () => {
     if (step === 1) {
         return (
             <ReactionTimeTest
+                key={step}
+                isSuite={true}
+                duration={null} // Force stimuli-based mode
                 maxStimuli={12}
                 minDelay={1000}
                 maxDelay={7000}
@@ -93,6 +106,8 @@ const SuiteManager = () => {
         const n = step - 1; // 1, 2, 3, 4
         return (
             <NBackTest
+                key={step}
+                isSuite={true}
                 n={n}
                 trials={20}
                 dim1targets={4}

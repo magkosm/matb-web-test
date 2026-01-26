@@ -47,7 +47,8 @@ const ReactionTimeTest = ({
   minDelay = 1500, // 1.5 seconds
   maxDelay = 8000, // 8 seconds
   onFinish,
-  onReturn
+  onReturn,
+  isSuite = false
 }) => {
   const { t } = useTranslation();
   // Game state
@@ -77,6 +78,7 @@ const ReactionTimeTest = ({
   const currentStimulusIndexRef = useRef(0); // Keep a ref to current index for timeout callbacks
   const timersRef = useRef([]); // Track all timers for better cleanup
   const isActiveRef = useRef(false); // Track active state for callbacks
+  const finishedRef = useRef(false); // Guard against multiple endGame calls
 
   // Update ref when state changes
   useEffect(() => {
@@ -211,21 +213,34 @@ const ReactionTimeTest = ({
 
   // End the game
   const endGame = () => {
-    debugLog('Ending game and calculating results');
+    if (finishedRef.current) return;
+    finishedRef.current = true;
 
     setIsActive(false);
-    setIsFinished(true);
+    if (!isSuite) {
+      setIsFinished(true);
+    }
 
     // Clear all timers
     clearAllTimers();
 
     // Calculate average reaction time
+    let avg = 0;
     if (reactionTimes.length > 0) {
-      const avg = reactionTimes.reduce((a, b) => a + b, 0) / reactionTimes.length;
+      avg = reactionTimes.reduce((a, b) => a + b, 0) / reactionTimes.length;
       debugLog(`Average reaction time: ${avg.toFixed(2)}ms`);
       setAverageReactionTime(avg);
     } else {
       debugLog('No reaction times recorded');
+    }
+
+    if (onFinish) {
+      onFinish({
+        reactionTimes,
+        averageReactionTime: avg,
+        stimuliCount: reactionTimes.length,
+        totalTime: duration ? (duration - timeRemaining) : (Date.now() - (stimulusStartTime.current || Date.now()))
+      });
     }
   };
 
@@ -505,8 +520,8 @@ const ReactionTimeTest = ({
     setShowFixation(false);
     currentStimulusIndexRef.current = 0;
 
-    // Start the game timer - only for displaying a countdown, game ends when all stimuli complete
-    if (duration) {
+    // Start the game timer - only for displaying a countdown if duration is provided
+    if (duration && duration > 0) {
       gameTimerRef.current = setInterval(() => {
         if (!isComponentMounted.current) return;
 
@@ -555,7 +570,7 @@ const ReactionTimeTest = ({
         reactionTimes,
         averageReactionTime,
         stimuliCount: reactionTimes.length,
-        totalTime: duration - timeRemaining
+        totalTime: duration ? (duration - timeRemaining) : (Date.now() - (stimulusStartTime.current || Date.now()))
       });
     }
   };
@@ -619,7 +634,10 @@ const ReactionTimeTest = ({
         }}>
           <h1>{t('reactionTest.title', 'Reaction Time Test')}</h1>
           <p>{t('reactionTest.instructions', 'Test your reaction time by clicking or pressing SPACE as quickly as possible when you see a red dot.')}</p>
-          <p>{t('reactionTest.testDetails', 'The test will last up to {{duration}} seconds with a maximum of {{maxStimuli}} stimuli.', { duration: duration / 1000, maxStimuli })}</p>
+          <p>{t('reactionTest.testDetails', 'The test will consist of {{maxStimuli}} stimuli presented with varying intervals.', {
+            duration: duration ? (duration / 1000) : ((maxStimuli * maxDelay) / 1000),
+            maxStimuli
+          })}</p>
           <button
             onClick={startGame}
             style={{

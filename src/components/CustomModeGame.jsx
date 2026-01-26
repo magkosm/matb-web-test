@@ -7,7 +7,8 @@ const CustomModeGame = ({
   taskConfig,
   onGameEnd,
   eventService,
-  healthRef
+  healthRef,
+  isSuite = false
 }) => {
   const { t } = useTranslation();
 
@@ -48,6 +49,7 @@ const CustomModeGame = ({
   const epmIntervalRef = useRef(null);
   const difficultyIntervalRef = useRef(null);
   const gameStartTimeRef = useRef(null);
+  const finishedRef = useRef(false); // Guard for suite transition
 
   // Helper to clear all timers
   const clearAllTimers = () => {
@@ -63,6 +65,14 @@ const CustomModeGame = ({
     clearAllTimers();
     eventService.stopScheduler();
     eventService.pauseAllTasks();
+
+    // If in suite mode, automatically trigger completion
+    if (isSuite) {
+      if (finishedRef.current) return;
+      finishedRef.current = true;
+      console.log('CustomModeGame: Suite mode active, skipping UI and finishing stage');
+      handleReturnToMenu();
+    }
   };
 
   // Initialize game

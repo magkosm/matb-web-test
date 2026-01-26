@@ -11,7 +11,8 @@ const NormalModeGame = ({
   onGameEnd,
   eventService,
   healthRef,
-  logs
+  logs,
+  isSuite = false
 }) => {
   const { t } = useTranslation();
   // Game state
@@ -36,6 +37,7 @@ const NormalModeGame = ({
   const epmIntervalRef = useRef(null);
   const difficultyIntervalRef = useRef(null);
   const gameStartTimeRef = useRef(null);
+  const finishedRef = useRef(false); // Guard for suite transition
   const logsRef = useRef(logs);
 
   // Keep logsRef updated
@@ -300,6 +302,14 @@ const NormalModeGame = ({
     // If it's a high score, show the save form
     if (isHighScore) {
       setShowScoreSaveForm(true);
+    }
+
+    // If in suite mode, automatically trigger completion
+    if (isSuite) {
+      if (finishedRef.current) return;
+      finishedRef.current = true;
+      console.log('NormalModeGame: Suite mode active, skipping UI and finishing stage');
+      handleReturnToMenu();
     }
   };
 

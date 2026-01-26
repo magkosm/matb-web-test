@@ -169,10 +169,11 @@ const NBackTest = ({
   tickTime = 3000, // 3 seconds per stimulus
   onFinish,
   onReturn,
-  audioEnabled = true
+  audioEnabled = true,
+  isSuite = false
 }) => {
   const { t, i18n } = useTranslation();
-  
+
   // Audio state - allow internal toggle if audioEnabled prop is true
   // If audioEnabled prop is false (like in quick start), it stays false
   const [isAudioActive, setIsAudioActive] = useState(audioEnabled);
@@ -212,6 +213,7 @@ const NBackTest = ({
   // Refs
   const timerRef = useRef(null);
   const isMountedRef = useRef(true);
+  const finishedRef = useRef(false); // Guard against multiple endTest calls
   const stimuliRef = useRef([[], []]);
   const audioRef = useRef(null);
   // Add a ref to track current audio state for intervals/timeouts
@@ -457,7 +459,7 @@ const NBackTest = ({
 
     // Play letter sound using the shared function
     playLetterSound(letter);
-    
+
     // Record timestamp
     stimulusTimestampRef.current = Date.now();
   };
@@ -487,6 +489,9 @@ const NBackTest = ({
       timerRef.current = null;
     }
 
+    if (finishedRef.current) return;
+    finishedRef.current = true;
+
     // Process all results when the test ends
     if (DEBUG_MODE) {
       console.log("Test ended, calculating final results");
@@ -494,12 +499,24 @@ const NBackTest = ({
       console.log("Current design:", design);
     }
 
-    // Move to the finished state immediately, the results will be calculated in render
+    // Move to the finished state if not in suite mode
     setTestStarted(false);
-    setIsFinished(true);
+    if (!isSuite) {
+      setIsFinished(true);
+    }
 
     if (onFinish) {
-      onFinish();
+      const finalResults = calculateFinalResults();
+      onFinish({
+        ...finalResults,
+        n: n,
+        accuracy: ((finalResults.dim1.hits + finalResults.dim2.hits) /
+          (Math.max(1, finalResults.dim1.hits + finalResults.dim1.misses +
+            finalResults.dim2.hits + finalResults.dim2.misses))) * 100,
+        correct: finalResults.dim1.hits + finalResults.dim2.hits,
+        incorrect: finalResults.dim1.misses + finalResults.dim1.falseAlarms +
+          finalResults.dim2.misses + finalResults.dim2.falseAlarms
+      });
     }
   };
 
@@ -603,7 +620,7 @@ const NBackTest = ({
     // Calculate average RT
     const dim1AvgRT = newResults.dim1.hitCount > 0 ? newResults.dim1.totalRT / newResults.dim1.hitCount : 0;
     const dim2AvgRT = newResults.dim2.hitCount > 0 ? newResults.dim2.totalRT / newResults.dim2.hitCount : 0;
-    
+
     // Add to results
     newResults.dim1.avgRT = dim1AvgRT;
     newResults.dim2.avgRT = dim2AvgRT;
@@ -804,7 +821,7 @@ const NBackTest = ({
       dim1FaRate: dim1FaRate.toFixed(2),
       dim2HitRate: dim2HitRate.toFixed(2),
       dim2FaRate: dim2FaRate.toFixed(2),
-      
+
       // Reaction Times
       dim1AvgRT: calculatedResults.dim1.avgRT.toFixed(0),
       dim2AvgRT: calculatedResults.dim2.avgRT.toFixed(0)
@@ -1037,7 +1054,7 @@ const NBackTest = ({
   const handleExportData = () => {
     // Generate row-by-row data for export
     const exportData = [];
-    
+
     // Process each trial
     for (let i = 0; i < trials; i++) {
       const trialData = {
@@ -1058,11 +1075,11 @@ const NBackTest = ({
         const letterIndex = stimuli[0][i] - 1;
         const positionIndex = stimuli[1][i] - 1;
         const positionMapping = [0, 1, 2, 3, 5, 6, 7, 8];
-        
+
         if (letterIndex >= 0 && letterIndex < nBackLetters.length) {
           trialData.letter = nBackLetters[letterIndex];
         }
-        
+
         if (positionIndex >= 0 && positionIndex < positionMapping.length) {
           trialData.position = positionMapping[positionIndex];
         }
@@ -1077,10 +1094,10 @@ const NBackTest = ({
       // Get user responses
       const letterResponse = responses.find(r => r.dimension === 0 && r.stimulusIndex === i);
       const positionResponse = responses.find(r => r.dimension === 1 && r.stimulusIndex === i);
-      
+
       trialData.responseLetter = !!letterResponse;
-        trialData.responsePosition = !!positionResponse;
-      
+      trialData.responsePosition = !!positionResponse;
+
       // Add RT to export
       trialData.letterRT = letterResponse ? letterResponse.rt : '';
       trialData.positionRT = positionResponse ? positionResponse.rt : '';
@@ -1424,7 +1441,7 @@ const NBackTest = ({
         }}>
           <p style={{ margin: '0 0 5px 0' }}>{t('nbackTest.progress', 'Progress')}: {currentStimulus + 1}/{trials}</p>
           <p style={{ margin: '0 0 5px 0' }}>{t('nbackTest.level', 'Level')}: {n}-back</p>
-          
+
           <button
             onClick={() => setIsAudioActive(!isAudioActive)}
             style={{

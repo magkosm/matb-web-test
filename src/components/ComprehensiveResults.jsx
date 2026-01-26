@@ -1,21 +1,40 @@
 import React, { useMemo } from 'react';
-import { useTranslation } from 'react-i18next';
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, PointElement, LineElement } from 'chart.js';
-import { Bar, Line } from 'react-chartjs-2';
+import { Bar } from 'react-chartjs-2';
 import { downloadCSV } from '../utils/csvExport';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, PointElement, LineElement, Title, Tooltip, Legend);
 
 const ComprehensiveResults = ({ results, onReturn }) => {
-  const { t } = useTranslation();
 
   // RT Results: step 1
-  const rtData = results[1] || {};
+  const rtData = useMemo(() => results[1] || {}, [results]);
   // N-Back Results: steps 2, 3, 4, 5
-  const nbackData = [results[2], results[3], results[4], results[5]].filter(Boolean);
+  const nbackData = useMemo(() => [results[2], results[3], results[4], results[5]].filter(res => res && (res.accuracy !== undefined || res.skipped)), [results]);
   // MATB Results: steps 6, 7
-  const matbEasy = results[6] || {};
-  const matbHard = results[7] || {};
+  const matbEasy = useMemo(() => results[6] || {}, [results]);
+  const matbHard = useMemo(() => results[7] || {}, [results]);
+
+  // Calculate Total Score
+  const totalScore = useMemo(() => {
+    let score = 0;
+
+    // RT Score: 1000ms base, minus avg RT, capped at 1000.
+    if (rtData.averageReactionTime) {
+      score += Math.max(0, 1000 - rtData.averageReactionTime);
+    }
+
+    // N-Back Score: Accuracy percentage normalized
+    nbackData.forEach(nb => {
+      score += (nb.accuracy || 0) * 5; // Up to 500 per level
+    });
+
+    // MATB Score: sum of scores
+    score += (matbEasy.finalScore || 0) / 10;
+    score += (matbHard.finalScore || 0) / 10;
+
+    return Math.floor(score);
+  }, [rtData, nbackData, matbEasy, matbHard]);
 
   const handleExportAll = () => {
     const masterData = [];
@@ -79,6 +98,11 @@ const ComprehensiveResults = ({ results, onReturn }) => {
             <p>Easy Score: {matbEasy.finalScore || 0}</p>
             <p>Hard Score: {matbHard.finalScore || 0}</p>
           </div>
+        </div>
+
+        <div style={{ textAlign: 'center', margin: '30px 0', border: '2px solid gold', padding: '20px', borderRadius: '12px' }}>
+          <h2 style={{ color: 'gold', margin: 0 }}>TOTAL ARCHITECTURE SCORE</h2>
+          <div style={{ fontSize: '48px', fontWeight: 'bold' }}>{totalScore}</div>
         </div>
 
         <div style={{ height: '300px', margin: '20px 0' }}>

@@ -636,7 +636,7 @@ function App({ isSuiteMode = false, suiteParams = null, onSuiteEnd = null }) {
             duration={gameDuration}
             onGameEnd={handleGameEnd}
             eventService={eventService}
-            healthRef={systemHealthValueRef}
+            isSuite={isSuiteMode}
             logs={{
               comm: commEventLog,
               resource: resourceEventLog,
@@ -652,6 +652,7 @@ function App({ isSuiteMode = false, suiteParams = null, onSuiteEnd = null }) {
             onGameEnd={handleGameEnd}
             eventService={eventService}
             healthRef={systemHealthValueRef}
+            isSuite={isSuiteMode}
           />
         )}
 
@@ -662,6 +663,7 @@ function App({ isSuiteMode = false, suiteParams = null, onSuiteEnd = null }) {
             onGameEnd={handleGameEnd}
             eventService={eventService}
             healthRef={systemHealthValueRef}
+            isSuite={isSuiteMode}
           />
         )}
 
