@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import ReactionTimeTest from './ReactionTimeTest';
 import NBackTest from './NBackTest';
 import App from '../App';
@@ -8,6 +8,7 @@ import BackgroundService from '../services/BackgroundService';
 const SuiteManager = () => {
     const [step, setStep] = useState(0);
     const [results, setResults] = useState({});
+    const finishedStepsRef = useRef(new Set()); // Guard to prevent double-firing handleNext for the same step
 
     // Steps definition:
     // 0: Introduction
@@ -32,6 +33,12 @@ const SuiteManager = () => {
     }, []);
 
     const handleNext = useCallback((stepResults) => {
+        if (finishedStepsRef.current.has(step)) {
+            console.log(`SuiteManager: Ignoring duplicate handleNext for step ${step}`);
+            return;
+        }
+        finishedStepsRef.current.add(step);
+
         console.log(`SuiteManager: Step ${step} finished. Moving to ${step + 1}. Results:`, stepResults);
         setResults(prev => ({ ...prev, [step]: stepResults }));
         setStep(prev => prev + 1);
@@ -46,7 +53,14 @@ const SuiteManager = () => {
         const handleKeyDown = (e) => {
             if (e.ctrlKey && e.shiftKey && e.key === 'N') {
                 console.log(`SuiteManager: Debug skip triggered for step ${step}`);
-                handleNext({ skipped: true, finalScore: 0, accuracy: 0, averageReactionTime: 0 });
+                if (step >= 2 && step <= 5) {
+                    const n = step - 1;
+                    handleNext({ skipped: true, n: n, finalScore: 0, accuracy: 0, correct: 0, incorrect: 0, trialLogs: [] });
+                } else if (step === 6 || step === 7) {
+                    handleNext({ skipped: true, finalScore: 0, gameTime: 240, gameMode: 'custom', trialLogs: { comm: [], resource: [], monitoring: [], tracking: [], performance: [] } });
+                } else {
+                    handleNext({ skipped: true, finalScore: 0, accuracy: 0, averageReactionTime: 0, stimuliCount: 12, reactionTimes: [] });
+                }
             }
         };
         window.addEventListener('keydown', handleKeyDown);
@@ -136,6 +150,7 @@ const SuiteManager = () => {
         };
         return (
             <App
+                key={step}
                 isSuiteMode={true}
                 suiteParams={easyParams}
                 onSuiteEnd={handleNext}
@@ -158,6 +173,7 @@ const SuiteManager = () => {
         };
         return (
             <App
+                key={step}
                 isSuiteMode={true}
                 suiteParams={hardParams}
                 onSuiteEnd={handleNext}

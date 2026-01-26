@@ -17,8 +17,8 @@ const CustomModeGame = ({
   const [score, setScore] = useState(0);
   const [isGameActive, setIsGameActive] = useState(true);
 
-  // Show instructions if key is provided
-  const [showInstructions, setShowInstructions] = useState(!!taskConfig.instructionKey);
+  // Show instructions if key is provided (bypass for suite mode)
+  const [showInstructions, setShowInstructions] = useState(isSuite ? false : !!taskConfig.instructionKey);
 
   const [currentSettings, setCurrentSettings] = useState({
     comm: {
@@ -83,8 +83,21 @@ const CustomModeGame = ({
     // Apply initial settings to the event service
     eventService.updateSchedulerSettings(currentSettings);
 
-    // Start scheduler
-    eventService.startScheduler();
+    const startScheduler = () => {
+      // Start scheduler
+      eventService.startScheduler();
+
+      // Explicitly resume all tasks
+      eventService.resumeAllTasks();
+      console.log('CustomModeGame: Scheduler started and tasks resumed');
+    };
+
+    if (isSuite) {
+      startScheduler();
+    } else {
+      // Give a tiny bit of time for non-suite mode
+      setTimeout(startScheduler, 100);
+    }
 
     // Set start time if not already set
     if (!gameStartTimeRef.current) {
@@ -110,79 +123,81 @@ const CustomModeGame = ({
       }
     }, 1000);
 
-    // Setup EPM progression (every 45 seconds)
-    epmIntervalRef.current = setInterval(() => {
-      setCurrentSettings(prevSettings => {
-        const newSettings = {
-          comm: {
-            ...prevSettings.comm,
-            eventsPerMinute: prevSettings.comm.isEnabled ?
-              Math.min(10, prevSettings.comm.eventsPerMinute + 1) :
-              prevSettings.comm.eventsPerMinute
-          },
-          monitoring: {
-            ...prevSettings.monitoring,
-            eventsPerMinute: prevSettings.monitoring.isEnabled ?
-              Math.min(10, prevSettings.monitoring.eventsPerMinute + 1) :
-              prevSettings.monitoring.eventsPerMinute
-          },
-          tracking: {
-            ...prevSettings.tracking,
-            eventsPerMinute: prevSettings.tracking.isEnabled ?
-              Math.min(10, prevSettings.tracking.eventsPerMinute + 1) :
-              prevSettings.tracking.eventsPerMinute
-          },
-          resource: {
-            ...prevSettings.resource,
-            eventsPerMinute: prevSettings.resource.isEnabled ?
-              Math.min(10, prevSettings.resource.eventsPerMinute + 1) :
-              prevSettings.resource.eventsPerMinute
-          }
-        };
+    // Setup EPM progression (every 45 seconds) - Disabled in suite mode
+    if (!showInstructions && !isSuite) {
+      epmIntervalRef.current = setInterval(() => {
+        setCurrentSettings(prevSettings => {
+          const newSettings = {
+            comm: {
+              ...prevSettings.comm,
+              eventsPerMinute: prevSettings.comm.isEnabled ?
+                Math.min(10, prevSettings.comm.eventsPerMinute + 1) :
+                prevSettings.comm.eventsPerMinute
+            },
+            monitoring: {
+              ...prevSettings.monitoring,
+              eventsPerMinute: prevSettings.monitoring.isEnabled ?
+                Math.min(10, prevSettings.monitoring.eventsPerMinute + 1) :
+                prevSettings.monitoring.eventsPerMinute
+            },
+            tracking: {
+              ...prevSettings.tracking,
+              eventsPerMinute: prevSettings.tracking.isEnabled ?
+                Math.min(10, prevSettings.tracking.eventsPerMinute + 1) :
+                prevSettings.tracking.eventsPerMinute
+            },
+            resource: {
+              ...prevSettings.resource,
+              eventsPerMinute: prevSettings.resource.isEnabled ?
+                Math.min(10, prevSettings.resource.eventsPerMinute + 1) :
+                prevSettings.resource.eventsPerMinute
+            }
+          };
 
-        // Update event service with new EPM values
-        eventService.updateSchedulerSettings(newSettings);
+          // Update event service with new EPM values
+          eventService.updateSchedulerSettings(newSettings);
+          return newSettings;
+        });
+      }, 45000); // 45 seconds
+    }
 
-        return newSettings;
-      });
-    }, 45000); // 45 seconds
+    // Setup difficulty progression (every 90 seconds) - Disabled in suite mode
+    if (!showInstructions && !isSuite) {
+      difficultyIntervalRef.current = setInterval(() => {
+        setCurrentSettings(prevSettings => {
+          const newSettings = {
+            comm: {
+              ...prevSettings.comm,
+              difficulty: prevSettings.comm.isEnabled ?
+                Math.min(10, prevSettings.comm.difficulty + 1) :
+                prevSettings.comm.difficulty
+            },
+            monitoring: {
+              ...prevSettings.monitoring,
+              difficulty: prevSettings.monitoring.isEnabled ?
+                Math.min(10, prevSettings.monitoring.difficulty + 1) :
+                prevSettings.monitoring.difficulty
+            },
+            tracking: {
+              ...prevSettings.tracking,
+              difficulty: prevSettings.tracking.isEnabled ?
+                Math.min(10, prevSettings.tracking.difficulty + 1) :
+                prevSettings.tracking.difficulty
+            },
+            resource: {
+              ...prevSettings.resource,
+              difficulty: prevSettings.resource.isEnabled ?
+                Math.min(10, prevSettings.resource.difficulty + 1) :
+                prevSettings.resource.difficulty
+            }
+          };
 
-    // Setup difficulty progression (every 90 seconds)
-    difficultyIntervalRef.current = setInterval(() => {
-      setCurrentSettings(prevSettings => {
-        const newSettings = {
-          comm: {
-            ...prevSettings.comm,
-            difficulty: prevSettings.comm.isEnabled ?
-              Math.min(10, prevSettings.comm.difficulty + 1) :
-              prevSettings.comm.difficulty
-          },
-          monitoring: {
-            ...prevSettings.monitoring,
-            difficulty: prevSettings.monitoring.isEnabled ?
-              Math.min(10, prevSettings.monitoring.difficulty + 1) :
-              prevSettings.monitoring.difficulty
-          },
-          tracking: {
-            ...prevSettings.tracking,
-            difficulty: prevSettings.tracking.isEnabled ?
-              Math.min(10, prevSettings.tracking.difficulty + 1) :
-              prevSettings.tracking.difficulty
-          },
-          resource: {
-            ...prevSettings.resource,
-            difficulty: prevSettings.resource.isEnabled ?
-              Math.min(10, prevSettings.resource.difficulty + 1) :
-              prevSettings.resource.difficulty
-          }
-        };
-
-        // Update event service with new difficulty values
-        eventService.updateSchedulerSettings(newSettings);
-
-        return newSettings;
-      });
-    }, 90000); // 90 seconds
+          // Update event service with new difficulty values
+          eventService.updateSchedulerSettings(newSettings);
+          return newSettings;
+        });
+      }, 90000); // 90 seconds
+    }
 
     // Cleanup function
     return () => {
@@ -220,7 +235,7 @@ const CustomModeGame = ({
       left: 0,
       width: '100%',
       pointerEvents: 'none',
-      zIndex: 1000
+      zIndex: 9999
     }}>
       {showInstructions && (
         <InstructionOverlay
@@ -242,26 +257,25 @@ const CustomModeGame = ({
         color: 'white'
       }}>
         <div>
-          <strong>Time: </strong>{formatTimeRemaining()}
+          <strong>{t('gameOver.time')}: </strong>{formatTimeRemaining()}
         </div>
         <div>
-          <strong>Score: </strong>{Math.floor(score)}
+          <strong>{t('gameOver.currentScore', 'Score')}: </strong>{Math.floor(score)}
         </div>
-        <div style={{ pointerEvents: 'auto' }}>
-          <button
-            onClick={handleQuit}
-            style={{
-              backgroundColor: 'rgba(220, 53, 69, 0.8)',
-              color: 'white',
-              border: 'none',
-              borderRadius: '4px',
-              padding: '5px 10px',
-              cursor: 'pointer'
-            }}
-          >
-            Quit
-          </button>
-        </div>
+        <button
+          onClick={handleQuit}
+          style={{
+            backgroundColor: '#ff5555',
+            color: 'white',
+            border: 'none',
+            borderRadius: '4px',
+            padding: '5px 10px',
+            cursor: 'pointer',
+            pointerEvents: 'auto'
+          }}
+        >
+          {t('gameOver.quit', 'Quit')}
+        </button>
       </div>
 
       {!isGameActive && !showInstructions && (

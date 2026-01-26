@@ -11,7 +11,7 @@ import LanguageSelector from './LanguageSelector';
 const MainMenu = ({ onStartGame, onExitApp, gameResults }) => {
   const { t } = useTranslation();
   const [selectedMode, setSelectedMode] = useState('normal'); // Normal is now default
-  const [gameDuration, setGameDuration] = useState(5); // Default 5 minutes
+  const [gameDuration] = useState(5 * 60 * 1000); // 5 minutes default
   const [showScoreboard, setShowScoreboard] = useState(false);
   const [showOtherModes, setShowOtherModes] = useState(false);
   const [showBackgroundSelector, setShowBackgroundSelector] = useState(false);
@@ -83,7 +83,7 @@ const MainMenu = ({ onStartGame, onExitApp, gameResults }) => {
     } else {
       onStartGame({
         mode: selectedMode,
-        duration: gameDuration * 60 * 1000 // Convert minutes to milliseconds
+        duration: gameDuration
       });
     }
   };
@@ -300,7 +300,10 @@ const MainMenu = ({ onStartGame, onExitApp, gameResults }) => {
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', marginBottom: '20px' }}>
           <button
-            onClick={() => window.location.href = `${process.env.PUBLIC_URL}/2min`}
+            onClick={() => {
+              onStartGame({ mode: 'normal', duration: 2 * 60 * 1000 });
+              setShowPresetsModal(false);
+            }}
             style={{
               padding: '15px',
               backgroundColor: '#007bff',
@@ -657,7 +660,7 @@ const MainMenu = ({ onStartGame, onExitApp, gameResults }) => {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
           {/* Main Quick Access Buttons */}
           <button
-            onClick={() => window.location.href = `${process.env.PUBLIC_URL}/2min`}
+            onClick={() => onStartGame({ mode: 'normal', duration: 2 * 60 * 1000 })}
             style={{
               padding: '15px 30px',
               fontSize: '18px',

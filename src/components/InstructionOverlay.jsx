@@ -12,7 +12,7 @@ const InstructionOverlay = ({
     if (!show) return null;
 
     // Function to process newlines into paragraphs or line breaks
-    const formatContent = (text) => {
+    const _formatContent = (text) => {
         if (!text) return null;
         return text.split('\n').map((line, index) => (
             <React.Fragment key={index}>

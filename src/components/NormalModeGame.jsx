@@ -20,8 +20,8 @@ const NormalModeGame = ({
   const [score, setScore] = useState(0);
   const [isGameActive, setIsGameActive] = useState(true);
   const [showScoreSaveForm, setShowScoreSaveForm] = useState(false);
-  // Add instruction state
-  const [showInstructions, setShowInstructions] = useState(true);
+  // Add instruction state - bypass for suite mode
+  const [showInstructions, setShowInstructions] = useState(!isSuite);
   const [finalLogs, setFinalLogs] = useState(null);
 
   const [currentSettings, setCurrentSettings] = useState({
@@ -109,11 +109,19 @@ const NormalModeGame = ({
     // Start scheduler with a delay to ensure everything is initialized
     // Wait for instructions to be dismissed
     let startTimeout;
+    // Start scheduler
     if (!showInstructions) {
-      startTimeout = setTimeout(() => {
-        console.log('Starting scheduler after init delay...');
+      if (isSuite) {
+        console.log('NormalModeGame: Starting scheduler immediately for suite mode');
         eventService.startScheduler();
-      }, 1000);
+        eventService.resumeAllTasks();
+      } else {
+        startTimeout = setTimeout(() => {
+          console.log('Starting scheduler after init delay...');
+          eventService.startScheduler();
+          eventService.resumeAllTasks();
+        }, 1000);
+      }
     }
 
     // Set start time
@@ -144,8 +152,8 @@ const NormalModeGame = ({
       }, 1000);
     }
 
-    // Setup EPM progression (every 45 seconds)
-    if (!showInstructions) {
+    // Setup EPM progression (every 45 seconds) - Disabled in suite mode
+    if (!showInstructions && !isSuite) {
       epmIntervalRef.current = setInterval(() => {
         setCurrentSettings(prevSettings => {
           const newSettings = {
@@ -197,7 +205,7 @@ const NormalModeGame = ({
     }
 
     // Setup difficulty progression (every 90 seconds)
-    if (!showInstructions) {
+    if (!showInstructions && !isSuite) {
       difficultyIntervalRef.current = setInterval(() => {
         setCurrentSettings(prevSettings => {
           const newSettings = {
@@ -362,7 +370,7 @@ const NormalModeGame = ({
       left: 0,
       width: '100%',
       pointerEvents: 'none',
-      zIndex: 1000
+      zIndex: 9999
     }}>
       {showInstructions && (
         <InstructionOverlay

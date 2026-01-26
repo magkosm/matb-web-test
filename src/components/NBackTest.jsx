@@ -507,6 +507,7 @@ const NBackTest = ({
 
     if (onFinish) {
       const finalResults = calculateFinalResults();
+      const trialLogs = generateExportData();
       onFinish({
         ...finalResults,
         n: n,
@@ -515,7 +516,8 @@ const NBackTest = ({
             finalResults.dim2.hits + finalResults.dim2.misses))) * 100,
         correct: finalResults.dim1.hits + finalResults.dim2.hits,
         incorrect: finalResults.dim1.misses + finalResults.dim1.falseAlarms +
-          finalResults.dim2.misses + finalResults.dim2.falseAlarms
+          finalResults.dim2.misses + finalResults.dim2.falseAlarms,
+        trialLogs: trialLogs
       });
     }
   };
@@ -1051,7 +1053,7 @@ const NBackTest = ({
     );
   };
 
-  const handleExportData = () => {
+  const generateExportData = () => {
     // Generate row-by-row data for export
     const exportData = [];
 
@@ -1071,9 +1073,9 @@ const NBackTest = ({
       };
 
       // Get stimulus data if available
-      if (stimuli[0][i] && stimuli[1][i]) {
-        const letterIndex = stimuli[0][i] - 1;
-        const positionIndex = stimuli[1][i] - 1;
+      if (stimuliRef.current[0][i] && stimuliRef.current[1][i]) {
+        const letterIndex = stimuliRef.current[0][i] - 1;
+        const positionIndex = stimuliRef.current[1][i] - 1;
         const positionMapping = [0, 1, 2, 3, 5, 6, 7, 8];
 
         if (letterIndex >= 0 && letterIndex < nBackLetters.length) {
@@ -1119,7 +1121,11 @@ const NBackTest = ({
 
       exportData.push(trialData);
     }
+    return exportData;
+  };
 
+  const handleExportData = () => {
+    const exportData = generateExportData();
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
     downloadCSV(exportData, `nback_results_${timestamp}`);
   };
