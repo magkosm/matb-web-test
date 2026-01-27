@@ -41,7 +41,16 @@ const SuiteManager = () => {
 
         console.log(`SuiteManager: Step ${step} finished. Moving to ${step + 1}. Results:`, stepResults);
         setResults(prev => ({ ...prev, [step]: stepResults }));
-        setStep(prev => prev + 1);
+        
+        // Add delay between MATB runs to ensure full reset completes
+        if (step === 6 || step === 7) {
+            // MATB Easy (step 6) or Hard (step 7) just finished - wait for reset
+            setTimeout(() => {
+                setStep(prev => prev + 1);
+            }, 500); // 500ms delay to ensure reset completes
+        } else {
+            setStep(prev => prev + 1);
+        }
     }, [step]);
 
     const handleReturnToMenu = () => {

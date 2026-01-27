@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import InstructionOverlay from './InstructionOverlay';
 
+// Reset score when game starts
+
 const CustomModeGame = ({
   duration,
   taskConfig,
@@ -74,6 +76,13 @@ const CustomModeGame = ({
       handleReturnToMenu();
     }
   };
+
+  // Reset score when game starts (when instructions are dismissed)
+  useEffect(() => {
+    if (!showInstructions && gameStartTimeRef.current === null) {
+      setScore(0); // Reset score at game start
+    }
+  }, [showInstructions]);
 
   // Initialize game
   useEffect(() => {
@@ -208,9 +217,13 @@ const CustomModeGame = ({
   }, [duration, eventService, healthRef, showInstructions]); // Removing currentSettings from deps to avoid re-init loop
 
   const handleReturnToMenu = () => {
+    // Calculate final score - ensure it's a valid number
+    const calculatedScore = Math.floor(score) || 0;
+    const calculatedGameTime = Math.floor(duration / 1000) - Math.floor(timeRemaining / 1000);
+    
     onGameEnd({
-      finalScore: Math.floor(score),
-      gameTime: Math.floor(duration / 1000) - Math.floor(timeRemaining / 1000),
+      finalScore: calculatedScore,
+      gameTime: calculatedGameTime,
       gameMode: 'custom'
     });
   };

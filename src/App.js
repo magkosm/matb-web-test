@@ -323,14 +323,38 @@ function App({ isSuiteMode = false, suiteParams = null, onSuiteEnd = null }) {
 
     // Reset task components explicitly
     if (isSuite) {
-      // Synchronous reset for suite mode
+      // Synchronous reset for suite mode with a small delay to ensure all resets complete
       console.log('Resetting task components synchronously for suite mode...');
-      if (resourceTaskRef.current?.resetTask) resourceTaskRef.current.resetTask();
-      if (commTaskRef.current?.resetTask) commTaskRef.current.resetTask();
-      if (monitoringTaskRef.current?.resetTask) monitoringTaskRef.current.resetTask();
-      if (trackingTaskRef.current?.resetTask) trackingTaskRef.current.resetTask();
-      if (systemHealthRef.current?.resetHealth) systemHealthRef.current.resetHealth();
+      // Reset all tasks
+      if (resourceTaskRef.current?.resetTask) {
+        resourceTaskRef.current.resetTask();
+        console.log('Resource task reset (suite mode)');
+      }
+      if (commTaskRef.current?.resetTask) {
+        commTaskRef.current.resetTask();
+        console.log('Communications task reset (suite mode)');
+      } else if (commTaskRef.current?.clearActiveMessage) {
+        commTaskRef.current.clearActiveMessage();
+        console.log('Communications task cleared (suite mode)');
+      }
+      if (monitoringTaskRef.current?.resetTask) {
+        monitoringTaskRef.current.resetTask();
+        console.log('Monitoring task reset (suite mode)');
+      }
+      if (trackingTaskRef.current?.resetTask) {
+        trackingTaskRef.current.resetTask();
+        console.log('Tracking task reset (suite mode)');
+      }
+      if (systemHealthRef.current?.resetHealth) {
+        systemHealthRef.current.resetHealth();
+        console.log('System health reset (suite mode)');
+      }
       systemHealthValueRef.current = 100;
+      
+      // Small delay to ensure all resets are applied before next game starts
+      setTimeout(() => {
+        console.log('Suite mode reset complete - all tasks and gauges reset');
+      }, 100);
     } else {
       // Use setTimeout for regular mode to ensure this runs after state updates
       setTimeout(() => {

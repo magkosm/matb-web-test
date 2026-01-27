@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, PointElement, LineElement } from 'chart.js';
 import { Bar } from 'react-chartjs-2';
 import { downloadCSV } from '../utils/csvExport';
+import MatbResults from './MatbResults';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, PointElement, LineElement, Title, Tooltip, Legend);
 
@@ -143,9 +144,9 @@ const ComprehensiveResults = ({ results, onReturn }) => {
 
   return (
     <div style={{
-      padding: '40px', backgroundColor: 'rgba(26, 42, 58, 0.95)', color: 'white', minHeight: '100vh', overflowY: 'auto'
+      padding: '40px', backgroundColor: 'rgba(26, 42, 58, 0.95)', color: 'white', minHeight: '100vh', overflowY: 'auto', maxHeight: '100vh'
     }}>
-      <div style={{ maxWidth: '1000px', margin: '0 auto', background: 'rgba(0,0,0,0.6)', padding: '30px', borderRadius: '12px' }}>
+      <div style={{ maxWidth: '1200px', margin: '0 auto', background: 'rgba(0,0,0,0.6)', padding: '30px', borderRadius: '12px' }}>
         <h1 style={{ textAlign: 'center' }}>Suite Completion Report</h1>
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', margin: '30px 0' }}>
@@ -173,6 +174,28 @@ const ComprehensiveResults = ({ results, onReturn }) => {
           <h3>N-Back Accuracy Curve</h3>
           <Bar data={nbackChartData} options={{ maintainAspectRatio: false, scales: { y: { beginAtZero: true, max: 100 } } }} />
         </div>
+
+        {/* MATB Easy Results with Plots */}
+        {matbEasy.trialLogs && !matbEasy.skipped && (
+          <div style={{ margin: '40px 0', borderTop: '2px solid rgba(76, 175, 80, 0.5)', paddingTop: '30px' }}>
+            <h2 style={{ textAlign: 'center', marginBottom: '20px', color: '#4caf50' }}>MATB Easy - Detailed Results</h2>
+            <MatbResults 
+              logs={matbEasy.trialLogs} 
+              finalScore={matbEasy.finalScore || 0} 
+            />
+          </div>
+        )}
+
+        {/* MATB Hard Results with Plots */}
+        {matbHard.trialLogs && !matbHard.skipped && (
+          <div style={{ margin: '40px 0', borderTop: '2px solid rgba(33, 150, 243, 0.5)', paddingTop: '30px' }}>
+            <h2 style={{ textAlign: 'center', marginBottom: '20px', color: '#2196f3' }}>MATB Hard - Detailed Results</h2>
+            <MatbResults 
+              logs={matbHard.trialLogs} 
+              finalScore={matbHard.finalScore || 0} 
+            />
+          </div>
+        )}
 
         <div style={{ margin: '40px 0', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '20px' }}>
           <h3 style={{ textAlign: 'center', marginBottom: '20px' }}>Detailed Phase Reports</h3>
