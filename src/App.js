@@ -626,6 +626,10 @@ function App({ isSuiteMode = false, suiteParams = null, onSuiteEnd = null }) {
         const startParams = JSON.parse(storedParams);
         const { mode, duration, tasks } = startParams;
         
+        // Set game mode immediately to prevent showing testing UI
+        setCurrentGameMode(mode || 'normal');
+        if (duration) setGameDuration(duration);
+        
         // Clear params immediately to prevent re-triggering
         localStorage.removeItem('matb_start_params');
 
@@ -671,6 +675,7 @@ function App({ isSuiteMode = false, suiteParams = null, onSuiteEnd = null }) {
             startOptions.taskConfig = generateTaskConfig();
           }
 
+          // startGame will set the mode again, but that's fine - it ensures consistency
           startGame(startOptions, false);
 
           if (mode === 'testing') {
