@@ -19,8 +19,8 @@ const CustomModeGame = ({
   const [score, setScore] = useState(0);
   const [isGameActive, setIsGameActive] = useState(true);
 
-  // Show instructions if key is provided (bypass for suite mode)
-  const [showInstructions, setShowInstructions] = useState(isSuite ? false : !!taskConfig.instructionKey);
+  // Show instructions if instructionKey is provided, even in suite mode
+  const [showInstructions, setShowInstructions] = useState(!!taskConfig.instructionKey);
 
   const [currentSettings, setCurrentSettings] = useState({
     comm: {

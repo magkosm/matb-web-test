@@ -4,15 +4,10 @@ import NBackTest from './NBackTest';
 import App from '../App';
 import ComprehensiveResults from './ComprehensiveResults';
 import BackgroundService from '../services/BackgroundService';
-import InstructionOverlay from './InstructionOverlay';
-import { useTranslation } from 'react-i18next';
 
 const SuiteManager = () => {
-    const { t } = useTranslation();
     const [step, setStep] = useState(0);
     const [results, setResults] = useState({});
-    const [showMatbInstructions, setShowMatbInstructions] = useState(false);
-    const [matbDifficulty, setMatbDifficulty] = useState(null); // 'easy' or 'hard'
     const finishedStepsRef = useRef(new Set()); // Guard to prevent double-firing handleNext for the same step
 
     // Steps definition:
@@ -60,19 +55,11 @@ const SuiteManager = () => {
         setResults(prev => ({ ...prev, [step]: stepResults }));
         
         // Add delay between MATB runs to ensure full reset completes
-        if (step === 5) {
-            // N-Back 4-back finished, show MATB Easy instructions
-            setMatbDifficulty('easy');
-            setShowMatbInstructions(true);
-        } else if (step === 6) {
-            // MATB Easy finished, show MATB Hard instructions
-            setMatbDifficulty('hard');
-            setShowMatbInstructions(true);
-        } else if (step === 7) {
-            // MATB Hard finished, go to results
+        if (step === 6 || step === 7) {
+            // MATB Easy (step 6) or Hard (step 7) just finished - wait for reset
             setTimeout(() => {
                 setStep(prev => prev + 1);
-            }, 500);
+            }, 500); // 500ms delay to ensure reset completes
         } else {
             setStep(prev => prev + 1);
         }
@@ -169,21 +156,8 @@ const SuiteManager = () => {
         );
     }
 
-    // 6: MATB Easy (4 minutes) - Show instructions first
+    // 6: MATB Easy (4 minutes)
     if (step === 6) {
-        if (showMatbInstructions && matbDifficulty === 'easy') {
-            return (
-                <InstructionOverlay
-                    show={true}
-                    title={t('suite.matbEasy', 'MATB - Easy Difficulty')}
-                    content={t('instructionsOverlay.multi', 'The challenge is now to do all these tasks simultaneously.\nGood luck!')}
-                    onStart={() => {
-                        setShowMatbInstructions(false);
-                    }}
-                />
-            );
-        }
-        
         const easyParams = {
             mode: 'custom',
             duration: 4 * 60 * 1000, // 4 minutes
@@ -192,7 +166,10 @@ const SuiteManager = () => {
                 comm: { isActive: true, eventsPerMinute: 1.5, difficulty: 3 },
                 monitoring: { isActive: true, eventsPerMinute: 5.0, difficulty: 5 },
                 tracking: { isActive: true, eventsPerMinute: 1.5, difficulty: 3 },
-                resource: { isActive: true, eventsPerMinute: 2.5, difficulty: 3 }
+                resource: { isActive: true, eventsPerMinute: 2.5, difficulty: 3 },
+                instructionKey: 'multi',
+                instructionTitle: 'MATB - Easy Difficulty',
+                instructionContent: 'The challenge is now to do all these tasks simultaneously.\nGood luck!'
             }
         };
         return (
@@ -205,21 +182,8 @@ const SuiteManager = () => {
         );
     }
 
-    // 7: MATB Hard (4 minutes) - Show instructions first
+    // 7: MATB Hard (4 minutes)
     if (step === 7) {
-        if (showMatbInstructions && matbDifficulty === 'hard') {
-            return (
-                <InstructionOverlay
-                    show={true}
-                    title={t('suite.matbHard', 'MATB - Hard Difficulty')}
-                    content={t('instructionsOverlay.multi', 'The challenge is now to do all these tasks simultaneously.\nGood luck!')}
-                    onStart={() => {
-                        setShowMatbInstructions(false);
-                    }}
-                />
-            );
-        }
-        
         const hardParams = {
             mode: 'custom',
             duration: 4 * 60 * 1000, // 4 minutes
@@ -228,7 +192,10 @@ const SuiteManager = () => {
                 comm: { isActive: true, eventsPerMinute: 3.5, difficulty: 7 },
                 monitoring: { isActive: true, eventsPerMinute: 9.0, difficulty: 3 },
                 tracking: { isActive: true, eventsPerMinute: 2.5, difficulty: 6 },
-                resource: { isActive: true, eventsPerMinute: 4.5, difficulty: 7 }
+                resource: { isActive: true, eventsPerMinute: 4.5, difficulty: 7 },
+                instructionKey: 'multi',
+                instructionTitle: 'MATB - Hard Difficulty',
+                instructionContent: 'The challenge is now to do all these tasks simultaneously.\nGood luck!'
             }
         };
         return (
