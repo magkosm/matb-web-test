@@ -508,15 +508,41 @@ const NBackTest = ({
     if (onFinish) {
       const finalResults = calculateFinalResults();
       const trialLogs = generateExportData();
+      
+      // Calculate accuracy - handle case where there are no targets
+      const totalTargets = finalResults.dim1.hits + finalResults.dim1.misses + 
+                          finalResults.dim2.hits + finalResults.dim2.misses;
+      const totalCorrect = finalResults.dim1.hits + finalResults.dim2.hits;
+      const totalIncorrect = finalResults.dim1.misses + finalResults.dim1.falseAlarms +
+                            finalResults.dim2.misses + finalResults.dim2.falseAlarms;
+      
+      // Accuracy = correct / (correct + incorrect) when there are responses
+      // If no targets exist, accuracy is undefined/0
+      let accuracy = 0;
+      if (totalTargets > 0) {
+        accuracy = (totalCorrect / totalTargets) * 100;
+      } else if (totalCorrect + totalIncorrect > 0) {
+        // If there are responses but no targets, calculate based on all responses
+        accuracy = (totalCorrect / (totalCorrect + totalIncorrect)) * 100;
+      }
+      
+      console.log('NBackTest: Finishing with results:', {
+        n,
+        totalTargets,
+        totalCorrect,
+        totalIncorrect,
+        accuracy,
+        trialLogsCount: trialLogs.length,
+        designLength: design.length,
+        responsesCount: responses.length
+      });
+      
       onFinish({
         ...finalResults,
         n: n,
-        accuracy: ((finalResults.dim1.hits + finalResults.dim2.hits) /
-          (Math.max(1, finalResults.dim1.hits + finalResults.dim1.misses +
-            finalResults.dim2.hits + finalResults.dim2.misses))) * 100,
-        correct: finalResults.dim1.hits + finalResults.dim2.hits,
-        incorrect: finalResults.dim1.misses + finalResults.dim1.falseAlarms +
-          finalResults.dim2.misses + finalResults.dim2.falseAlarms,
+        accuracy: accuracy,
+        correct: totalCorrect,
+        incorrect: totalIncorrect,
         trialLogs: trialLogs
       });
     }

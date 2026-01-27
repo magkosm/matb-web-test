@@ -137,17 +137,29 @@ const SuiteManager = () => {
     }
 
     // 2-5: N-Back Sequence (6 trials for testing)
+    // With 6 trials and n=1-4, we need to ensure targets fit
+    // For n=1: 5 test trials, can fit 1+1+1=3 targets
+    // For n=2: 4 test trials, can fit 1+1+1=3 targets  
+    // For n=3: 3 test trials, can fit 1+1+0=2 targets
+    // For n=4: 2 test trials, can fit 1+1+0=2 targets
     if (step >= 2 && step <= 5) {
         const n = step - 1; // 1, 2, 3, 4
+        const testTrials = 6 - n; // Available trials after memorization
+        // Ensure we don't request more targets than available
+        const maxTargets = Math.max(1, Math.floor(testTrials / 2));
+        const dim1targets = Math.min(1, maxTargets);
+        const dim2targets = Math.min(1, maxTargets);
+        const bothTargets = Math.min(1, Math.max(0, testTrials - dim1targets - dim2targets));
+        
         return (
             <NBackTest
                 key={step}
                 isSuite={true}
                 n={n}
                 trials={6}
-                dim1targets={2}
-                dim2targets={2}
-                bothTargets={1}
+                dim1targets={dim1targets}
+                dim2targets={dim2targets}
+                bothTargets={bothTargets}
                 tickTime={3000}
                 audioEnabled={true}
                 onFinish={handleNext}

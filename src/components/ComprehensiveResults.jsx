@@ -203,12 +203,20 @@ const ComprehensiveResults = ({ results, onReturn }) => {
   };
 
   const nbackChartData = useMemo(() => {
-    const validData = nbackData.filter(d => d && (d.accuracy !== undefined || d.skipped));
+    // Include all N-Back data, even if accuracy is 0 or undefined
+    const validData = nbackData.filter(d => d && !d.skipped);
+    if (validData.length === 0) {
+      return null;
+    }
     return {
-      labels: validData.map((d, idx) => d.n ? `${d.n}-back` : `${idx + 1}-back (Skipped)`),
+      labels: validData.map((d, idx) => d.n ? `${d.n}-back` : `${idx + 1}-back`),
       datasets: [{
         label: 'Accuracy %',
-        data: validData.map(d => d.accuracy || 0),
+        data: validData.map(d => {
+          // Ensure accuracy is a number, default to 0 if missing
+          const acc = d.accuracy;
+          return (acc !== undefined && acc !== null && !isNaN(acc)) ? acc : 0;
+        }),
         backgroundColor: 'rgba(75, 192, 192, 0.6)'
       }]
     };
