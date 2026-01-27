@@ -16,23 +16,22 @@ const AppWithParams = ({ startParams }) => {
   const [isLoading, setIsLoading] = React.useState(true);
 
   React.useEffect(() => {
-    const paramsStr = JSON.stringify(startParams);
-
     // Clear any existing params first to prevent conflicts
     localStorage.removeItem('matb_start_params');
 
     if (startParams) {
+      const paramsStr = JSON.stringify(startParams);
       // Store the parameters in localStorage
       localStorage.setItem('matb_start_params', paramsStr);
 
       // Small delay to ensure localStorage is set before App checks it
       setTimeout(() => {
         setIsLoading(false);
-      }, 50);
+      }, 100);
     } else {
       setIsLoading(false);
     }
-  }, []); // Only run once on mount for route initialization
+  }, [startParams]); // Include startParams in dependencies
 
   if (isLoading) {
     return (

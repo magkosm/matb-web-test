@@ -33,7 +33,7 @@ const InstructionOverlay = ({
             display: 'flex',
             justifyContent: 'center',
             alignItems: 'center',
-            zIndex: 2000,
+            zIndex: 100000,
             backdropFilter: 'blur(5px)',
             pointerEvents: 'auto'
         }}>

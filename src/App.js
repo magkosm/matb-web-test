@@ -48,13 +48,10 @@ function App({ isSuiteMode = false, suiteParams = null, onSuiteEnd = null }) {
   // Main Menu state - we'll decide this after checking localStorage
   // Main Menu state - check localStorage synchronously for auto-start params to avoid flash
   const [showMainMenu, setShowMainMenu] = useState(() => {
-    // If we're in suite mode or have start params, don't show menu initially
+    // If we're in suite mode, don't show menu
     if (isSuiteMode) return false;
-    try {
-      return localStorage.getItem('matb_start_params') === null;
-    } catch {
-      return true;
-    }
+    // Always show menu initially - we'll check for params in useEffect
+    return true;
   });
 
   // Game mode state
@@ -587,6 +584,14 @@ function App({ isSuiteMode = false, suiteParams = null, onSuiteEnd = null }) {
   }, [trackingInputMode]);
 
   // Check for startup parameters stored in localStorage
+  // Clear any stale localStorage params on mount if we're showing the menu
+  useEffect(() => {
+    if (showMainMenu && !isSuiteMode) {
+      // If we're showing the menu, clear any stale params
+      localStorage.removeItem('matb_start_params');
+    }
+  }, [showMainMenu, isSuiteMode]);
+
   useEffect(() => {
     // Prioritize suite parameters if provided
     if (isSuiteMode && suiteParams) {
@@ -608,6 +613,9 @@ function App({ isSuiteMode = false, suiteParams = null, onSuiteEnd = null }) {
         setShowMainMenu(false); // Hide menu immediately while preparing
         const startParams = JSON.parse(storedParams);
         const { mode, duration, tasks } = startParams;
+        
+        // Clear params immediately to prevent re-triggering
+        localStorage.removeItem('matb_start_params');
 
         // Create task configuration object for custom mode (moved here to be accessible)
         const generateTaskConfig = () => {
@@ -657,7 +665,6 @@ function App({ isSuiteMode = false, suiteParams = null, onSuiteEnd = null }) {
             eventService.resumeAllTasks();
           }
 
-          localStorage.removeItem('matb_start_params');
           setIsInitializing(false);
           setStartupParamsChecked(true);
         }, 200); // Reduced timeout
