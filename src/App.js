@@ -494,11 +494,11 @@ function App({ isSuiteMode = false, suiteParams = null, onSuiteEnd = null }) {
       gameMode,
       // Inject logs for suite mode summary export - using REFS for absolute latest data
       trialLogs: isSuiteMode ? {
-        comm: [...commLogRef.current],
-        resource: [...resourceLogRef.current],
-        monitoring: [...monitoringLogRef.current],
-        tracking: [...trackingLogRef.current],
-        performance: [...performanceLogRef.current]
+        comm: Array.isArray(commLogRef.current) ? [...commLogRef.current] : [],
+        resource: Array.isArray(resourceLogRef.current) ? [...resourceLogRef.current] : [],
+        monitoring: Array.isArray(monitoringLogRef.current) ? [...monitoringLogRef.current] : [],
+        tracking: Array.isArray(trackingLogRef.current) ? [...trackingLogRef.current] : [],
+        performance: Array.isArray(performanceLogRef.current) ? [...performanceLogRef.current] : []
       } : null
     };
 

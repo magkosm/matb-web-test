@@ -135,11 +135,11 @@ const SuiteManager = () => {
         );
     }
 
-    // 6: MATB Easy (4 min)
+    // 6: MATB Easy (30 seconds for troubleshooting)
     if (step === 6) {
         const easyParams = {
             mode: 'custom',
-            duration: 4 * 60 * 1000,
+            duration: 30 * 1000,
             tasks: ['comm', 'monitoring', 'tracking', 'resource'],
             taskConfig: {
                 comm: { isActive: true, eventsPerMinute: 1.5, difficulty: 3 },
@@ -158,11 +158,11 @@ const SuiteManager = () => {
         );
     }
 
-    // 7: MATB Hard (4 min)
+    // 7: MATB Hard (30 seconds for troubleshooting)
     if (step === 7) {
         const hardParams = {
             mode: 'custom',
-            duration: 4 * 60 * 1000,
+            duration: 30 * 1000,
             tasks: ['comm', 'monitoring', 'tracking', 'resource'],
             taskConfig: {
                 comm: { isActive: true, eventsPerMinute: 3.5, difficulty: 7 },
