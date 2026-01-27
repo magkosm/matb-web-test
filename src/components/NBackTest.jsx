@@ -215,6 +215,7 @@ const NBackTest = ({
   const isMountedRef = useRef(true);
   const finishedRef = useRef(false); // Guard against multiple endTest calls
   const stimuliRef = useRef([[], []]);
+  const designRef = useRef([]); // Store design in ref for reliable access
   const audioRef = useRef(null);
   // Add a ref to track current audio state for intervals/timeouts
   const audioActiveRef = useRef(audioEnabled);
@@ -369,8 +370,9 @@ const NBackTest = ({
     // Store in ref for immediate access
     stimuliRef.current = newStimuli;
 
-    // Reset state
+    // Reset state and refs
     setDesign(newDesign);
+    designRef.current = newDesign; // Store in ref for reliable access
     setStimuli(newStimuli);
     setCurrentStimulus(0);
     setResponses([]);
@@ -1113,10 +1115,11 @@ const NBackTest = ({
         }
       }
 
-      // Get target status from design
-      if (i >= n && design[i]) {
-        trialData.targetLetter = design[i][0] === 1;
-        trialData.targetPosition = design[i][1] === 1;
+      // Get target status from design - use ref for reliable access
+      const currentDesign = designRef.current.length > 0 ? designRef.current : design;
+      if (i >= n && currentDesign[i]) {
+        trialData.targetLetter = currentDesign[i][0] === 1;
+        trialData.targetPosition = currentDesign[i][1] === 1;
       }
 
       // Get user responses

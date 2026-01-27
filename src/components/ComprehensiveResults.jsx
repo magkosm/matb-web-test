@@ -294,7 +294,7 @@ const ComprehensiveResults = ({ results, onReturn }) => {
         )}
 
         {/* N-Back Accuracy Chart */}
-        {nbackChartData.labels.length > 0 && (
+        {nbackChartData && nbackChartData.labels.length > 0 ? (
           <div style={{ height: '300px', margin: '20px 0', background: 'rgba(255,255,255,0.05)', padding: '15px', borderRadius: '8px' }}>
             <h3>N-Back Accuracy Curve</h3>
             <Bar 
@@ -310,6 +310,11 @@ const ComprehensiveResults = ({ results, onReturn }) => {
                 }
               }} 
             />
+          </div>
+        ) : (
+          <div style={{ margin: '20px 0', padding: '15px', background: 'rgba(255,255,255,0.05)', borderRadius: '8px', color: '#ffa500' }}>
+            <h3>N-Back Accuracy Curve</h3>
+            <p>No N-Back data available to display</p>
           </div>
         )}
 
