@@ -50,8 +50,13 @@ function App({ isSuiteMode = false, suiteParams = null, onSuiteEnd = null }) {
   const [showMainMenu, setShowMainMenu] = useState(() => {
     // If we're in suite mode, don't show menu
     if (isSuiteMode) return false;
-    // Always show menu initially - we'll check for params in useEffect
-    return true;
+    // Check for params synchronously - if params exist, don't show menu
+    try {
+      const hasParams = localStorage.getItem('matb_start_params') !== null;
+      return !hasParams; // Show menu only if no params
+    } catch {
+      return true; // Default to showing menu on error
+    }
   });
 
   // Game mode state
@@ -584,13 +589,20 @@ function App({ isSuiteMode = false, suiteParams = null, onSuiteEnd = null }) {
   }, [trackingInputMode]);
 
   // Check for startup parameters stored in localStorage
-  // Clear any stale localStorage params on mount if we're showing the menu
+  // Clear any stale localStorage params on mount ONLY if we're on the main route (no params on initial mount)
   useEffect(() => {
-    if (showMainMenu && !isSuiteMode) {
-      // If we're showing the menu, clear any stale params
-      localStorage.removeItem('matb_start_params');
+    // Only run once on mount
+    if (startupParamsChecked) return;
+    
+    if (!isSuiteMode) {
+      // Check if we have params - if not, we're on main route, so clear any stale data
+      const hasParams = localStorage.getItem('matb_start_params') !== null;
+      if (!hasParams && showMainMenu) {
+        // We're on main route with no params - ensure it's clean
+        localStorage.removeItem('matb_start_params');
+      }
     }
-  }, [showMainMenu, isSuiteMode]);
+  }, []); // Only run once on mount
 
   useEffect(() => {
     // Prioritize suite parameters if provided
