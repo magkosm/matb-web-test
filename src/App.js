@@ -512,18 +512,32 @@ function App({ isSuiteMode = false, suiteParams = null, onSuiteEnd = null }) {
     // Preserve the gameMode in the results if it was provided
     const gameMode = results.gameMode || currentGameMode;
 
+    // Collect logs BEFORE any reset happens - using REFS for absolute latest data
+    const collectedLogs = isSuiteMode ? {
+      comm: Array.isArray(commLogRef.current) ? [...commLogRef.current] : [],
+      resource: Array.isArray(resourceLogRef.current) ? [...resourceLogRef.current] : [],
+      monitoring: Array.isArray(monitoringLogRef.current) ? [...monitoringLogRef.current] : [],
+      tracking: Array.isArray(trackingLogRef.current) ? [...trackingLogRef.current] : [],
+      performance: Array.isArray(performanceLogRef.current) ? [...performanceLogRef.current] : []
+    } : null;
+
+    // Debug logging for suite mode
+    if (isSuiteMode && collectedLogs) {
+      console.log('App: Collecting logs for suite:', {
+        comm: collectedLogs.comm.length,
+        resource: collectedLogs.resource.length,
+        monitoring: collectedLogs.monitoring.length,
+        tracking: collectedLogs.tracking.length,
+        performance: collectedLogs.performance.length
+      });
+    }
+
     // Create a standardized result object with the mode included
     const standardizedResults = {
       ...results,
       gameMode,
-      // Inject logs for suite mode summary export - using REFS for absolute latest data
-      trialLogs: isSuiteMode ? {
-        comm: Array.isArray(commLogRef.current) ? [...commLogRef.current] : [],
-        resource: Array.isArray(resourceLogRef.current) ? [...resourceLogRef.current] : [],
-        monitoring: Array.isArray(monitoringLogRef.current) ? [...monitoringLogRef.current] : [],
-        tracking: Array.isArray(trackingLogRef.current) ? [...trackingLogRef.current] : [],
-        performance: Array.isArray(performanceLogRef.current) ? [...performanceLogRef.current] : []
-      } : null
+      // Inject logs for suite mode summary export
+      trialLogs: collectedLogs
     };
 
     // Update the game results state with the standardized object
@@ -531,7 +545,7 @@ function App({ isSuiteMode = false, suiteParams = null, onSuiteEnd = null }) {
 
     // If in suite mode, notify the suite manager instead of exiting to main menu
     if (isSuiteMode && onSuiteEnd) {
-      console.log('App: Suite stage finished, notifying suite manager');
+      console.log('App: Suite stage finished, notifying suite manager with logs');
       onSuiteEnd(standardizedResults);
       return;
     }

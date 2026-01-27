@@ -40,6 +40,18 @@ const SuiteManager = () => {
         finishedStepsRef.current.add(step);
 
         console.log(`SuiteManager: Step ${step} finished. Moving to ${step + 1}. Results:`, stepResults);
+        
+        // Debug: Log trialLogs if present
+        if (stepResults.trialLogs) {
+            console.log(`SuiteManager: Step ${step} trialLogs:`, {
+                comm: stepResults.trialLogs.comm?.length || 0,
+                resource: stepResults.trialLogs.resource?.length || 0,
+                monitoring: stepResults.trialLogs.monitoring?.length || 0,
+                tracking: stepResults.trialLogs.tracking?.length || 0,
+                performance: stepResults.trialLogs.performance?.length || 0
+            });
+        }
+        
         setResults(prev => ({ ...prev, [step]: stepResults }));
         
         // Add delay between MATB runs to ensure full reset completes

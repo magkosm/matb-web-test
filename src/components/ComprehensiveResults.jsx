@@ -165,12 +165,41 @@ const ComprehensiveResults = ({ results, onReturn }) => {
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
     const safeLabel = label.toLowerCase().replace(/\s+/g, '_');
 
+    // Debug: Log what we're exporting
+    console.log(`Exporting ${label} logs:`, {
+      comm: trialLogs.comm?.length || 0,
+      resource: trialLogs.resource?.length || 0,
+      monitoring: trialLogs.monitoring?.length || 0,
+      tracking: trialLogs.tracking?.length || 0,
+      performance: trialLogs.performance?.length || 0
+    });
+
     // Trigger multiple downloads to match standalone behavior
-    if (trialLogs.comm && trialLogs.comm.length > 0) downloadCSV(trialLogs.comm, `${safeLabel}_comm_log_${timestamp}`);
-    if (trialLogs.resource && trialLogs.resource.length > 0) downloadCSV(trialLogs.resource, `${safeLabel}_resource_log_${timestamp}`);
-    if (trialLogs.monitoring && trialLogs.monitoring.length > 0) downloadCSV(trialLogs.monitoring, `${safeLabel}_monitoring_log_${timestamp}`);
-    if (trialLogs.tracking && trialLogs.tracking.length > 0) downloadCSV(trialLogs.tracking, `${safeLabel}_tracking_log_${timestamp}`);
-    if (trialLogs.performance && trialLogs.performance.length > 0) downloadCSV(trialLogs.performance, `${safeLabel}_performance_plots_${timestamp}`);
+    if (trialLogs.comm && trialLogs.comm.length > 0) {
+      downloadCSV(trialLogs.comm, `${safeLabel}_comm_log_${timestamp}`);
+    } else {
+      console.warn(`No comm logs for ${label}`);
+    }
+    if (trialLogs.resource && trialLogs.resource.length > 0) {
+      downloadCSV(trialLogs.resource, `${safeLabel}_resource_log_${timestamp}`);
+    } else {
+      console.warn(`No resource logs for ${label}`);
+    }
+    if (trialLogs.monitoring && trialLogs.monitoring.length > 0) {
+      downloadCSV(trialLogs.monitoring, `${safeLabel}_monitoring_log_${timestamp}`);
+    } else {
+      console.warn(`No monitoring logs for ${label}`);
+    }
+    if (trialLogs.tracking && trialLogs.tracking.length > 0) {
+      downloadCSV(trialLogs.tracking, `${safeLabel}_tracking_log_${timestamp}`);
+    } else {
+      console.warn(`No tracking logs for ${label}`);
+    }
+    if (trialLogs.performance && trialLogs.performance.length > 0) {
+      downloadCSV(trialLogs.performance, `${safeLabel}_performance_plots_${timestamp}`);
+    } else {
+      console.warn(`No performance logs for ${label}`);
+    }
   };
 
   const nbackChartData = useMemo(() => {

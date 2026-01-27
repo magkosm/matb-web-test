@@ -31,61 +31,91 @@ ChartJS.register(
 const MatbResults = ({ logs, finalScore }) => {
     const { t } = useTranslation();
 
-    /* console.log('MatbResults rendering with logs:', {
+    // Debug logging to help diagnose empty logs
+    console.log('MatbResults rendering with logs:', {
         comm: logs?.comm?.length || 0,
         resource: logs?.resource?.length || 0,
         monitoring: logs?.monitoring?.length || 0,
         tracking: logs?.tracking?.length || 0,
-        performance: logs?.performance?.length || 0
-    }); */
+        performance: logs?.performance?.length || 0,
+        hasLogs: !!logs,
+        commSample: logs?.comm?.[0],
+        resourceSample: logs?.resource?.[0],
+        monitoringSample: logs?.monitoring?.[0]
+    });
 
     // Calculate accuracies for each task
     const calculateAccuracy = (taskLogs, taskType) => {
         if (!taskLogs || taskLogs.length === 0) {
-            return { correct: 0, incorrect: 0, accuracy: 0 };
+            return { correct: 0, incorrect: 0, accuracy: 0, total: 0 };
         }
 
         let correct = 0;
         let incorrect = 0;
+        let totalCounted = 0;
 
         if (taskType === 'comm') {
             // For comms, check for 'HIT' or 'CR' (Correct Rejection) vs 'MISS' or 'FA'
+            // Only count logs that have a Remarks field
             taskLogs.forEach(log => {
-                if (log.Remarks === 'HIT' || log.Remarks === 'CR') correct++;
-                else if (log.Remarks === 'MISS' || log.Remarks === 'FA') incorrect++;
+                if (log.Remarks !== undefined && log.Remarks !== null && log.Remarks !== '') {
+                    totalCounted++;
+                    if (log.Remarks === 'HIT' || log.Remarks === 'CR') {
+                        correct++;
+                    } else if (log.Remarks === 'MISS' || log.Remarks === 'FA') {
+                        incorrect++;
+                    }
+                }
             });
         } else if (taskType === 'resource') {
             // For resource, check tank range status (corrA && corrB)
             // Only count logs that have corrA/corrB fields (not event logs)
             taskLogs.forEach(log => {
                 if (log.corrA !== undefined && log.corrB !== undefined) {
-                    if (log.corrA && log.corrB) correct++;
-                    else incorrect++;
+                    totalCounted++;
+                    if (log.corrA && log.corrB) {
+                        correct++;
+                    } else {
+                        incorrect++;
+                    }
                 }
             });
         } else if (taskType === 'monitoring') {
             // For monitoring, check type (HIT vs MISS/FA)
+            // Only count logs that have a type field
             taskLogs.forEach(log => {
-                if (log.type === 'HIT') correct++;
-                else if (log.type === 'MISS' || log.type === 'FA') incorrect++;
+                if (log.type !== undefined && log.type !== null && log.type !== '') {
+                    totalCounted++;
+                    if (log.type === 'HIT') {
+                        correct++;
+                    } else if (log.type === 'MISS' || log.type === 'FA') {
+                        incorrect++;
+                    }
+                }
             });
         } else if (taskType === 'tracking') {
             // For tracking, check isWithinTarget - sample every 10th entry to avoid massive data
             const sampledLogs = taskLogs.filter((_, index) => index % 10 === 0);
             sampledLogs.forEach(log => {
                 if (log.isWithinTarget !== undefined) {
-                    if (log.isWithinTarget) correct++;
-                    else incorrect++;
+                    totalCounted++;
+                    if (log.isWithinTarget) {
+                        correct++;
+                    } else {
+                        incorrect++;
+                    }
                 }
             });
-
         }
 
         const total = correct + incorrect;
+        // If no valid logs were counted, return 0 accuracy
+        // This prevents showing 100% when logs are empty or invalid
         return {
             correct,
             incorrect,
-            accuracy: total > 0 ? (correct / total) * 100 : 0
+            total: totalCounted,
+            accuracy: total > 0 ? (correct / total) * 100 : (totalCounted === 0 ? 0 : NaN)
         };
     };
 
