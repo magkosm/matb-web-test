@@ -13,8 +13,32 @@ const ComprehensiveResults = ({ results, onReturn }) => {
   // N-Back Results: steps 2, 3, 4, 5
   const nbackData = useMemo(() => [results[2], results[3], results[4], results[5]].filter(res => res && (res.accuracy !== undefined || res.skipped)), [results]);
   // MATB Results: steps 6, 7
-  const matbEasy = useMemo(() => results[6] || {}, [results]);
-  const matbHard = useMemo(() => results[7] || {}, [results]);
+  const matbEasy = useMemo(() => {
+    const data = results[6] || {};
+    // Calculate score from performance logs if finalScore is missing
+    if (!data.finalScore && data.trialLogs && data.trialLogs.performance && Array.isArray(data.trialLogs.performance)) {
+      // Sum up health values from performance logs (score = sum of health over time)
+      const calculatedScore = data.trialLogs.performance.reduce((sum, log) => {
+        const health = log.health || log.Health || 0;
+        return sum + health;
+      }, 0);
+      return { ...data, finalScore: Math.floor(calculatedScore) };
+    }
+    return data;
+  }, [results]);
+  const matbHard = useMemo(() => {
+    const data = results[7] || {};
+    // Calculate score from performance logs if finalScore is missing
+    if (!data.finalScore && data.trialLogs && data.trialLogs.performance && Array.isArray(data.trialLogs.performance)) {
+      // Sum up health values from performance logs (score = sum of health over time)
+      const calculatedScore = data.trialLogs.performance.reduce((sum, log) => {
+        const health = log.health || log.Health || 0;
+        return sum + health;
+      }, 0);
+      return { ...data, finalScore: Math.floor(calculatedScore) };
+    }
+    return data;
+  }, [results]);
 
   // Calculate Total Score
   const totalScore = useMemo(() => {
