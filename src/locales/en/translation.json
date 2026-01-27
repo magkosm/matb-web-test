@@ -47,7 +47,11 @@
     "resMan": "In this task you must maintain levels in the two main tanks (A and B) by using a set of reserve tanks and pumps, each with specific flow rates.\nYour task is to toggle numbered pumps on and off to get tanks A and B as close to their normal levels as possible.\nNormal levels for A and B tanks are indicated by the red line through the tank.\nPumps can sometimes fail, indicated by turning red.\nFlow rates for different pumps are shown below the respective pump (when active).\n\nControls:\nTo turn pumps on or off, use the number keys corresponding to the pump number.",
     "multiTitle": "Multitasking",
     "multi": "The challenge is now to do all these tasks simultaneously.\nGood luck!",
-    "ready": "I Understand - Start Practice",
+    "ready": "I Understand - Start Practice"
+  },
+  "suite": {
+    "matbEasy": "MATB - Easy Difficulty",
+    "matbHard": "MATB - Hard Difficulty",
     "startPractice": "I Understand - Start Practice"
   },
   "customMode": {

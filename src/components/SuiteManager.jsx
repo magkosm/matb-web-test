@@ -4,10 +4,15 @@ import NBackTest from './NBackTest';
 import App from '../App';
 import ComprehensiveResults from './ComprehensiveResults';
 import BackgroundService from '../services/BackgroundService';
+import InstructionOverlay from './InstructionOverlay';
+import { useTranslation } from 'react-i18next';
 
 const SuiteManager = () => {
+    const { t } = useTranslation();
     const [step, setStep] = useState(0);
     const [results, setResults] = useState({});
+    const [showMatbInstructions, setShowMatbInstructions] = useState(false);
+    const [matbDifficulty, setMatbDifficulty] = useState(null); // 'easy' or 'hard'
     const finishedStepsRef = useRef(new Set()); // Guard to prevent double-firing handleNext for the same step
 
     // Steps definition:
@@ -55,11 +60,19 @@ const SuiteManager = () => {
         setResults(prev => ({ ...prev, [step]: stepResults }));
         
         // Add delay between MATB runs to ensure full reset completes
-        if (step === 6 || step === 7) {
-            // MATB Easy (step 6) or Hard (step 7) just finished - wait for reset
+        if (step === 5) {
+            // N-Back 4-back finished, show MATB Easy instructions
+            setMatbDifficulty('easy');
+            setShowMatbInstructions(true);
+        } else if (step === 6) {
+            // MATB Easy finished, show MATB Hard instructions
+            setMatbDifficulty('hard');
+            setShowMatbInstructions(true);
+        } else if (step === 7) {
+            // MATB Hard finished, go to results
             setTimeout(() => {
                 setStep(prev => prev + 1);
-            }, 500); // 500ms delay to ensure reset completes
+            }, 500);
         } else {
             setStep(prev => prev + 1);
         }
@@ -120,14 +133,14 @@ const SuiteManager = () => {
         );
     }
 
-    // 1: Reaction Time (3 stimuli for testing)
+    // 1: Reaction Time (12 stimuli)
     if (step === 1) {
         return (
             <ReactionTimeTest
                 key={step}
                 isSuite={true}
                 duration={null} // Force stimuli-based mode
-                maxStimuli={3}
+                maxStimuli={12}
                 minDelay={1000}
                 maxDelay={7000}
                 onFinish={handleNext}
@@ -136,30 +149,18 @@ const SuiteManager = () => {
         );
     }
 
-    // 2-5: N-Back Sequence (6 trials for testing)
-    // With 6 trials and n=1-4, we need to ensure targets fit
-    // For n=1: 5 test trials, can fit 1+1+1=3 targets
-    // For n=2: 4 test trials, can fit 1+1+1=3 targets  
-    // For n=3: 3 test trials, can fit 1+1+0=2 targets
-    // For n=4: 2 test trials, can fit 1+1+0=2 targets
+    // 2-5: N-Back Sequence (20 trials)
     if (step >= 2 && step <= 5) {
         const n = step - 1; // 1, 2, 3, 4
-        const testTrials = 6 - n; // Available trials after memorization
-        // Ensure we don't request more targets than available
-        const maxTargets = Math.max(1, Math.floor(testTrials / 2));
-        const dim1targets = Math.min(1, maxTargets);
-        const dim2targets = Math.min(1, maxTargets);
-        const bothTargets = Math.min(1, Math.max(0, testTrials - dim1targets - dim2targets));
-        
         return (
             <NBackTest
                 key={step}
                 isSuite={true}
                 n={n}
-                trials={6}
-                dim1targets={dim1targets}
-                dim2targets={dim2targets}
-                bothTargets={bothTargets}
+                trials={20}
+                dim1targets={4}
+                dim2targets={4}
+                bothTargets={2}
                 tickTime={3000}
                 audioEnabled={true}
                 onFinish={handleNext}
@@ -168,11 +169,24 @@ const SuiteManager = () => {
         );
     }
 
-    // 6: MATB Easy (30 seconds for troubleshooting)
+    // 6: MATB Easy (4 minutes) - Show instructions first
     if (step === 6) {
+        if (showMatbInstructions && matbDifficulty === 'easy') {
+            return (
+                <InstructionOverlay
+                    show={true}
+                    title={t('suite.matbEasy', 'MATB - Easy Difficulty')}
+                    content={t('instructionsOverlay.multi', 'The challenge is now to do all these tasks simultaneously.\nGood luck!')}
+                    onStart={() => {
+                        setShowMatbInstructions(false);
+                    }}
+                />
+            );
+        }
+        
         const easyParams = {
             mode: 'custom',
-            duration: 30 * 1000,
+            duration: 4 * 60 * 1000, // 4 minutes
             tasks: ['comm', 'monitoring', 'tracking', 'resource'],
             taskConfig: {
                 comm: { isActive: true, eventsPerMinute: 1.5, difficulty: 3 },
@@ -191,15 +205,28 @@ const SuiteManager = () => {
         );
     }
 
-    // 7: MATB Hard (30 seconds for troubleshooting)
+    // 7: MATB Hard (4 minutes) - Show instructions first
     if (step === 7) {
+        if (showMatbInstructions && matbDifficulty === 'hard') {
+            return (
+                <InstructionOverlay
+                    show={true}
+                    title={t('suite.matbHard', 'MATB - Hard Difficulty')}
+                    content={t('instructionsOverlay.multi', 'The challenge is now to do all these tasks simultaneously.\nGood luck!')}
+                    onStart={() => {
+                        setShowMatbInstructions(false);
+                    }}
+                />
+            );
+        }
+        
         const hardParams = {
             mode: 'custom',
-            duration: 30 * 1000,
+            duration: 4 * 60 * 1000, // 4 minutes
             tasks: ['comm', 'monitoring', 'tracking', 'resource'],
             taskConfig: {
                 comm: { isActive: true, eventsPerMinute: 3.5, difficulty: 7 },
-                monitoring: { isActive: true, eventsPerMinute: 9.0, difficulty: 3 }, // More events, less items/complexity per event? Lower difficulty usually means fewer lamps active.
+                monitoring: { isActive: true, eventsPerMinute: 9.0, difficulty: 3 },
                 tracking: { isActive: true, eventsPerMinute: 2.5, difficulty: 6 },
                 resource: { isActive: true, eventsPerMinute: 4.5, difficulty: 7 }
             }
