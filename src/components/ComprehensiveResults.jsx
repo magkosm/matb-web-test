@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, PointElement, LineElement } from 'chart.js';
-import { Bar } from 'react-chartjs-2';
+import { Bar, Line } from 'react-chartjs-2';
 import { downloadCSV } from '../utils/csvExport';
 import MatbResults from './MatbResults';
 
@@ -11,7 +11,23 @@ const ComprehensiveResults = ({ results, onReturn }) => {
   // RT Results: step 1
   const rtData = useMemo(() => results[1] || {}, [results]);
   // N-Back Results: steps 2, 3, 4, 5
-  const nbackData = useMemo(() => [results[2], results[3], results[4], results[5]].filter(res => res && (res.accuracy !== undefined || res.skipped)), [results]);
+  const nbackData = useMemo(() => {
+    const data = [results[2], results[3], results[4], results[5]].filter(res => res && (res.accuracy !== undefined || res.skipped || res.trialLogs));
+    // Ensure accuracy is calculated if missing but trialLogs exist
+    return data.map(res => {
+      if (!res.accuracy && res.trialLogs && res.trialLogs.length > 0) {
+        // Calculate accuracy from trialLogs if missing
+        const validTrials = res.trialLogs.filter(t => !t.isMemorization);
+        const correct = validTrials.filter(t => 
+          (t.correctLetter === 'HIT' || t.correctLetter === 'CR') && 
+          (t.correctPosition === 'HIT' || t.correctPosition === 'CR')
+        ).length;
+        const total = validTrials.length;
+        return { ...res, accuracy: total > 0 ? (correct / total) * 100 : 0 };
+      }
+      return res;
+    });
+  }, [results]);
   // MATB Results: steps 6, 7
   const matbEasy = useMemo(() => {
     const data = results[6] || {};
@@ -157,14 +173,40 @@ const ComprehensiveResults = ({ results, onReturn }) => {
     if (trialLogs.performance && trialLogs.performance.length > 0) downloadCSV(trialLogs.performance, `${safeLabel}_performance_plots_${timestamp}`);
   };
 
-  const nbackChartData = {
-    labels: nbackData.map((d, idx) => d.n ? `${d.n}-back` : `${idx + 1}-back (Skipped)`),
-    datasets: [{
-      label: 'Accuracy %',
-      data: nbackData.map(d => d.accuracy || 0),
-      backgroundColor: 'rgba(75, 192, 192, 0.6)'
-    }]
-  };
+  const nbackChartData = useMemo(() => {
+    const validData = nbackData.filter(d => d && (d.accuracy !== undefined || d.skipped));
+    return {
+      labels: validData.map((d, idx) => d.n ? `${d.n}-back` : `${idx + 1}-back (Skipped)`),
+      datasets: [{
+        label: 'Accuracy %',
+        data: validData.map(d => d.accuracy || 0),
+        backgroundColor: 'rgba(75, 192, 192, 0.6)'
+      }]
+    };
+  }, [nbackData]);
+
+  // Reaction Time Chart Data
+  const rtChartData = useMemo(() => {
+    if (!rtData.reactionTimes || rtData.reactionTimes.length === 0 || rtData.skipped) {
+      return null;
+    }
+    return {
+      labels: rtData.reactionTimes.map((_, index) => `Trial ${index + 1}`),
+      datasets: [{
+        label: 'Reaction Time (ms)',
+        data: rtData.reactionTimes,
+        borderColor: 'rgb(75, 192, 192)',
+        backgroundColor: 'rgba(75, 192, 192, 0.5)',
+        tension: 0.1
+      }, {
+        label: 'Average',
+        data: rtData.reactionTimes.map(() => rtData.averageReactionTime || 0),
+        borderColor: 'rgb(255, 99, 132)',
+        backgroundColor: 'rgba(255, 99, 132, 0.5)',
+        borderDash: [5, 5]
+      }]
+    };
+  }, [rtData]);
 
   return (
     <div style={{
@@ -194,10 +236,45 @@ const ComprehensiveResults = ({ results, onReturn }) => {
           <div style={{ fontSize: '48px', fontWeight: 'bold' }}>{totalScore}</div>
         </div>
 
-        <div style={{ height: '300px', margin: '20px 0' }}>
-          <h3>N-Back Accuracy Curve</h3>
-          <Bar data={nbackChartData} options={{ maintainAspectRatio: false, scales: { y: { beginAtZero: true, max: 100 } } }} />
-        </div>
+        {/* Reaction Time Plot */}
+        {rtChartData && !rtData.skipped && (
+          <div style={{ height: '300px', margin: '20px 0', background: 'rgba(255,255,255,0.05)', padding: '15px', borderRadius: '8px' }}>
+            <h3>Reaction Time by Trial</h3>
+            <Line 
+              data={rtChartData} 
+              options={{ 
+                maintainAspectRatio: false, 
+                scales: { 
+                  y: { beginAtZero: true, ticks: { color: 'white' }, grid: { color: 'rgba(255,255,255,0.1)' } },
+                  x: { ticks: { color: 'white' }, grid: { color: 'rgba(255,255,255,0.1)' } }
+                },
+                plugins: {
+                  legend: { labels: { color: 'white' } }
+                }
+              }} 
+            />
+          </div>
+        )}
+
+        {/* N-Back Accuracy Chart */}
+        {nbackChartData.labels.length > 0 && (
+          <div style={{ height: '300px', margin: '20px 0', background: 'rgba(255,255,255,0.05)', padding: '15px', borderRadius: '8px' }}>
+            <h3>N-Back Accuracy Curve</h3>
+            <Bar 
+              data={nbackChartData} 
+              options={{ 
+                maintainAspectRatio: false, 
+                scales: { 
+                  y: { beginAtZero: true, max: 100, ticks: { color: 'white' }, grid: { color: 'rgba(255,255,255,0.1)' } },
+                  x: { ticks: { color: 'white' }, grid: { color: 'rgba(255,255,255,0.1)' } }
+                },
+                plugins: {
+                  legend: { labels: { color: 'white' } }
+                }
+              }} 
+            />
+          </div>
+        )}
 
         {/* MATB Easy Results with Plots */}
         {matbEasy.trialLogs && !matbEasy.skipped && (

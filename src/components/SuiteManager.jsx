@@ -108,14 +108,14 @@ const SuiteManager = () => {
         );
     }
 
-    // 1: Reaction Time (12 stimuli, 1-7s)
+    // 1: Reaction Time (3 stimuli for testing)
     if (step === 1) {
         return (
             <ReactionTimeTest
                 key={step}
                 isSuite={true}
                 duration={null} // Force stimuli-based mode
-                maxStimuli={12}
+                maxStimuli={3}
                 minDelay={1000}
                 maxDelay={7000}
                 onFinish={handleNext}
@@ -124,7 +124,7 @@ const SuiteManager = () => {
         );
     }
 
-    // 2-5: N-Back Sequence
+    // 2-5: N-Back Sequence (6 trials for testing)
     if (step >= 2 && step <= 5) {
         const n = step - 1; // 1, 2, 3, 4
         return (
@@ -132,10 +132,10 @@ const SuiteManager = () => {
                 key={step}
                 isSuite={true}
                 n={n}
-                trials={20}
-                dim1targets={4}
-                dim2targets={4}
-                bothTargets={2}
+                trials={6}
+                dim1targets={2}
+                dim2targets={2}
+                bothTargets={1}
                 tickTime={3000}
                 audioEnabled={true}
                 onFinish={handleNext}
