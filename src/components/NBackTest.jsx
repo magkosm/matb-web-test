@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import ScoreboardService from '../services/ScoreboardService';
 
 import { downloadCSV } from '../utils/csvExport';
+import BackgroundService from '../services/BackgroundService';
 
 // Register ChartJS components
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, Title, Tooltip, Legend);
@@ -182,6 +183,17 @@ const NBackTest = ({
   useEffect(() => {
     setIsAudioActive(audioEnabled);
   }, [audioEnabled]);
+
+  // Sync background on mount
+  useEffect(() => {
+    const currentBackground = BackgroundService.getCurrentBackground();
+    const style = BackgroundService.getBackgroundStyle(currentBackground);
+    document.body.style.backgroundImage = style.backgroundImage || 'none';
+    document.body.style.backgroundColor = style.backgroundColor || '';
+    document.body.style.backgroundSize = style.backgroundSize || '';
+    document.body.style.backgroundPosition = style.backgroundPosition || '';
+    document.body.style.backgroundRepeat = style.backgroundRepeat || '';
+  }, []);
 
   // Game state
   const [testStarted, setTestStarted] = useState(false);
@@ -510,14 +522,14 @@ const NBackTest = ({
     if (onFinish) {
       const finalResults = calculateFinalResults();
       const trialLogs = generateExportData();
-      
+
       // Calculate accuracy - handle case where there are no targets
-      const totalTargets = finalResults.dim1.hits + finalResults.dim1.misses + 
-                          finalResults.dim2.hits + finalResults.dim2.misses;
+      const totalTargets = finalResults.dim1.hits + finalResults.dim1.misses +
+        finalResults.dim2.hits + finalResults.dim2.misses;
       const totalCorrect = finalResults.dim1.hits + finalResults.dim2.hits;
       const totalIncorrect = finalResults.dim1.misses + finalResults.dim1.falseAlarms +
-                            finalResults.dim2.misses + finalResults.dim2.falseAlarms;
-      
+        finalResults.dim2.misses + finalResults.dim2.falseAlarms;
+
       // Accuracy = correct / (correct + incorrect) when there are responses
       // If no targets exist, accuracy is undefined/0
       let accuracy = 0;
@@ -527,7 +539,7 @@ const NBackTest = ({
         // If there are responses but no targets, calculate based on all responses
         accuracy = (totalCorrect / (totalCorrect + totalIncorrect)) * 100;
       }
-      
+
       console.log('NBackTest: Finishing with results:', {
         n,
         totalTargets,
@@ -538,7 +550,7 @@ const NBackTest = ({
         designLength: design.length,
         responsesCount: responses.length
       });
-      
+
       onFinish({
         ...finalResults,
         n: n,
@@ -1435,7 +1447,7 @@ const NBackTest = ({
         alignItems: 'center',
         padding: '20px',
         minHeight: '100vh',
-        backgroundColor: 'rgba(26, 42, 58, 0.85)', // Match the app's background
+        backgroundColor: 'rgba(26, 42, 58, 0.85)',
         color: 'white',
         overflow: 'auto'
       }}>
@@ -1461,7 +1473,7 @@ const NBackTest = ({
         alignItems: 'center',
         padding: '20px',
         minHeight: '100vh',
-        backgroundColor: 'rgba(26, 42, 58, 0.85)', // Match the app's background
+        backgroundColor: 'rgba(26, 42, 58, 0.85)',
         color: 'white'
       }}>
         <div style={{
@@ -1578,7 +1590,7 @@ const NBackTest = ({
       overflow: 'auto',
       padding: '20px',
       textAlign: 'center',
-      backgroundColor: 'rgba(26, 42, 58, 0.85)', // Match the app's background
+      backgroundColor: 'rgba(26, 42, 58, 0.85)',
       color: 'white'
     }}>
       <div style={{

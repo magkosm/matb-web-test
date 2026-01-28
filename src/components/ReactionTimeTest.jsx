@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import ScoreboardService from '../services/ScoreboardService';
 
 import { downloadCSV } from '../utils/csvExport';
+import BackgroundService from '../services/BackgroundService';
 
 // Register ChartJS components
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, Title, Tooltip, Legend);
@@ -611,6 +612,17 @@ const ReactionTimeTest = ({
     };
   }, []);
 
+  // Sync background on mount
+  useEffect(() => {
+    const currentBackground = BackgroundService.getCurrentBackground();
+    const style = BackgroundService.getBackgroundStyle(currentBackground);
+    document.body.style.backgroundImage = style.backgroundImage || 'none';
+    document.body.style.backgroundColor = style.backgroundColor || '';
+    document.body.style.backgroundSize = style.backgroundSize || '';
+    document.body.style.backgroundPosition = style.backgroundPosition || '';
+    document.body.style.backgroundRepeat = style.backgroundRepeat || '';
+  }, []);
+
   // If not started, show start screen
   if (!isStarted) {
     return (
@@ -622,7 +634,7 @@ const ReactionTimeTest = ({
         height: '100vh',
         padding: '20px',
         textAlign: 'center',
-        backgroundColor: 'rgba(26, 42, 58, 0.85)', // Semi-transparent background
+        backgroundColor: 'rgba(26, 42, 58, 0.85)',
         color: 'white'
       }}>
         <div style={{
@@ -724,7 +736,7 @@ const ReactionTimeTest = ({
         alignItems: 'center',
         padding: '20px',
         height: '100vh',
-        backgroundColor: 'rgba(26, 42, 58, 0.85)', // Semi-transparent background
+        backgroundColor: 'rgba(26, 42, 58, 0.85)',
         color: 'white',
         overflow: 'auto'
       }}>

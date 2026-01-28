@@ -611,7 +611,18 @@ function App({ isSuiteMode = false, suiteParams = null, onSuiteEnd = null }) {
     }
   }, []);
 
-  // Add a useEffect to log when trackingInputMode changes
+  // Sync background on mount
+  useEffect(() => {
+    const currentBackground = BackgroundService.getCurrentBackground();
+    const style = BackgroundService.getBackgroundStyle(currentBackground);
+    document.body.style.backgroundImage = style.backgroundImage || 'none';
+    document.body.style.backgroundColor = style.backgroundColor || '';
+    document.body.style.backgroundSize = style.backgroundSize || '';
+    document.body.style.backgroundPosition = style.backgroundPosition || '';
+    document.body.style.backgroundRepeat = style.backgroundRepeat || '';
+  }, []);
+
+  // Sync background when trackingInputMode changes (already has an effect)
   useEffect(() => {
   }, [trackingInputMode]);
 
@@ -818,7 +829,7 @@ function App({ isSuiteMode = false, suiteParams = null, onSuiteEnd = null }) {
                     overflow: 'hidden',
                     display: 'flex',
                     flexDirection: 'column',
-                    backgroundColor: 'white'
+                    backgroundColor: 'rgba(255, 255, 255, 0.9)'
                   }}>
                     {isTrackingTaskEnabled ? (
                       <TrackingTask

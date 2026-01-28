@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.1] - 2026-01-28
+### Added
+- **Dynamic Background Synchronization**: Users' selected environments (Cupola, Columbus, CASA) now sync across all tests (RT, N-Back, and MATB) even when accessed independently.
+- **Improved Test Readability**: Semi-transparent overlays added to test screens to ensure readability over vibrant background environments.
+
+### Fixed
+- **Scoreboard Integration**: Fixed a missing import that prevented high scores from being saved in Reaction Time and N-Back tests.
+- **MATB Panel Transparency**: Adjusted MATB task panels to be semi-transparent, allowing the selected backdrop to show through for a more immersive experience.
+
+
 ## [1.0.0] - 2026-01-28
 ### Added
 - **Official Release**: Formally released the OrbAch Web Assessment Suite.
