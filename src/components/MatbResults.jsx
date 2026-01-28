@@ -31,18 +31,7 @@ ChartJS.register(
 const MatbResults = ({ logs, finalScore }) => {
     const { t } = useTranslation();
 
-    // Debug logging to help diagnose empty logs
-    console.log('MatbResults rendering with logs:', {
-        comm: logs?.comm?.length || 0,
-        resource: logs?.resource?.length || 0,
-        monitoring: logs?.monitoring?.length || 0,
-        tracking: logs?.tracking?.length || 0,
-        performance: logs?.performance?.length || 0,
-        hasLogs: !!logs,
-        commSample: logs?.comm?.[0],
-        resourceSample: logs?.resource?.[0],
-        monitoringSample: logs?.monitoring?.[0]
-    });
+    // No logs here
 
     // Calculate accuracies for each task
     const calculateAccuracy = (taskLogs, taskType) => {
@@ -261,6 +250,60 @@ const MatbResults = ({ logs, finalScore }) => {
         }
     };
 
+    // Prepare chart data for Tracking Task performance
+    const trackingChartData = useMemo(() => {
+        if (!logs.tracking || logs.tracking.length === 0) {
+            return null;
+        }
+
+        // Filter for actual tracking logs (they have rmsError) and sample to avoid massive data
+        // Sample every 30th entry (approx 2Hz if logged at 60Hz)
+        const sampledTracking = logs.tracking
+            .filter(d => d.rmsError !== undefined)
+            .filter((_, index) => index % 30 === 0);
+
+        if (sampledTracking.length === 0) return null;
+
+        return {
+            labels: sampledTracking.map(d => {
+                const dateObj = new Date(d.time);
+                return `${dateObj.getMinutes()}:${dateObj.getSeconds().toString().padStart(2, '0')}`;
+            }),
+            datasets: [
+                {
+                    label: t('tasks.tracking.title', 'Tracking Error (RMS)'),
+                    data: sampledTracking.map(d => d.rmsError),
+                    borderColor: 'rgb(75, 192, 192)',
+                    backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                    fill: true,
+                    tension: 0.3,
+                    pointRadius: 0
+                }
+            ]
+        };
+    }, [logs.tracking, t]);
+
+    const trackingOptions = {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: { position: 'top', labels: { color: 'white' } },
+            title: { display: true, text: 'Tracking Performance (Lower is Better)', color: 'white' }
+        },
+        scales: {
+            y: {
+                min: 0,
+                grid: { color: 'rgba(255, 255, 255, 0.1)' },
+                ticks: { color: 'white' },
+                title: { display: true, text: 'RMS Error', color: 'white' }
+            },
+            x: {
+                ticks: { color: 'white' },
+                grid: { color: 'rgba(255, 255, 255, 0.1)' }
+            }
+        }
+    };
+
     return (
         <div style={{ width: '100%', color: 'white' }}>
             <div style={{ textAlign: 'center', marginBottom: '20px' }}>
@@ -282,11 +325,20 @@ const MatbResults = ({ logs, finalScore }) => {
             </div>
 
             {/* Performance Plot (Time) */}
-            <div style={{ height: '250px', marginBottom: '30px', background: 'rgba(255,255,255,0.05)', padding: '15px', borderRadius: '8px' }}>
+            <div style={{ height: '250px', marginBottom: '20px', background: 'rgba(255,255,255,0.05)', padding: '15px', borderRadius: '8px' }}>
                 {performanceChartData ? (
                     <Line data={performanceChartData} options={performanceOptions} />
                 ) : (
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>No performance data</div>
+                )}
+            </div>
+
+            {/* Tracking Performance Plot */}
+            <div style={{ height: '250px', marginBottom: '30px', background: 'rgba(255,255,255,0.05)', padding: '15px', borderRadius: '8px' }}>
+                {trackingChartData ? (
+                    <Line data={trackingChartData} options={trackingOptions} />
+                ) : (
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>No tracking performance data</div>
                 )}
             </div>
 

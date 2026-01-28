@@ -552,7 +552,6 @@ const TrackingTask = forwardRef(({
     setSystemLoad(0);
     onMetricsUpdate?.({ healthImpact: 0, systemLoad: 0 });
 
-    console.log(`TrackingTask: Reset complete, using keyboard input mode`);
   }, [onStatusUpdate, onLogUpdate, onMetricsUpdate, difficulty]);
 
   useImperativeHandle(ref, () => ({
@@ -564,7 +563,6 @@ const TrackingTask = forwardRef(({
       isAutomatic: isAuto
     }),
     setDifficulty: (value) => {
-      console.log('TrackingTask: Setting difficulty to', value);
       setCurrentEventDifficulty(value);
     },
     togglePause: () => {

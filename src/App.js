@@ -156,7 +156,7 @@ function App({ isSuiteMode = false, suiteParams = null, onSuiteEnd = null }) {
   // Handler for Monitoring logs
   const handleMonitoringLogUpdate = useCallback((newEntry) => {
     setMonitoringEventLog(prevLog => {
-      const updated = typeof newEntry === 'function' ? newEntry(prevLog) : newEntry;
+      const updated = Array.isArray(newEntry) ? newEntry : [...prevLog, newEntry];
       monitoringLogRef.current = updated;
       return updated;
     });
@@ -165,7 +165,7 @@ function App({ isSuiteMode = false, suiteParams = null, onSuiteEnd = null }) {
   // Handler for Comm logs
   const handleCommLogUpdate = useCallback((newEntry) => {
     setCommEventLog(prevLog => {
-      const updated = typeof newEntry === 'function' ? newEntry(prevLog) : newEntry;
+      const updated = Array.isArray(newEntry) ? newEntry : [...prevLog, newEntry];
       commLogRef.current = updated;
       return updated;
     });
@@ -174,7 +174,7 @@ function App({ isSuiteMode = false, suiteParams = null, onSuiteEnd = null }) {
   // Handler for Resource logs
   const handleResourceLogUpdate = useCallback((newEntry) => {
     setResourceEventLog(prevLog => {
-      const updated = typeof newEntry === 'function' ? newEntry(prevLog) : newEntry;
+      const updated = Array.isArray(newEntry) ? newEntry : [...prevLog, newEntry];
       resourceLogRef.current = updated;
       return updated;
     });
@@ -183,7 +183,7 @@ function App({ isSuiteMode = false, suiteParams = null, onSuiteEnd = null }) {
   // Custom handler to append Tracking logs
   const handleTrackingLogUpdate = useCallback((newEntry) => {
     setTrackingEventLog(prevLog => {
-      const updated = typeof newEntry === 'function' ? newEntry(prevLog) : newEntry;
+      const updated = Array.isArray(newEntry) ? newEntry : [...prevLog, newEntry];
       trackingLogRef.current = updated;
       return updated;
     });
@@ -350,7 +350,7 @@ function App({ isSuiteMode = false, suiteParams = null, onSuiteEnd = null }) {
         console.log('System health reset (suite mode)');
       }
       systemHealthValueRef.current = 100;
-      
+
       // Small delay to ensure all resets are applied before next game starts
       setTimeout(() => {
         console.log('Suite mode reset complete - all tasks and gauges reset');
@@ -523,13 +523,7 @@ function App({ isSuiteMode = false, suiteParams = null, onSuiteEnd = null }) {
 
     // Debug logging for suite mode
     if (isSuiteMode && collectedLogs) {
-      console.log('App: Collecting logs for suite:', {
-        comm: collectedLogs.comm.length,
-        resource: collectedLogs.resource.length,
-        monitoring: collectedLogs.monitoring.length,
-        tracking: collectedLogs.tracking.length,
-        performance: collectedLogs.performance.length
-      });
+      // No logs here
     }
 
     // Create a standardized result object with the mode included
@@ -545,7 +539,6 @@ function App({ isSuiteMode = false, suiteParams = null, onSuiteEnd = null }) {
 
     // If in suite mode, notify the suite manager instead of exiting to main menu
     if (isSuiteMode && onSuiteEnd) {
-      console.log('App: Suite stage finished, notifying suite manager with logs');
       onSuiteEnd(standardizedResults);
       return;
     }
@@ -594,7 +587,6 @@ function App({ isSuiteMode = false, suiteParams = null, onSuiteEnd = null }) {
   // Add an effect to log when running on mobile
   useEffect(() => {
     if (isMobile) {
-      console.log('MATB-II is running on a mobile device - configuring for touch input');
     }
   }, [isMobile]);
 
@@ -610,20 +602,17 @@ function App({ isSuiteMode = false, suiteParams = null, onSuiteEnd = null }) {
     if (isMobileDevice && !localStorage.getItem('trackingInputMode')) {
       localStorage.setItem('trackingInputMode', 'touch');
       setTrackingInputMode('touch');
-      console.log('Auto-initialized tracking input mode to touch for mobile device');
     } else {
       // Ensure we sync our state with the stored preference
       const savedMode = localStorage.getItem('trackingInputMode');
       if (savedMode && ['keyboard', 'touch'].includes(savedMode)) {
         setTrackingInputMode(savedMode);
-        console.log(`App: Using saved tracking input mode: ${savedMode}`);
       }
     }
   }, []);
 
   // Add a useEffect to log when trackingInputMode changes
   useEffect(() => {
-    console.log(`App: trackingInputMode state changed to ${trackingInputMode}`);
   }, [trackingInputMode]);
 
   // Check for startup parameters stored in localStorage
@@ -631,7 +620,7 @@ function App({ isSuiteMode = false, suiteParams = null, onSuiteEnd = null }) {
   useEffect(() => {
     // Only run once on mount
     if (startupParamsChecked) return;
-    
+
     if (!isSuiteMode) {
       // Check if we have params - if not, we're on main route, so clear any stale data
       const hasParams = localStorage.getItem('matb_start_params') !== null;
@@ -646,7 +635,6 @@ function App({ isSuiteMode = false, suiteParams = null, onSuiteEnd = null }) {
     // Prioritize suite parameters if provided
     if (isSuiteMode && suiteParams) {
       if (startupParamsChecked) return;
-      console.log('App: Initializing with suite parameters IMMEDIATELY', suiteParams);
       // Synchronous start for suite mode to avoid race conditions with component mount
       startGame(suiteParams, true);
       setStartupParamsChecked(true);
@@ -663,11 +651,11 @@ function App({ isSuiteMode = false, suiteParams = null, onSuiteEnd = null }) {
         setShowMainMenu(false); // Hide menu immediately while preparing
         const startParams = JSON.parse(storedParams);
         const { mode, duration, tasks } = startParams;
-        
+
         // Set game mode immediately to prevent showing testing UI
         setCurrentGameMode(mode || 'normal');
         if (duration) setGameDuration(duration);
-        
+
         // Clear params immediately to prevent re-triggering
         localStorage.removeItem('matb_start_params');
 
@@ -702,7 +690,6 @@ function App({ isSuiteMode = false, suiteParams = null, onSuiteEnd = null }) {
 
         // Wait a bit for normal mode to ensure refs are ready
         const timer = setTimeout(() => {
-          console.log(`App: Auto-starting game in mode: ${mode}, duration: ${duration}`);
 
           const startOptions = {
             mode: mode || 'normal',

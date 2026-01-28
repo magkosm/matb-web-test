@@ -40,7 +40,7 @@ const SuiteManager = () => {
         finishedStepsRef.current.add(step);
 
         console.log(`SuiteManager: Step ${step} finished. Moving to ${step + 1}. Results:`, stepResults);
-        
+
         // Debug: Log trialLogs if present
         if (stepResults.trialLogs) {
             console.log(`SuiteManager: Step ${step} trialLogs:`, {
@@ -51,9 +51,9 @@ const SuiteManager = () => {
                 performance: stepResults.trialLogs.performance?.length || 0
             });
         }
-        
+
         setResults(prev => ({ ...prev, [step]: stepResults }));
-        
+
         // Add delay between MATB runs to ensure full reset completes
         if (step === 6 || step === 7) {
             // MATB Easy (step 6) or Hard (step 7) just finished - wait for reset

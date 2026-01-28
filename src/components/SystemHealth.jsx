@@ -184,10 +184,7 @@ const SystemHealth = forwardRef(({
           health: internalHealthRef.current,
           load: systemLoad
         };
-        // Log sample data for debugging
-        if (Math.random() < 0.1) { // 10% sample rate
-          console.log('Performance update:', performanceData);
-        }
+        // No logs here
         onPerformanceUpdate(performanceData);
       }
     }, 1000);

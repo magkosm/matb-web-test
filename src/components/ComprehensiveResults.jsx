@@ -18,8 +18,8 @@ const ComprehensiveResults = ({ results, onReturn }) => {
       if (!res.accuracy && res.trialLogs && res.trialLogs.length > 0) {
         // Calculate accuracy from trialLogs if missing
         const validTrials = res.trialLogs.filter(t => !t.isMemorization);
-        const correct = validTrials.filter(t => 
-          (t.correctLetter === 'HIT' || t.correctLetter === 'CR') && 
+        const correct = validTrials.filter(t =>
+          (t.correctLetter === 'HIT' || t.correctLetter === 'CR') &&
           (t.correctPosition === 'HIT' || t.correctPosition === 'CR')
         ).length;
         const total = validTrials.length;
@@ -123,7 +123,26 @@ const ComprehensiveResults = ({ results, onReturn }) => {
           const logs = item.data.trialLogs;
           if (logs.comm) logs.comm.forEach((l, i) => masterData.push({ Test: `${item.label} (COMM)`, Trial: i + 1, Metric: l.event || l.type || 'message', Value: l.status || l.callsign || 'logged' }));
           if (logs.monitoring) logs.monitoring.forEach((l, i) => masterData.push({ Test: `${item.label} (MON)`, Trial: i + 1, Metric: l.event || 'indicator', Value: l.status || l.type }));
-          if (logs.tracking) logs.tracking.forEach((l, i) => masterData.push({ Test: `${item.label} (TRK)`, Trial: i + 1, Metric: 'Deviation-Max', Value: l.deviation || l.value }));
+          if (logs.tracking) {
+            logs.tracking.forEach((l, i) => {
+              // Only log actual samples, or log events differently
+              if (l.rmsError !== undefined) {
+                masterData.push({
+                  Test: `${item.label} (TRK)`,
+                  Trial: i + 1,
+                  Metric: `RMS Error${l.isAuto ? ' (Auto)' : ' (Manual)'}`,
+                  Value: l.rmsError.toFixed(2)
+                });
+              } else if (l.event) {
+                masterData.push({
+                  Test: `${item.label} (TRK)`,
+                  Trial: i + 1,
+                  Metric: 'Event',
+                  Value: l.event
+                });
+              }
+            });
+          }
           if (logs.resource) logs.resource.forEach((l, i) => masterData.push({ Test: `${item.label} (RES)`, Trial: i + 1, Metric: l.event || 'pump', Value: l.status || l.pumpId }));
           if (logs.performance) logs.performance.forEach((l, i) => masterData.push({ Test: `${item.label} (PERF)`, Trial: i + 1, Metric: 'SystemHealth', Value: l.health }));
         }
@@ -277,18 +296,18 @@ const ComprehensiveResults = ({ results, onReturn }) => {
         {rtChartData && !rtData.skipped && (
           <div style={{ height: '300px', margin: '20px 0', background: 'rgba(255,255,255,0.05)', padding: '15px', borderRadius: '8px' }}>
             <h3>Reaction Time by Trial</h3>
-            <Line 
-              data={rtChartData} 
-              options={{ 
-                maintainAspectRatio: false, 
-                scales: { 
+            <Line
+              data={rtChartData}
+              options={{
+                maintainAspectRatio: false,
+                scales: {
                   y: { beginAtZero: true, ticks: { color: 'white' }, grid: { color: 'rgba(255,255,255,0.1)' } },
                   x: { ticks: { color: 'white' }, grid: { color: 'rgba(255,255,255,0.1)' } }
                 },
                 plugins: {
                   legend: { labels: { color: 'white' } }
                 }
-              }} 
+              }}
             />
           </div>
         )}
@@ -297,18 +316,18 @@ const ComprehensiveResults = ({ results, onReturn }) => {
         {nbackChartData && nbackChartData.labels.length > 0 ? (
           <div style={{ height: '300px', margin: '20px 0', background: 'rgba(255,255,255,0.05)', padding: '15px', borderRadius: '8px' }}>
             <h3>N-Back Accuracy Curve</h3>
-            <Bar 
-              data={nbackChartData} 
-              options={{ 
-                maintainAspectRatio: false, 
-                scales: { 
+            <Bar
+              data={nbackChartData}
+              options={{
+                maintainAspectRatio: false,
+                scales: {
                   y: { beginAtZero: true, max: 100, ticks: { color: 'white' }, grid: { color: 'rgba(255,255,255,0.1)' } },
                   x: { ticks: { color: 'white' }, grid: { color: 'rgba(255,255,255,0.1)' } }
                 },
                 plugins: {
                   legend: { labels: { color: 'white' } }
                 }
-              }} 
+              }}
             />
           </div>
         ) : (
@@ -322,9 +341,9 @@ const ComprehensiveResults = ({ results, onReturn }) => {
         {matbEasy.trialLogs && !matbEasy.skipped && (
           <div style={{ margin: '40px 0', borderTop: '2px solid rgba(76, 175, 80, 0.5)', paddingTop: '30px' }}>
             <h2 style={{ textAlign: 'center', marginBottom: '20px', color: '#4caf50' }}>MATB Easy - Detailed Results</h2>
-            <MatbResults 
-              logs={matbEasy.trialLogs} 
-              finalScore={matbEasy.finalScore || 0} 
+            <MatbResults
+              logs={matbEasy.trialLogs}
+              finalScore={matbEasy.finalScore || 0}
             />
           </div>
         )}
@@ -333,9 +352,9 @@ const ComprehensiveResults = ({ results, onReturn }) => {
         {matbHard.trialLogs && !matbHard.skipped && (
           <div style={{ margin: '40px 0', borderTop: '2px solid rgba(33, 150, 243, 0.5)', paddingTop: '30px' }}>
             <h2 style={{ textAlign: 'center', marginBottom: '20px', color: '#2196f3' }}>MATB Hard - Detailed Results</h2>
-            <MatbResults 
-              logs={matbHard.trialLogs} 
-              finalScore={matbHard.finalScore || 0} 
+            <MatbResults
+              logs={matbHard.trialLogs}
+              finalScore={matbHard.finalScore || 0}
             />
           </div>
         )}
