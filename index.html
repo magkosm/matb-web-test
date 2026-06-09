@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Redirecting…</title>
+    <script type="text/javascript">
+      // Forward any old /matb-web-test/... URL (root or deep link, preserving
+      // query string and hash) to the new /orbarch-edu/... deployment.
+      (function () {
+        var NEW_BASE = 'https://magkosm.github.io/orbarch-edu';
+        var OLD_BASE = '/matb-web-test';
+        var path = window.location.pathname || '/';
+        if (path.indexOf(OLD_BASE) === 0) {
+          path = path.slice(OLD_BASE.length);
+        }
+        if (path.charAt(0) !== '/') path = '/' + path;
+        var target = NEW_BASE + path + window.location.search + window.location.hash;
+        window.location.replace(target);
+      })();
+    </script>
+    <!-- Fallback for browsers with JS disabled -->
+    <meta http-equiv="refresh" content="0; url=https://magkosm.github.io/orbarch-edu/" />
+  </head>
+  <body>
+    <p>
+      This tool has moved to
+      <a href="https://magkosm.github.io/orbarch-edu/">magkosm.github.io/orbarch-edu</a>.
+    </p>
+  </body>
+</html>

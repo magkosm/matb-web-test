@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Redirecting…</title>
+    <script type="text/javascript">
+      // Deep links (e.g. /matb-web-test/monitoring?lng=sv) hit this 404 page on
+      // GitHub Pages. Forward them to the equivalent /orbarch-edu/... URL,
+      // preserving the path, query string and hash. The destination's own
+      // SPA 404 handler then resolves the client-side route.
+      (function () {
+        var NEW_BASE = 'https://magkosm.github.io/orbarch-edu';
+        var OLD_BASE = '/matb-web-test';
+        var path = window.location.pathname || '/';
+        if (path.indexOf(OLD_BASE) === 0) {
+          path = path.slice(OLD_BASE.length);
+        }
+        if (path.charAt(0) !== '/') path = '/' + path;
+        var target = NEW_BASE + path + window.location.search + window.location.hash;
+        window.location.replace(target);
+      })();
+    </script>
+    <meta http-equiv="refresh" content="0; url=https://magkosm.github.io/orbarch-edu/" />
+  </head>
+  <body>
+    <p>
+      This tool has moved to
+      <a href="https://magkosm.github.io/orbarch-edu/">magkosm.github.io/orbarch-edu</a>.
+    </p>
+  </body>
+</html>
